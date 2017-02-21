@@ -2,9 +2,11 @@ QT += qml quick opengl quickcontrols2 network webengine
 
 CONFIG += c++11
 
-HEADERS +=
+HEADERS += \
+    settingsmodel.h
 
-SOURCES += main.cpp
+SOURCES += main.cpp \
+    settingsmodel.cpp
 
 RESOURCES += qml.qrc \
     assets.qrc
@@ -32,4 +34,4 @@ LIBS += -L/opt/ros/kinetic/lib -lrosconsole_backend_interface
 LIBS += -L/opt/ros/kinetic/lib -lrosconsole_bridge
 LIBS += -L/opt/ros/kinetic/lib -lrosconsole_log4cxx
 LIBS += -L/opt/ros/kinetic/lib -lrostime
-LIBS += -L/opt/ros/kinetic/lib -lparams
+LIBS += -L/opt/ros/kinetic/lib -lrospack
