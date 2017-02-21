@@ -21,13 +21,40 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QDebug>
+#include <QQuickView>
+#include <QQmlContext>
+#include <QtWebEngine>
 
-#include <ros/ros.h>
+#include <Qt5GStreamer/QGlib/Error>
+#include <Qt5GStreamer/QGst/Init>
+
+#include <SDL2/SDL.h>
 
 int main(int argc, char *argv[])
 {
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);
+
+    // Initialize Qt5GStreamer, must be called before anything else is done with it
+    try
+    {
+        QGst::init(&argc, &argv);
+    }
+    catch (QGlib::Error error)
+    {
+        QMessageBox::critical(0, "Mission Control", QString("Failed to initialize QtGStreamer (Reason given:  %1)").arg(error.message()));
+        return 1;
+    }
+
+    // Initiaize the Qt webengine (i.e. blink web engine) for use in QML
+    QtWebEngine::initialize();
+
+    // Initialize SDL (for gamepad reading)
+    if (SDL_Init(SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) != 0)
+    {
+        QMessageBox::critical(0, "Mission Control", QString("Failed to initialize SDL (Reason given:  %1)").arg(SDL_GetError()));
+        return 1;
+    }
 
     // Create the QML application engine
     QQmlEngine qmlEngine(&app);
@@ -41,7 +68,7 @@ int main(int argc, char *argv[])
     if (!qmlComponent.errorString().isEmpty() || !window)
     {
         // There was an error creating the QML window. This is most likely due to a QML syntax error
-        qCritical() << "Failed to create QML window (Reason given: " << qmlComponent.errorString() << ")";
+        QMessageBox::critical(0, "Mission Control", QString("Failed to create QML window (Reason given:  %1)").arg(qmlComponent.errorString()));
         return 1;
     }
 

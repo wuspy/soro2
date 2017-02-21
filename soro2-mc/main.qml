@@ -25,7 +25,14 @@ ApplicationWindow {
     visible: true
     width: 800
     height: 600
-    title: qsTr("Mission Control")
+    title: "Mission Control"
 
-    //TODO
+    /*
+      The web view that shows the Google Maps overlay
+      */
+    WebEngineView {
+        id: mapWebEngine
+        anchors.fill: parent
+        url: "qrc:/html/map.html"
+    }
 }

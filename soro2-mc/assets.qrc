@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/html">
+        <file>map.html</file>
+    </qresource>
+    <qresource prefix="/icons"/>
+</RCC>
