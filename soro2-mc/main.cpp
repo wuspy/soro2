@@ -30,6 +30,19 @@
 
 #include <SDL2/SDL.h>
 
+#include <ros/ros.h>
+
+QString generateUniqueId() {
+    const QString chars("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
+
+    qsrand(QTime::currentTime().msec());
+    QString randomString = "mc_";
+    for(int i = 0; i < 12; ++i) {
+        randomString.append(chars.at(qrand() % chars.length()));
+    }
+    return randomString;
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
@@ -40,9 +53,9 @@ int main(int argc, char *argv[])
     {
         QGst::init(&argc, &argv);
     }
-    catch (QGlib::Error error)
+    catch (QGlib::Error e)
     {
-        QMessageBox::critical(0, "Mission Control", QString("Failed to initialize QtGStreamer (Reason given:  %1)").arg(error.message()));
+        QMessageBox::critical(0, "Mission Control", QString("Failed to initialize QtGStreamer (Reason given:  %1)").arg(e.message()));
         return 1;
     }
 
@@ -53,6 +66,20 @@ int main(int argc, char *argv[])
     if (SDL_Init(SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) != 0)
     {
         QMessageBox::critical(0, "Mission Control", QString("Failed to initialize SDL (Reason given:  %1)").arg(SDL_GetError()));
+        return 1;
+    }
+
+    // Create a unique identifier for this mission control, it is mainly used as a unique node name for ROS
+    QString mcId = generateUniqueId();
+
+    // Initialize ROS
+    try {
+        // TODO replace this with the actual ros master uri
+        putenv("ROS_MASTER_URI=http://localhost:11311");
+        ros::init(argc, argv, mcId.toStdString());
+    }
+    catch(ros::InvalidNameException e) {
+        QMessageBox::critical(0, "Mission Control", QString("Failed to initialize ROS: Invalid node name"));
         return 1;
     }
 
