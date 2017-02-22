@@ -33,6 +33,8 @@
 
 #include <ros/ros.h>
 
+#include <stdlib.h>
+
 #include "settingsmodel.h"
 
 using namespace Soro;
@@ -40,7 +42,8 @@ using namespace Soro;
 /* Generates a random string of letters and numbers, prefixed by 'mc_' to identify
  * this mission control.
  */
-QString generateUniqueId() {
+QString generateUniqueId()
+{
     const QString chars("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
 
     qsrand(QTime::currentTime().msec());
@@ -51,9 +54,10 @@ QString generateUniqueId() {
     return randomString;
 }
 
-/* Calle in the event of an unrecoverable init error
+/* Called in the event of an unrecoverable init error
  */
-void error(QString message) {
+void error(QString message)
+{
     qCritical() << message;
     QMessageBox::critical(0, "Mission Control", message);
 }
@@ -72,7 +76,8 @@ int main(int argc, char *argv[])
     // Create the settings model and load the main settings file
     SettingsModel settings;
     QString settingsErrorString;
-    if (!settings.load(&settingsErrorString)) {
+    if (!settings.load(&settingsErrorString))
+    {
         error(QString("<b>Failed to load settings:</b> %1").arg(settingsErrorString));
         return 1;
     }
@@ -101,12 +106,16 @@ int main(int argc, char *argv[])
     // Load the SDL gamepad map file
     // This map file allows SDL to know which button/axis (i.e. "Left X Axis") corresponds
     // to the raw reading from the controller (i.e. "Axis 0")
-    QFile gamepadMap(":/conf/gamecontrollerdb.txt"); // Loads from assets.qrc
+    QFile gamepadMap(":/config/gamecontrollerdb.txt"); // Loads from assets.qrc
     gamepadMap.open(QIODevice::ReadOnly);
-    if (SDL_GameControllerAddMapping(gamepadMap.readAll().data()) == -1)
+    while (gamepadMap.bytesAvailable())
     {
-        error(QString("<b>Failed to apply SDL gamepad map:</b> %1").arg(SDL_GetError()));
-        return 1;
+        if (SDL_GameControllerAddMapping(gamepadMap.readLine().data()) == -1)
+        {
+            error(QString("<b>Failed to apply SDL gamepad map:</b> %1").arg(SDL_GetError()));
+            gamepadMap.close();
+            return 1;
+        }
     }
     gamepadMap.close();
 
@@ -122,6 +131,8 @@ int main(int argc, char *argv[])
         error(QString("<b>Failed to initialize ROS:</b> %1").arg(e.what()));
         return 1;
     }
+
+    // TODO: ensure our mission control role is allowed (i.e. cannot have two arm mission controls)
 
     // Create the QML application engine
     QQmlEngine qmlEngine(&app);
