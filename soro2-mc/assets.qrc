@@ -3,7 +3,7 @@
         <file>map.html</file>
     </qresource>
     <qresource prefix="/icons"/>
-    <qresource prefix="/conf">
+    <qresource prefix="/config">
         <file>gamecontrollerdb.txt</file>
     </qresource>
 </RCC>
