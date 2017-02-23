@@ -1,26 +1,39 @@
-QT += qml quick opengl quickcontrols2 network webengine
+## Copyright 2017 The University of Oklahoma.
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+##     http://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
 
-CONFIG += c++11
+QT       += testlib
 
-HEADERS += \
-    settingsmodel.h
+TARGET = tst_tests
+CONFIG   += console
+CONFIG   -= app_bundle
 
-SOURCES += main.cpp \
-    settingsmodel.cpp
+TEMPLATE = app
 
-RESOURCES += qml.qrc \
-    assets.qrc
 
-# Additional import path used to resolve QML modules in Qt Creator's code model
-QML_IMPORT_PATH =
+SOURCES += tst_tests.cpp
+DEFINES += SRCDIR=\\\"$$PWD/\\\"
 
+# Include ROS headers
 INCLUDEPATH += /opt/ros/kinetic/include/
 DEPENDPATH += /opt/ros/kinetic/include/
 
 # Link against SDL2
 LIBS += -lSDL2
+
 # Link against Qt5Gstreamer
 LIBS += -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUtils-1.0 -lQt5GStreamerQuick-1.0
+
 # Link against ROS
 LIBS += -L/opt/ros/kinetic/lib -lroslib
 LIBS += -L/opt/ros/kinetic/lib -lroscpp
