@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
     try
     {
         // ROS loads ROS_MASTER_URI through envvar, but we load it in the settings file
-        putenv(QString("ROS_MASTER_URI=%1").arg(settings.getRosMasterUri()).toLatin1().data());
+        setenv("ROS_MASTER_URI", settings.getRosMasterUri().toLatin1().data(), 1);
         ros::init(argc, argv, mcId.toStdString());
     }
     catch(ros::InvalidNameException e)
