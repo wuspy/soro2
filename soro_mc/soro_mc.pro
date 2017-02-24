@@ -22,10 +22,12 @@ BUILD_DIR = ../build/soro_mc
 DESTDIR = ../bin
 
 HEADERS += \
-    settingsmodel.h
+    settingsmodel.h \
+    gamepadcontroller.h
 
 SOURCES += main.cpp \
-    settingsmodel.cpp
+    settingsmodel.cpp \
+    gamepadcontroller.cpp
 
 RESOURCES += qml.qrc \
     assets.qrc
