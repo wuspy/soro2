@@ -15,12 +15,14 @@ BUILD_DIR = ../build/soro_mc
 DESTDIR = ../lib
 
 SOURCES += \
-    camerasettingsmodel.cpp
+    camerasettingsmodel.cpp \
+    settingsmodel.cpp
 
 HEADERS +=\
-        libsoromc_global.h \
+    libsoromc_global.h \
     camerasettingsmodel.h \
     constants.h \
+    settingsmodel.h \
     soroexception.h
 
 # Include ROS headers
