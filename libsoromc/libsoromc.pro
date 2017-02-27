@@ -14,8 +14,12 @@ DEFINES += LIBSOROMC_LIBRARY
 BUILD_DIR = ../build/soro_mc
 DESTDIR = ../lib
 
+SOURCES += \
+    camerasettingsmodel.cpp
+
 HEADERS +=\
         libsoromc_global.h \
+    camerasettingsmodel.h \
     constants.h \
     soroexception.h
 
