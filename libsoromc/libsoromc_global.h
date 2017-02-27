@@ -1,0 +1,12 @@
+#ifndef LIBSOROMC_GLOBAL_H
+#define LIBSOROMC_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(LIBSOROMC_LIBRARY)
+#  define LIBSOROMCSHARED_EXPORT Q_DECL_EXPORT
+#else
+#  define LIBSOROMCSHARED_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // LIBSOROMC_GLOBAL_H
