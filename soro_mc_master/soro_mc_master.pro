@@ -26,6 +26,9 @@ DESTDIR = ../bin
 
 TEMPLATE = app
 
+INCLUDEPATH += $$PWD/..
+INCLUDEPATH += $$PWD/../..
+
 SOURCES += main.cpp
 
 # Include ROS headers
