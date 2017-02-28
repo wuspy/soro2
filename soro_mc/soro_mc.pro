@@ -28,13 +28,15 @@ HEADERS += \
     gamepadcontroller.h \
     mastercontroller.h \
     rosconnectioncontroller.h \
-    maincontroller.h
+    maincontroller.h \
+    mainwindowcontroller.h
 
 SOURCES += main.cpp \
     gamepadcontroller.cpp \
     mastercontroller.cpp \
     rosconnectioncontroller.cpp \
-    maincontroller.cpp
+    maincontroller.cpp \
+    mainwindowcontroller.cpp
 
 RESOURCES += qml.qrc \
     assets.qrc

@@ -4,8 +4,6 @@
 #include <QString>
 #include <QVector>
 
-#include "soroexception.h"
-
 namespace Soro {
 
 class CameraSettingsModel
@@ -21,18 +19,22 @@ public:
         QString productId;
     };
 
-    /* Loads the camera definitions from the camera settings file
+    /* Loads the camera definitions from the camera settings file. If unsuccessful,
+     * this will return false and set the class error string, which can be accessed with errorString()
      */
-    void load();
+    bool load();
 
     /* Returns a list of the camera definitions loaded from the settings file,
      * or an empty list if the file has not yet been loaded or if an error
      * occurred when loading the file
      */
-    const QVector<Camera>& getCameras();
+    const QVector<Camera>& getCameras() const;
+
+    QString errorString() const;
 
 private:
     QVector<Camera> _cameras;
+    QString _errorString;
 };
 
 } // namespace Soro

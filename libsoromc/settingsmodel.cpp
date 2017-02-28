@@ -15,18 +15,18 @@
  */
 
 #include "settingsmodel.h"
+#include "constants.h"
 
 #include <QCoreApplication>
 #include <QFile>
+#include <QJsonDocument>
 
-#define SETTINGS_FILE_PATH QString("%1/mc.conf").arg(QCoreApplication::applicationDirPath())
-
-#define KEY_ROS_MASTER_URI "RosMasterUri"
+#define KEY_MASTER "Master"
 
 namespace Soro {
 
 SettingsModel::SettingsModel() {
-    _settings = new QSettings(SETTINGS_FILE_PATH, QSettings::IniFormat);
+    _settings = new QSettings(SORO_MC_SETTINGS_FILE, QSettings::IniFormat);
 }
 
 SettingsModel::~SettingsModel() {
@@ -36,29 +36,13 @@ SettingsModel::~SettingsModel() {
     }
 }
 
-bool SettingsModel::checkKeyExists(QString key, QString *error)
-{
-    if (!_settings->contains(key))
-    {
-        if (error)
-        {
-            *error = QString("Entry for '%1' was not found in the settings file.").arg(key);
-            return false;
-        }
-    }
-    return true;
-}
-
-bool SettingsModel::load(QString *error)
+bool SettingsModel::load()
 {
     // Check that the settings file exists
-    if (!QFile(SETTINGS_FILE_PATH).exists())
+    if (!QFile(SORO_MC_SETTINGS_FILE).exists())
     {
-        if (error)
-        {
-            *error = QString("The settings file %1 does not exist.").arg(SETTINGS_FILE_PATH);
-            return false;
-        }
+        _errorString = QString("The settings file %1 does not exist.").arg(SORO_MC_SETTINGS_FILE);
+        return false;
     }
     _settings->sync();
 
@@ -66,26 +50,25 @@ bool SettingsModel::load(QString *error)
     switch (_settings->status())
     {
     case QSettings::AccessError:
-        if (error)
-        {
-            *error = QString("The settings file %1 could not be accessed. This could mean it's in use by another program.").arg(SETTINGS_FILE_PATH);
-        }
+        _errorString = QString("The settings file %1 could not be accessed. This could mean it's in use by another program.").arg(SORO_MC_SETTINGS_FILE);
         return false;
     case QSettings::FormatError:
-        if (error)
-        {
-            *error = QString("The settings file %1 is malformed.").arg(SETTINGS_FILE_PATH);
-        }
+        _errorString = QString("The settings file %1 is malformed.").arg(SORO_MC_SETTINGS_FILE);
         return false;
     default: break;
     }
 
-    if (!checkKeyExists(KEY_ROS_MASTER_URI, error)) return false;
+    if (!_settings->contains(KEY_MASTER))
+    {
+        _errorString = QString("Entry for '%1' was not found in the settings file.").arg(KEY_MASTER);
+        return false;
+    }
+
 
     return true;
 }
 
-bool SettingsModel::write(QString *error)
+bool SettingsModel::write()
 {
     // Write the changes to the file
     _settings->sync();
@@ -93,23 +76,25 @@ bool SettingsModel::write(QString *error)
     // Check for errors
     if (_settings->status() != QSettings::NoError)
     {
-        if (error)
-        {
-            *error = "Internal QSettings error while writing data";
-            return false;
-        }
+        _errorString = "Internal QSettings error while writing data";
+        return false;
     }
     return true;
 }
 
-QString SettingsModel::getRosMasterUri() const
+QString SettingsModel::errorString() const
 {
-    return _settings->value(KEY_ROS_MASTER_URI).toString();
+    return _errorString;
 }
 
-void SettingsModel::setRosMasterUri(QString uri)
+bool SettingsModel::getIsMaster() const
 {
-    _settings->setValue(KEY_ROS_MASTER_URI, uri);
+    return _settings->value(KEY_MASTER).toBool();
+}
+
+void SettingsModel::setIsMaster(bool master)
+{
+    _settings->setValue(KEY_MASTER, master);
 }
 
 } // namespace Soro
