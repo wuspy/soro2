@@ -21,13 +21,22 @@ TARGET = soro_mc
 BUILD_DIR = ../build/soro_mc
 DESTDIR = ../bin
 
+INCLUDEPATH += $$PWD/..
+INCLUDEPATH += $$PWD/../..
+
 HEADERS += \
-    settingsmodel.h \
-    gamepadcontroller.h
+    gamepadcontroller.h \
+    mastercontroller.h \
+    rosconnectioncontroller.h \
+    maincontroller.h \
+    mainwindowcontroller.h
 
 SOURCES += main.cpp \
-    settingsmodel.cpp \
-    gamepadcontroller.cpp
+    gamepadcontroller.cpp \
+    mastercontroller.cpp \
+    rosconnectioncontroller.cpp \
+    maincontroller.cpp \
+    mainwindowcontroller.cpp
 
 RESOURCES += qml.qrc \
     assets.qrc
@@ -38,6 +47,9 @@ QML_IMPORT_PATH =
 # Include ROS headers
 INCLUDEPATH += /opt/ros/kinetic/include/
 DEPENDPATH += /opt/ros/kinetic/include/
+
+# Link against libsoromc
+LIBS += -L../lib -lsoromc
 
 # Link against SDL2
 LIBS += -lSDL2

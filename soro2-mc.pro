@@ -19,6 +19,7 @@ SUBDIRS =\
     soro_mc_master \
     soro_mc_vid_master \
     sandbox \
-    tests
+    tests \
+    libsoromc
 
-soro_mc.depends = soro_mc_master soro_mc_vid_master
+soro_mc.depends = soro_mc_master soro_mc_vid_master libsoromc
