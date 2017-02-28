@@ -78,6 +78,26 @@ int GamepadController::getPollInterval() const
     return _pollInterval;
 }
 
+void GamepadController::updateIfChangedAxis(SDL_GameControllerAxis axis, qint16 currentValue)
+{
+    qint16 temp = SDL_GameControllerGetAxis(_gameController, axis);
+    if (currentValue != temp)
+    {
+            currentValue = temp;
+            emit axisChanged(axis, convertToFloat(currentValue));
+    }
+}
+
+void GamepadController::updateIfChangedButton(SDL_GameControllerButton button, qint16 currentValue)
+{
+    qint16 temp = SDL_GameControllerGetButton(_gameController, button);
+    if (currentValue != temp)
+    {
+            currentValue = temp;
+            emit buttonPressed(button, convertToFloat(currentValue));
+    }
+}
+
 void GamepadController::timerEvent(QTimerEvent *e)
 {
     QObject::timerEvent(e);
@@ -87,27 +107,29 @@ void GamepadController::timerEvent(QTimerEvent *e)
         if (_gameController && SDL_GameControllerGetAttached(_gameController))
         {
             // Update gamepad data
-            _axisLeftX           = SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTX);
-            _axisLeftY           = SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTY);
-            _axisRightX          = SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_RIGHTX);
-            _axisRightY          = SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_RIGHTY);
-            _axisLeftTrigger     = SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
-            _axisRightTrigger    = SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
-            _buttonA             = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_A);
-            _buttonB             = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_B);
-            _buttonX             = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_X);
-            _buttonY             = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_Y);
-            _buttonLeftShoulder  = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
-            _buttonRightShoulder = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
-            _buttonStart         = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_START);
-            _buttonBack          = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_BACK);
-            _buttonLeftStick     = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_LEFTSTICK);
-            _buttonRightStick    = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_RIGHTSTICK);
-            _dpadUp              = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_DPAD_UP);
-            _dpadLeft            = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
-            _dpadDown            = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
-            _dpadRight           = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
+            updateIfChangedAxis(SDL_CONTROLLER_AXIS_LEFTX, _axisLeftX);
+            updateIfChangedAxis(SDL_CONTROLLER_AXIS_LEFTY, _axisLeftY);
+            updateIfChangedAxis(SDL_CONTROLLER_AXIS_RIGHTX, _axisRightX);
+            updateIfChangedAxis(SDL_CONTROLLER_AXIS_RIGHTY, _axisRightY);
+            updateIfChangedAxis(SDL_CONTROLLER_AXIS_TRIGGERLEFT, _axisLeftTrigger);
+            updateIfChangedAxis(SDL_CONTROLLER_AXIS_TRIGGERRIGHT, _axisRightTrigger);
+            updateIfChangedButton(SDL_CONTROLLER_BUTTON_A, _buttonA);
+            updateIfChangedButton(SDL_CONTROLLER_BUTTON_B, _buttonB);
+            updateIfChangedButton(SDL_CONTROLLER_BUTTON_X, _buttonX);
+            updateIfChangedButton(SDL_CONTROLLER_BUTTON_Y, _buttonY);
+            updateIfChangedButton(SDL_CONTROLLER_BUTTON_LEFTSHOULDER, _buttonLeftShoulder);
+            updateIfChangedButton(SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, _buttonRightShoulder);
+            updateIfChangedButton(SDL_CONTROLLER_BUTTON_START, _buttonStart);
+            updateIfChangedButton(SDL_CONTROLLER_BUTTON_BACK, _buttonBack);
+            updateIfChangedButton(SDL_CONTROLLER_BUTTON_LEFTSTICK, _buttonLeftStick);
+            updateIfChangedButton(SDL_CONTROLLER_BUTTON_RIGHTSTICK, _buttonRightStick);
+            updateIfChangedButton(SDL_CONTROLLER_BUTTON_DPAD_UP, _dpadUp);
+            updateIfChangedButton(SDL_CONTROLLER_BUTTON_DPAD_LEFT, _dpadLeft);
+            updateIfChangedButton(SDL_CONTROLLER_BUTTON_DPAD_DOWN, _dpadDown);
+            updateIfChangedButton(SDL_CONTROLLER_BUTTON_DPAD_RIGHT, _dpadRight);
             emit poll();
+
+
         }
         else
         {
@@ -140,5 +162,4 @@ void GamepadController::setGamepad(SDL_GameController *controller)
         emit gamepadChanged(isGamepadConnected(), _gamepadName);
     }
 }
-
 }
