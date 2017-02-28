@@ -15,27 +15,28 @@ public:
     SettingsModel();
     ~SettingsModel();
 
-    /* Loads the main settings file. If unsuccessful, this will return false
-     * and set 'error' to a human-readable error message detailing what went wrong.
+    /* Loads the main settings file. If unsuccessful, this will return false and
+     * set the class error string, which can be accessed with errorString()
      */
-    bool load(QString *error);
+    bool load();
 
     /* Writes the current settings back to the file. If unsuccessful, this will return false
-     * and set 'error' to a human-readable error message detailing what went wrong.
+     * and set the class error string, which can be accessed with errorString()
      */
-    bool write(QString *error);
+    bool write();
 
     // Getters/Setters
 
-    QString getRosMasterUri() const;
-    void setRosMasterUri(QString uri);
+    bool getIsMaster() const;
+    void setIsMaster(bool master);
+    QString errorString() const;
 
 private:
     /* A helper function for load() that both checks if a key exists in the file,
      * and sets the error string if it doesn't
      */
     bool checkKeyExists(QString key, QString *error);
-
+    QString _errorString;
     QSettings *_settings = nullptr;
 };
 
