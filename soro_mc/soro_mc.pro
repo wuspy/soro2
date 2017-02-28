@@ -23,7 +23,8 @@ DESTDIR = ../bin
 
 HEADERS += \
     settingsmodel.h \
-    gamepadcontroller.h
+    gamepadcontroller.h \
+    drivecontrolsystem.h
 
 SOURCES += main.cpp \
     settingsmodel.cpp \
