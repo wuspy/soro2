@@ -6,8 +6,10 @@
 
 #include <SDL2/SDL.h>
 
-//#include <Qt5GStreamer/QGst/Init>
-//#include <Qt5GStreamer/QGlib/Error>
+#include <Qt5GStreamer/QGst/Init>
+#include <Qt5GStreamer/QGlib/Error>
+
+#include "qquickgstreamersurface.h"
 
 #include <ros/ros.h>
 
@@ -125,6 +127,7 @@ void MainController::initInternal()
     // Create the QML application engine
     //
     logInfo(LogTag, "Initializing QML engine...");
+    qmlRegisterType<QQuickGStreamerSurface>("Soro", 1, 0, "GStreamerSurface");
     _qmlEngine = new QQmlEngine(this);
 
     //
@@ -143,6 +146,13 @@ void MainController::initInternal()
         panic(QString("Failed to create QML window:  %1").arg(qmlComponent.errorString()));
     }
 
+    ///////////////////////////
+    //////  TESTING  //////////
+
+
+
+    ///////////////////////////
+    ///////////////////////////
     logInfo(LogTag, "Initialization complete");
 }
 
