@@ -34,7 +34,7 @@ DEPENDPATH += /opt/ros/kinetic/include/
 LIBS += -lSDL2
 
 # Link against Qt5Gstreamer
-LIBS += -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUtils-1.0 -lQt5GStreamerQuick-1.0
+#LIBS += -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUtils-1.0 -lQt5GStreamerQuick-1.0
 
 # Link against ROS
 LIBS += -L/opt/ros/kinetic/lib -lroslib
