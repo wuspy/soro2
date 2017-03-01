@@ -32,10 +32,6 @@ public:
     QString errorString() const;
 
 private:
-    /* A helper function for load() that both checks if a key exists in the file,
-     * and sets the error string if it doesn't
-     */
-    bool checkKeyExists(QString key, QString *error);
     QString _errorString;
     QSettings *_settings = nullptr;
 };
