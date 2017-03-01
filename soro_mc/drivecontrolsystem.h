@@ -3,6 +3,10 @@
 
 #include <QObject>
 #include <gamepadcontroller.h>
+#include "libsoromc/drivemessage.h"
+#include "ros/ros.h"
+#include <SDL2/SDL.h>
+#include <QTimerEvent>
 
 namespace Soro {
 
@@ -15,9 +19,13 @@ public:
 
     void setGamepad(GamepadController *gamepad);
 
+    void buildDriveMessage(SDL_GameControllerAxis *axis, float value);
+
 private:
     GamepadController *_gamepad = nullptr;
     QString _gamepadName;
+
+    int sendTimerId;
 
     int8_t wheelIFL;
     int8_t wheelIFR;
@@ -27,7 +35,10 @@ private:
     int8_t wheelIBR;
 
 public slots:
-    void setAxis(SDL_GameControllerAxis axis, float value);
+    void driveControlSystemSlot();
+
+protected:
+    void timerEvent(QTimerEvent* e);
 
 };
 
