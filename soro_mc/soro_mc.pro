@@ -28,14 +28,16 @@ HEADERS += \
     mastercontroller.h \
     rosconnectioncontroller.h \
     maincontroller.h \
-    mainwindowcontroller.h
+    mainwindowcontroller.h \
+    qquickgstreamersurface.h
 
 SOURCES += main.cpp \
     gamepadcontroller.cpp \
     mastercontroller.cpp \
     rosconnectioncontroller.cpp \
     maincontroller.cpp \
-    mainwindowcontroller.cpp
+    mainwindowcontroller.cpp \
+    qquickgstreamersurface.cpp
 
 RESOURCES += qml.qrc \
     assets.qrc
