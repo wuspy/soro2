@@ -41,6 +41,9 @@ public:
     bool getButtonPressed(SDL_GameControllerButton button);
     float getAxisValue(SDL_GameControllerAxis axis);
 
+    void updateIfChangedAxis(SDL_GameControllerAxis axis, qint16 currentValue);
+    void updateIfChangedButton(SDL_GameControllerButton button, qint16 currentValue);
+
 signals:
     /* Emitted when a gamepad button is pressed */
     void buttonPressed(SDL_GameControllerButton button, bool isPressed);
