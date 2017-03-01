@@ -18,9 +18,9 @@
 #include <QMessageBox>
 #include <ros/ros.h>
 
-#include "maincontroller.h"
+#include "mainwindowcontroller.h"
 
-using namespace Soro;
+//using namespace Soro;
 
 int main(int argc, char *argv[])
 {
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationName("Mission Control");
     QApplication app(argc, argv);
 
-    MainController::init(&app);
+    MainWindowController::init(&app);
 
     return app.exec();
 }

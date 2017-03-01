@@ -37,7 +37,8 @@ SOURCES += main.cpp \
     mastercontroller.cpp \
     rosconnectioncontroller.cpp \
     maincontroller.cpp \
-    mainwindowcontroller.cpp
+    mainwindowcontroller.cpp \
+    drivecontrolsystem.cpp
 
 RESOURCES += qml.qrc \
     assets.qrc
