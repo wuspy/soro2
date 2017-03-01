@@ -22,7 +22,6 @@ BUILD_DIR = ../build/soro_mc
 DESTDIR = ../bin
 
 INCLUDEPATH += $$PWD/..
-INCLUDEPATH += $$PWD/../..
 
 HEADERS += \
     drivecontrolsystem.h \
