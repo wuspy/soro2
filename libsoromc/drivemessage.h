@@ -66,24 +66,24 @@ struct drive_
 
 
 
-  typedef boost::shared_ptr< ::message_gen::drive_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::message_gen::drive_<ContainerAllocator> const> ConstPtr;
+  typedef boost::shared_ptr< ::Soro::Messages::drive_<ContainerAllocator> > Ptr;
+  typedef boost::shared_ptr< ::Soro::Messages::drive_<ContainerAllocator> const> ConstPtr;
 
 }; // struct drive_
 
-typedef ::message_gen::drive_<std::allocator<void> > drive;
+typedef ::Soro::Messages::drive_<std::allocator<void> > drive;
 
-typedef boost::shared_ptr< ::message_gen::drive > drivePtr;
-typedef boost::shared_ptr< ::message_gen::drive const> driveConstPtr;
+typedef boost::shared_ptr< ::Soro::Messages::drive > drivePtr;
+typedef boost::shared_ptr< ::Soro::Messages::drive const> driveConstPtr;
 
 // constants requiring out of line definition
 
 
 
 template<typename ContainerAllocator>
-std::ostream& operator<<(std::ostream& s, const ::message_gen::drive_<ContainerAllocator> & v)
+std::ostream& operator<<(std::ostream& s, const ::Soro::Messages::drive_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::message_gen::drive_<ContainerAllocator> >::stream(s, "", v);
+ros::message_operations::Printer< ::Soro::Messages::drive_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
@@ -98,7 +98,7 @@ namespace message_traits
 
 
 // BOOLTRAITS {'IsFixedSize': True, 'IsMessage': True, 'HasHeader': False}
-// {'std_msgs': ['/opt/ros/kinetic/share/std_msgs/cmake/../msg'], 'message_gen': ['/home/soro/catkin_workspace/MessgeGen/msg']}
+// {'std_msgs': ['/opt/ros/kinetic/share/std_msgs/cmake/../msg'], 'Soro::Messages': ['/home/soro/catkin_workspace/MessgeGen/msg']}
 
 // !!!!!!!!!!! ['__class__', '__delattr__', '__dict__', '__doc__', '__eq__', '__format__', '__getattribute__', '__hash__', '__init__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_parsed_fields', 'constants', 'fields', 'full_name', 'has_header', 'header_present', 'names', 'package', 'parsed_fields', 'short_name', 'text', 'types']
 
@@ -106,62 +106,62 @@ namespace message_traits
 
 
 template <class ContainerAllocator>
-struct IsFixedSize< ::message_gen::drive_<ContainerAllocator> >
+struct IsFixedSize< ::Soro::Messages::drive_<ContainerAllocator> >
   : TrueType
   { };
 
 template <class ContainerAllocator>
-struct IsFixedSize< ::message_gen::drive_<ContainerAllocator> const>
+struct IsFixedSize< ::Soro::Messages::drive_<ContainerAllocator> const>
   : TrueType
   { };
 
 template <class ContainerAllocator>
-struct IsMessage< ::message_gen::drive_<ContainerAllocator> >
+struct IsMessage< ::Soro::Messages::drive_<ContainerAllocator> >
   : TrueType
   { };
 
 template <class ContainerAllocator>
-struct IsMessage< ::message_gen::drive_<ContainerAllocator> const>
+struct IsMessage< ::Soro::Messages::drive_<ContainerAllocator> const>
   : TrueType
   { };
 
 template <class ContainerAllocator>
-struct HasHeader< ::message_gen::drive_<ContainerAllocator> >
+struct HasHeader< ::Soro::Messages::drive_<ContainerAllocator> >
   : FalseType
   { };
 
 template <class ContainerAllocator>
-struct HasHeader< ::message_gen::drive_<ContainerAllocator> const>
+struct HasHeader< ::Soro::Messages::drive_<ContainerAllocator> const>
   : FalseType
   { };
 
 
 template<class ContainerAllocator>
-struct MD5Sum< ::message_gen::drive_<ContainerAllocator> >
+struct MD5Sum< ::Soro::Messages::drive_<ContainerAllocator> >
 {
   static const char* value()
   {
     return "9cd6dc5f687cf0d3cbd747212dba324a";
   }
 
-  static const char* value(const ::message_gen::drive_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::Soro::Messages::drive_<ContainerAllocator>&) { return value(); }
   static const uint64_t static_value1 = 0x9cd6dc5f687cf0d3ULL;
   static const uint64_t static_value2 = 0xcbd747212dba324aULL;
 };
 
 template<class ContainerAllocator>
-struct DataType< ::message_gen::drive_<ContainerAllocator> >
+struct DataType< ::Soro::Messages::drive_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "message_gen/drive";
+    return "Soro_Messages/drive";
   }
 
-  static const char* value(const ::message_gen::drive_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::Soro::Messages::drive_<ContainerAllocator>&) { return value(); }
 };
 
 template<class ContainerAllocator>
-struct Definition< ::message_gen::drive_<ContainerAllocator> >
+struct Definition< ::Soro::Messages::drive_<ContainerAllocator> >
 {
   static const char* value()
   {
@@ -174,7 +174,7 @@ int8 wheelBR\n\
 ";
   }
 
-  static const char* value(const ::message_gen::drive_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::Soro::Messages::drive_<ContainerAllocator>&) { return value(); }
 };
 
 } // namespace message_traits
@@ -185,7 +185,7 @@ namespace ros
 namespace serialization
 {
 
-  template<class ContainerAllocator> struct Serializer< ::message_gen::drive_<ContainerAllocator> >
+  template<class ContainerAllocator> struct Serializer< ::Soro::Messages::drive_<ContainerAllocator> >
   {
     template<typename Stream, typename T> inline static void allInOne(Stream& stream, T m)
     {
@@ -209,9 +209,9 @@ namespace message_operations
 {
 
 template<class ContainerAllocator>
-struct Printer< ::message_gen::drive_<ContainerAllocator> >
+struct Printer< ::Soro::Messages::drive_<ContainerAllocator> >
 {
-  template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::message_gen::drive_<ContainerAllocator>& v)
+  template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::Soro::Messages::drive_<ContainerAllocator>& v)
   {
     s << indent << "wheelFL: ";
     Printer<int8_t>::stream(s, indent + "  ", v.wheelFL);
