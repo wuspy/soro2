@@ -22,7 +22,9 @@ HEADERS +=\
     libsoromc_global.h \
     camerasettingsmodel.h \
     constants.h \
-    settingsmodel.h
+    settingsmodel.h \
+    drivemessage.h \
+    videomessage.h
 
 # Include ROS headers
 INCLUDEPATH += /opt/ros/kinetic/include/
