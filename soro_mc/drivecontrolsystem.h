@@ -8,6 +8,7 @@
 #include <SDL2/SDL.h>
 #include <QTimerEvent>
 
+
 namespace Soro {
 
 class DriveControlSystem : public QObject
@@ -17,25 +18,20 @@ class DriveControlSystem : public QObject
 public:
     explicit DriveControlSystem(QObject *parent = 0);
 
-    void setGamepad(GamepadController *gamepad);
-
-    void buildDriveMessage(SDL_GameControllerAxis *axis, float value);
+    Soro::Messages::drive* buildDriveMessage(float x, float y);
+    void setDriveMode(int i);
+    int getDriveMode();
+    void setDriveEnabled(bool e);
+    bool getDriveEnabled();
 
 private:
-    GamepadController *_gamepad = nullptr;
-    QString _gamepadName;
 
-    int sendTimerId;
+    int _sendTimerId;
+    int _mode;          //mode: 1 for single stick, 2 for dual
+    bool _enabled;       //is drivecontrol enabled
 
-    int8_t wheelIFL;
-    int8_t wheelIFR;
-    int8_t wheelIML;
-    int8_t wheelIMR;
-    int8_t wheelIBL;
-    int8_t wheelIBR;
-
-public slots:
-    void driveControlSystemSlot();
+    ros::NodeHandle _driveHandle;
+    ros::Publisher _drivePublisher;
 
 protected:
     void timerEvent(QTimerEvent* e);
