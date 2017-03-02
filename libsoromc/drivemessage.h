@@ -154,7 +154,7 @@ struct DataType< ::Soro::Messages::drive_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "Soro_Messages/drive";
+    return "beginner_tutorials/drive";
   }
 
   static const char* value(const ::Soro::Messages::drive_<ContainerAllocator>&) { return value(); }
