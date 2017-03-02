@@ -278,4 +278,7 @@ ApplicationWindow {
         color: "#4CAF50"
     }
 
+    Host {
+        anchors.horizontalCenter: parent.horizontalCenter
+    }
 }
