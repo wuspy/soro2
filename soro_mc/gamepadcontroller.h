@@ -20,12 +20,11 @@ public:
     void setPollInterval(int rate);
     int getPollInterval() const;
 
-    /* Sets/Gets the timer's id */
-    void setTimerId(int id);
-    int getTimerId() const;
+    float getDeadzone() const;
+    void setDeadzone(float deadzone);
 
     /* Gets the currently connected gamepad, or null if no gamepad is connected.
-         */
+     */
     SDL_GameController* getGamepad();
 
     /* Gets the name of the currently connected gamepad, or an empty string
@@ -41,8 +40,8 @@ public:
     bool getButtonPressed(SDL_GameControllerButton button);
     float getAxisValue(SDL_GameControllerAxis axis);
 
-    void updateIfChangedAxis(SDL_GameControllerAxis axis, qint16 currentValue);
-    void updateIfChangedButton(SDL_GameControllerButton button, qint16 currentValue);
+    void updateIfChangedAxis(SDL_GameControllerAxis axis, qint16 *currentValue);
+    void updateIfChangedButton(SDL_GameControllerButton button, bool *currentValue);
 
 signals:
     /* Emitted when a gamepad button is pressed */
@@ -58,11 +57,13 @@ protected:
     void timerEvent(QTimerEvent *event);
 
 private:
-    int _pollInterval = 10;
-    int _timerId = -1;
+    int _pollInterval;
+    int _timerId;
+    float _deadzone;
 
     /* Sets the currently active controller to be polled */
     void setGamepad(SDL_GameController *controller);
+    float convertToFloatWithDeadzone(qint16 value, float deadzone);
 
     SDL_GameController *_gameController = nullptr;
     QString _gamepadName;
