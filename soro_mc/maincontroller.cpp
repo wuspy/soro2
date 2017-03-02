@@ -136,6 +136,16 @@ void MainController::initInternal()
     _gamepadController = new GamepadController(this);
 
     //
+    // Create ROS connection controller
+    //
+    _rosConnectionController = new RosConnectionController(this);
+
+    //
+    // Create drive control system
+    //
+    _driveControlSystem = new DriveControlSystem(this);
+
+    //
     // Create the main UI
     //
     QQmlComponent qmlComponent(_qmlEngine, QUrl("qrc:/main.qml"));
@@ -146,13 +156,6 @@ void MainController::initInternal()
         panic(QString("Failed to create QML window:  %1").arg(qmlComponent.errorString()));
     }
 
-    ///////////////////////////
-    //////  TESTING  //////////
-
-
-
-    ///////////////////////////
-    ///////////////////////////
     logInfo(LogTag, "Initialization complete");
 }
 

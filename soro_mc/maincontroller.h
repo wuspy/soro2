@@ -11,6 +11,8 @@
 #include "rosconnectioncontroller.h"
 #include "gamepadcontroller.h"
 #include "mainwindowcontroller.h"
+#include "drivecontrolsystem.h"
+#include "rosconnectioncontroller.h"
 
 namespace Soro {
 
@@ -55,6 +57,8 @@ private:
     SettingsModel* _settingsModel = nullptr;
     CameraSettingsModel *_cameraSettingsModel = nullptr;
     MainWindowController *_mainWindowController = nullptr;
+    DriveControlSystem *_driveControlSystem = nullptr;
+    RosConnectionController *_rosController = nullptr;
 
 private slots:
     void initInternal();
