@@ -7,6 +7,9 @@
 #include "ros/ros.h"
 #include <QTimerEvent>
 
+// ***TODO***
+// ROS hangs the application if connection to master is not immediately successful
+// All functionality associated with ROS has been commented out until this can be resolved
 namespace Soro {
 
 class DriveControlSystem : public QObject

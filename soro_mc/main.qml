@@ -28,15 +28,19 @@ ApplicationWindow {
     height: 600
     title: "Mission Control"
 
+    /*
+      Alias properties for QML controls
+      */
     property alias mainVideoSurface: mainVideoSurface
-    property alias sideVideoSurface1: sideVideoSurface1
-    property alias sideVideoSurface2: sideVideoSurface2
-    property alias view1Selected: viewSelection1.selected
-    property alias view2Selected: viewSelection2.selected
-    property alias view3Selected: viewSelection3.selected
 
+    /*
+      State of the sidebar, can be either 'hidden' or 'visible'
+      */
     property alias sidebarState: sidebar.state
 
+    /*
+      Fullscreen state of the application, boolean
+      */
     property bool fullscreen: false;
     onFullscreenChanged: {
         if (fullscreen) {
@@ -56,11 +60,18 @@ ApplicationWindow {
         url: "qrc:/html/map.html"
     }
 
+    /*
+      The main video surface to display fullscreen video
+      */
     GStreamerSurface {
         id: mainVideoSurface
         anchors.fill: parent;
+        visible: false
     }
 
+    /*
+      Drop shadow for the sidebar
+      */
     DropShadow {
         anchors.fill: sidebar
         source: sidebar
@@ -69,6 +80,9 @@ ApplicationWindow {
         samples: 64
     }
 
+    /*
+      Blur behind the sidebar
+      */
     FastBlur {
         id: sidebarBlur
         anchors.fill: sidebar
@@ -81,6 +95,9 @@ ApplicationWindow {
         opacity: 1
     }
 
+    /*
+      The main sidebar
+      */
     Rectangle {
         id: sidebar
         state: "visible"
@@ -182,16 +199,6 @@ ApplicationWindow {
             text: "18ms"
             horizontalAlignment: Text.AlignHCenter
             color: "white"
-
-            Timer {
-                id: pingChangeTimer
-                repeat: true
-                interval: 500
-                running: true
-                onTriggered: {
-                    pingLabel.text = Math.round(Math.random() * 8) + "ms"
-                }
-            }
         }
 
         Label {
@@ -204,157 +211,25 @@ ApplicationWindow {
             font.pixelSize: 24
             color: "white"
         }
-
-        Rectangle {
-            id: viewSelectionRectangle
-            anchors.fill: parent
-            anchors.topMargin: 150
-            color: "transparent"
-
-            Rectangle {
-                property bool selected: false;
-                id: viewSelection1
-                height: width / 1.6
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.rightMargin: 20
-                anchors.leftMargin: 20
-                anchors.top: parent.top
-                anchors.topMargin: 20
-                border.color: selected ? "#2196F3" : "white"
-                border.width: 4
-                GStreamerSurface {
-                    id: sideVideoSurface1
-                    anchors.fill: parent
-                    anchors.margins: parent.border.width
-                    backgroundColor: "red"
-                }
-                DropShadow {
-                    source: viewSelection1Text
-                    anchors.fill: viewSelection1Text
-                    radius: 10
-                    samples: 20
-                    color: "black"
-                }
-
-                Text {
-                    id: viewSelection1Text
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.margins: 12
-                    font.pixelSize: 24
-                    font.bold: true
-                    color: "white"
-                    text: "Camera 1"
-                }
-            }
-
-            Rectangle {
-                property bool selected: true;
-                id: viewSelection2
-                height: width / 1.6
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.rightMargin: 20
-                anchors.leftMargin: 20
-                anchors.top: viewSelection1.bottom
-                anchors.topMargin: 20
-                border.color: selected ? "#2196F3" : "white"
-                border.width: 4
-                GStreamerSurface {
-                    id: sideVideoSurface2
-                    anchors.fill: parent
-                    anchors.margins: parent.border.width
-                }
-                DropShadow {
-                    source: viewSelection2Text
-                    anchors.fill: viewSelection2Text
-                    radius: 10
-                    samples: 20
-                    color: "black"
-                }
-
-                Text {
-                    id: viewSelection2Text
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.margins: 12
-                    font.pixelSize: 24
-                    font.bold: true
-                    color: "white"
-                    text: "Camera 2"
-                }
-            }
-
-            Rectangle {
-                property bool selected: false;
-                id: viewSelection3
-                height: width / 1.6
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.rightMargin: 20
-                anchors.leftMargin: 20
-                anchors.top: viewSelection2.bottom
-                anchors.topMargin: 20
-                border.color: selected ? "#2196F3" : "white"
-                border.width: 4
-                ShaderEffectSource {
-                    sourceItem: mapWebEngine
-                    sourceRect: Qt.rect(0, 0, mapWebEngine.width, mapWebEngine.height)
-                    anchors.fill: parent
-                    anchors.margins: parent.border.width
-                }
-                /*WebEngineView {
-                    id: mapWebEngine2
-                    anchors.fill: parent
-                    url: "qrc:/html/map.html"
-                    anchors.margins: parent.border.width
-                }*/
-                DropShadow {
-                    source: viewSelection3Text
-                    anchors.fill: viewSelection3Text
-                    radius: 10
-                    samples: 20
-                    color: "black"
-                }
-
-                Text {
-                    id: viewSelection3Text
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.margins: 12
-                    font.pixelSize: 24
-                    font.bold: true
-                    color: "white"
-                    text: "Map"
-                }
-            }
-
-        }
-
-        Rectangle {
-            id: separator1
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: viewSelectionRectangle.top
-
-            height: 2
-            color: "white"
-            opacity: 0.2
-        }
     }
 
+    /*
+      Drop shadow for the mini connection status image
+      */
     DropShadow {
-        source: connectionStatusImage2
-        anchors.fill: connectionStatusImage2
+        source: miniConnectionStatusImage
+        anchors.fill: miniConnectionStatusImage
         radius: 20
         samples: 40
         color: "#66000000"
         visible: sidebar.state == "hidden"
     }
 
+    /*
+      Status image that is shown when the main sidebar is hidden
+      */
     Image {
-        id: connectionStatusImage2
+        id: miniConnectionStatusImage
         width: 96
         height: 96
         anchors.top: parent.top
@@ -366,30 +241,38 @@ ApplicationWindow {
         source: "qrc:/icons/ic_check_circle_white_48px.svg"
     }
 
+    /*
+      Color overlay to colorize the mini connection status image
+      */
     ColorOverlay {
-        anchors.fill: connectionStatusImage2
-        source: connectionStatusImage2
+        anchors.fill: miniConnectionStatusImage
+        source: miniConnectionStatusImage
         color: "#4CAF50"
         visible: sidebar.state == "hidden"
     }
 
+    /*
+      Drop shadow for the mini ping label
+      */
     DropShadow {
-        source: pingLabel2
-        anchors.fill: pingLabel2
+        source: miniPingLabel
+        anchors.fill: miniPingLabel
         radius: 20
         samples: 40
         color: "#66000000"
         visible: sidebar.state == "hidden"
     }
 
+    /*
+      Ping label that is shown when the main sidebar is hidden
+      */
     Label {
-        id: pingLabel2
+        id: miniPingLabel
         font.pixelSize: 64
-        anchors.right: parent.right
         anchors.rightMargin: 10
         anchors.leftMargin: 10
-        anchors.left: connectionStatusImage2.right
-        anchors.verticalCenter: connectionStatusImage2.verticalCenter
+        anchors.left: miniConnectionStatusImage.right
+        anchors.verticalCenter: miniConnectionStatusImage.verticalCenter
         text: pingLabel.text
         visible: sidebar.state == "hidden"
         color: "#4CAF50"
