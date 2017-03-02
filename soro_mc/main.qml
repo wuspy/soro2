@@ -278,4 +278,8 @@ ApplicationWindow {
         color: "#4CAF50"
     }
 
+    Host {
+
+    }
+
 }
