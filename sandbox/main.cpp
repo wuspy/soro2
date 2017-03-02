@@ -28,9 +28,9 @@ int main(int argc, char **argv)
     QGst::init(&argc, &argv);
 
     // Register Qt5GStreamer with QML
-    //qmlRegisterType<QGst::Quick::VideoItem>("QtGStreamer", 1, 0, "VideoItem");
+    qmlRegisterType<QGst::Quick::VideoItem>("QtGStreamer", 1, 0, "VideoItem");
     //qmlRegisterType<Player>("QtGStreamer", 1, 0, "Player");
-    //qmlRegisterUncreatableType<QGst::Quick::VideoSurface>("QtGStreamer", 1, 0, "VideoSurface");
+    qmlRegisterUncreatableType<QGst::Quick::VideoSurface>("QtGStreamer", 1, 0, "VideoSurface", "Because");
 
     QQuickView view;
 
@@ -43,11 +43,12 @@ int main(int argc, char **argv)
     if (argc > 1)
         player->setUri(QString::fromLocal8Bit(argv[1]));
     else
-        player->setUri(QLatin1Literal("file:///home/soro/Downloads/big_buck_bunny_480p_surround-fix.avi"));
+        player->setUri(QLatin1Literal("file:///home/jj/Downloads/Big_Buck_Bunny_4K.webm.480p.webm"));
     view.rootContext()->setContextProperty(QLatin1String("player"), player);
 
     view.setSource(QUrl(QLatin1String("qrc:///video.qml")));
     view.show();
+    player->play();
 
     return app.exec();
 }

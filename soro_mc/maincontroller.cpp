@@ -29,8 +29,8 @@ MainController::MainController(QObject *parent) : QObject(parent)
 
 void MainController::panic(QString message)
 {
-    logFatal(LogTag, QString("panic(): %1").arg(message));
     QMessageBox::critical(0, "Mission Control", message);
+    logFatal(LogTag, QString("panic(): %1").arg(message));
     QCoreApplication::exit(1);
 }
 
@@ -143,36 +143,43 @@ void MainController::initInternal()
     // Create the main UI
     //
     QQmlComponent qmlComponent(_qmlEngine, QUrl("qrc:/main.qml"));
-    QQuickWindow *window = qobject_cast<QQuickWindow*>(qmlComponent.create());
-    if (!qmlComponent.errorString().isEmpty() || !window)
+    _window = qobject_cast<QQuickWindow*>(qmlComponent.create());
+    if (!qmlComponent.errorString().isEmpty() || !_window)
     {
         // There was an error creating the QML window. This is most likely due to a QML syntax error
         panic(QString("Failed to create QML window:  %1").arg(qmlComponent.errorString()));
     }
 
-    QQuickGStreamerSurface *videoSurface1 = qvariant_cast<QQuickGStreamerSurface*>(window->property("mainVideoSurface"));
-    QQuickGStreamerSurface *videoSurface2 = qvariant_cast<QQuickGStreamerSurface*>(window->property("sideVideoSurface1"));
-    QQuickGStreamerSurface *videoSurface3 = qvariant_cast<QQuickGStreamerSurface*>(window->property("sideVideoSurface2"));
+    _gamepadController = new GamepadController(this);
+    connect(_gamepadController, &GamepadController::buttonPressed, this, &MainController::gamepadButtonPressed);
+
+    _rosConnectionController = new RosConnectionController(this);
+
+    _driveSystem = new DriveControlSystem(this);
+
+    _vidSurface1 = qvariant_cast<QQuickGStreamerSurface*>(_window->property("mainVideoSurface"));
+    _vidSurface2 = qvariant_cast<QQuickGStreamerSurface*>(_window->property("sideVideoSurface1"));
+    _vidSurface3 = qvariant_cast<QQuickGStreamerSurface*>(_window->property("sideVideoSurface2"));
 
     ///////////////////////////
     //////  TESTING  //////////
 
     QGst::PipelinePtr pipeline1 = QGst::Pipeline::create("pipeline1");
-    QGst::BinPtr source1 = QGst::Bin::fromDescription("videotestsrc ! videoconvert");
-    QGst::ElementPtr sink1 = QGst::ElementFactory::make("qt5videosink");
-    pipeline1->add(source1, sink1);
-    source1->link(sink1);
-    videoSurface1->setSink(sink1);
-    videoSurface3->setSink(sink1);
+    QGst::BinPtr source1 = QGst::Bin::fromDescription("videotestsrc pattern=snow ! videoconvert");
+    _sink1 = QGst::ElementFactory::make("qt5videosink");
+    pipeline1->add(source1, _sink1);
+    source1->link(_sink1);
+    _vidSurface1->setSink(_sink1);
+    _vidSurface3->setSink(_sink1);
     pipeline1->setState(QGst::StatePlaying);
 
     QGst::PipelinePtr pipeline2 = QGst::Pipeline::create("pipeline2");
-    QGst::BinPtr source2 = QGst::Bin::fromDescription("videotestsrc pattern=snow ! videoconvert");
+    QGst::BinPtr source2 = QGst::Bin::fromDescription("videotestsrc ! videoconvert");
     //QGst::BinPtr source2 = QGst::Bin::fromDescription("udpsrc port=5502 ! application/x-rtp,media=video,encoding-name=JPEG,payload=26 ! rtpjpegdepay ! jpegdec ! videoconvert");
-    QGst::ElementPtr sink2 = QGst::ElementFactory::make("qt5videosink");
-    pipeline2->add(source2, sink2);
-    source2->link(sink2);
-    videoSurface2->setSink(sink2);
+    _sink2 = QGst::ElementFactory::make("qt5videosink");
+    pipeline2->add(source2, _sink2);
+    source2->link(_sink2);
+    _vidSurface2->setSink(_sink2);
     pipeline2->setState(QGst::StatePlaying);
 
 
@@ -261,6 +268,45 @@ void MainController::log(LogLevel level, QString tag, QString message) {
             qFatal(formatted);
             break;
         }
+    }
+}
+
+void MainController::gamepadButtonPressed(SDL_GameControllerButton button, bool pressed) {
+    if ((button == SDL_CONTROLLER_BUTTON_A) && pressed) {
+        if (_window->property("sidebarState").toString() == "visible") {
+            _window->setProperty("sidebarState", QVariant("hidden"));
+        }
+        else {
+            _window->setProperty("sidebarState", QVariant("visible"));
+        }
+    }
+    else if ((button == SDL_CONTROLLER_BUTTON_DPAD_DOWN) && pressed) {
+        //_vidSurface1->clearSink();
+        if (_sinkConfig == 1) {
+            _vidSurface1->setProperty("visible", QVariant(true));
+            _sinkConfig = 2;
+            _vidSurface1->setSink(_sink2);
+            _window->setProperty("view3Selected", QVariant(false));
+            _window->setProperty("view1Selected", QVariant(true));
+            _window->setProperty("view2Selected", QVariant(false));
+        }
+        else if (_sinkConfig == 2) {
+            _sinkConfig = 3;
+            _vidSurface1->setSink(_sink1);
+            _window->setProperty("view3Selected", QVariant(false));
+            _window->setProperty("view2Selected", QVariant(true));
+            _window->setProperty("view1Selected", QVariant(false));
+        }
+        else if (_sinkConfig == 3) {
+            _sinkConfig = 1;
+            _vidSurface1->setProperty("visible", QVariant(false));
+            _window->setProperty("view3Selected", QVariant(true));
+            _window->setProperty("view2Selected", QVariant(false));
+            _window->setProperty("view1Selected", QVariant(false));
+        }
+    }
+    else if ((button == SDL_CONTROLLER_BUTTON_Y) && pressed) {
+        _window->setProperty("fullscreen", !_window->property("fullscreen").toBool());
     }
 }
 

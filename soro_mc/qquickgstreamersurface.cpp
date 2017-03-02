@@ -22,16 +22,8 @@ void QQuickGStreamerSurface::paint(QPainter *painter)
 
 void QQuickGStreamerSurface::setSink(const QGst::ElementPtr &sink)
 {
-    clearSink();
-    QGlib::connect(sink, "update", this, &QQuickGStreamerSurface::onUpdate);
-    _sink = QGst::ElementPtr(sink);
-}
-
-void QQuickGStreamerSurface::clearSink() {
-    if (!_sink.isNull()) {
-        QGlib::disconnect(_sink, "update", this, &QQuickGStreamerSurface::onUpdate);
-        _sink.clear();
-    }
+    _sink = sink;
+    QGlib::connect(_sink, "update", this, &QQuickGStreamerSurface::onUpdate);
 }
 
 void QQuickGStreamerSurface::onUpdate() {

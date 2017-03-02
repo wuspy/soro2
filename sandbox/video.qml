@@ -18,62 +18,17 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 import QtQuick 2.0
-//import QtGStreamer 1.0
+import QtGStreamer 1.0
 
 Rectangle {
     id: window
     width: 600
     height: 300
 
-    Column {
-
-        VideoItem {
-            id: video
-            visible: true
-            width: window.width
-            height: 260
-            surface: videoSurface1 //bound on the context from main()
-        }
-
-        Row {
-            id: buttons
-
-            width: window.width
-            height: 35
-            spacing: 5
-
-            Rectangle {
-                id: playButton
-                color: "black"
-
-                width: 60
-                height: 30
-
-                Text { text: "Play"; color: "white"; anchors.centerIn: parent }
-                MouseArea { anchors.fill: parent; onClicked: player.play() }
-            }
-
-            Rectangle {
-                id: pauseButton
-                color: "black"
-
-                width: 60
-                height: 30
-
-                Text { text: "Pause"; color: "white"; anchors.centerIn: parent }
-                MouseArea { anchors.fill: parent; onClicked: { player.pause(); } }
-            }
-
-            Rectangle {
-                id: stopButton
-                color: "black"
-
-                width: 60
-                height: 30
-
-                Text { text: "Stop"; color: "white"; anchors.centerIn: parent }
-                MouseArea { anchors.fill: parent; onClicked: player.stop() }
-            }
-        }
+    VideoItem {
+        id: video
+        visible: true
+        anchors.fill: parent
+        surface: videoSurface1 //bound on the context from main()
     }
 }

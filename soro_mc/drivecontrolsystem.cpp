@@ -1,54 +1,42 @@
 #include "drivecontrolsystem.h"
-
+#include "maincontroller.h"
+#include <SDL2/SDL.h>
+#include <climits>
 
 #define LOG_TAG "DriveControlSystem"
 
-namespace Soro{
+namespace Soro
+{
 
 DriveControlSystem::DriveControlSystem(QObject *parent) : QObject(parent){
-
-    sendTimerId = startTimer(1000);
+    //sendTimerId = startTimer(20);
+    //drivePublisher = driveHandle.advertise<Soro::Messages::drive>("drive", 10);
 }
 
-void DriveControl::setGamepad(GamepadController *gamepad)
+Soro::Messages::drive DriveControlSystem::buildDriveMessage()
 {
-    _gamepad = gamepad;
-    _gamepadName = gamepad->getGamepadName();
+    qint8 leftY = MainController::getGamepadController()->getAxisValue(SDL_CONTROLLER_AXIS_LEFTY) * -0.5 * (INT8_MAX - 1);
+    qint8 rightY = MainController::getGamepadController()->getAxisValue(SDL_CONTROLLER_AXIS_RIGHTY) * -0.5 * (INT8_MAX - 1);
+    Soro::Messages::drive driveMessage;
+    driveMessage.wheelBL = leftY;
+    driveMessage.wheelML = leftY;
+    driveMessage.wheelFL = leftY;
+    driveMessage.wheelBR = rightY;
+    driveMessage.wheelMR = rightY;
+    driveMessage.wheelFR = rightY;
+
+    return driveMessage;
 }
 
- Soro::Messages::drive_ buildDriveMessage(){
+//Timer loop to get latest controller axis changes
+void DriveControlSystem::timerEvent(QTimerEvent* e)
+{
+    if(e->timerId() == sendTimerId)
+    {
+        Soro::Messages::drive driveMessage = buildDriveMessage();
 
-
-
-
-
-
-
-
-
-
-
+        //drivePublisher.publish(driveMessage);
+    }
 }
 
- //Timer loop to get latest controller axis changes
-void timerEvent(QTimerEvent* e){
-
-     if(e->timerId() == sendTimerId){
-
-         MainController::getGamepadController();
-
-
-
-         //Soro::Messages::drive_ *driveMessage = buildDriveMessage(axis, value);
-
-         ros::NodeHandle driveHandle;
-
-         ros::Publisher drivePublisher = driveHandle.advertise<Soro::Messages::drive_>("drive");
-
-         drivePublisher.publish(driveMessage);
-     }
-
- }
-
-
-}
+} // namespace Soro

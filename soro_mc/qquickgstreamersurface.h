@@ -17,7 +17,6 @@ public:
     QQuickGStreamerSurface();
 
     void setSink(const QGst::ElementPtr & sink);
-    void clearSink();
     void setBackgroundColor(QColor color);
     QColor getBackgroundColor() const;
 
