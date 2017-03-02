@@ -24,7 +24,7 @@ DESTDIR = ../bin
 INCLUDEPATH += $$PWD/..
 
 HEADERS += \
-    drivecontrolsystem.h \
+    #drivecontrolsystem.h \
     gamepadcontroller.h \
     mastercontroller.h \
     rosconnectioncontroller.h \
@@ -38,8 +38,8 @@ SOURCES += main.cpp \
     rosconnectioncontroller.cpp \
     maincontroller.cpp \
     mainwindowcontroller.cpp \
-    qquickgstreamersurface.cpp \
-    drivecontrolsystem.cpp
+    qquickgstreamersurface.cpp
+    #drivecontrolsystem.cpp
 
 
 RESOURCES += qml.qrc \

@@ -8,6 +8,10 @@
 
 #include <Qt5GStreamer/QGst/Init>
 #include <Qt5GStreamer/QGlib/Error>
+#include <Qt5GStreamer/QGst/Pipeline>
+#include <Qt5GStreamer/QGst/Element>
+#include <Qt5GStreamer/QGst/ElementFactory>
+#include <Qt5GStreamer/QGst/Bin>
 
 #include "qquickgstreamersurface.h"
 
@@ -146,9 +150,30 @@ void MainController::initInternal()
         panic(QString("Failed to create QML window:  %1").arg(qmlComponent.errorString()));
     }
 
+    QQuickGStreamerSurface *videoSurface1 = qvariant_cast<QQuickGStreamerSurface*>(window->property("mainVideoSurface"));
+    QQuickGStreamerSurface *videoSurface2 = qvariant_cast<QQuickGStreamerSurface*>(window->property("sideVideoSurface1"));
+    QQuickGStreamerSurface *videoSurface3 = qvariant_cast<QQuickGStreamerSurface*>(window->property("sideVideoSurface2"));
+
     ///////////////////////////
     //////  TESTING  //////////
 
+    QGst::PipelinePtr pipeline1 = QGst::Pipeline::create("pipeline1");
+    QGst::BinPtr source1 = QGst::Bin::fromDescription("videotestsrc ! videoconvert");
+    QGst::ElementPtr sink1 = QGst::ElementFactory::make("qt5videosink");
+    pipeline1->add(source1, sink1);
+    source1->link(sink1);
+    videoSurface1->setSink(sink1);
+    videoSurface3->setSink(sink1);
+    pipeline1->setState(QGst::StatePlaying);
+
+    QGst::PipelinePtr pipeline2 = QGst::Pipeline::create("pipeline2");
+    QGst::BinPtr source2 = QGst::Bin::fromDescription("videotestsrc pattern=snow ! videoconvert");
+    //QGst::BinPtr source2 = QGst::Bin::fromDescription("udpsrc port=5502 ! application/x-rtp,media=video,encoding-name=JPEG,payload=26 ! rtpjpegdepay ! jpegdec ! videoconvert");
+    QGst::ElementPtr sink2 = QGst::ElementFactory::make("qt5videosink");
+    pipeline2->add(source2, sink2);
+    source2->link(sink2);
+    videoSurface2->setSink(sink2);
+    pipeline2->setState(QGst::StatePlaying);
 
 
     ///////////////////////////
