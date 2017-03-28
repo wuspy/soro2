@@ -36,13 +36,12 @@ SettingsModel::~SettingsModel() {
     }
 }
 
-bool SettingsModel::load()
+void SettingsModel::load()
 {
     // Check that the settings file exists
     if (!QFile(SORO_MC_SETTINGS_FILE).exists())
     {
-        _errorString = QString("The settings file %1 does not exist.").arg(SORO_MC_SETTINGS_FILE);
-        return false;
+        throw QString("The settings file %1 does not exist.").arg(SORO_MC_SETTINGS_FILE);
     }
     _settings->sync();
 
@@ -50,25 +49,19 @@ bool SettingsModel::load()
     switch (_settings->status())
     {
     case QSettings::AccessError:
-        _errorString = QString("The settings file %1 could not be accessed. This could mean it's in use by another program.").arg(SORO_MC_SETTINGS_FILE);
-        return false;
+        throw QString("The settings file %1 could not be accessed. This could mean it's in use by another program.").arg(SORO_MC_SETTINGS_FILE);
     case QSettings::FormatError:
-        _errorString = QString("The settings file %1 is malformed.").arg(SORO_MC_SETTINGS_FILE);
-        return false;
+        throw QString("The settings file %1 is malformed.").arg(SORO_MC_SETTINGS_FILE);
     default: break;
     }
 
     if (!_settings->contains(KEY_MASTER))
     {
-        _errorString = QString("Entry for '%1' was not found in the settings file.").arg(KEY_MASTER);
-        return false;
+        throw QString("Entry for '%1' was not found in the settings file.").arg(KEY_MASTER);
     }
-
-
-    return true;
 }
 
-bool SettingsModel::write()
+void SettingsModel::write()
 {
     // Write the changes to the file
     _settings->sync();
@@ -76,15 +69,8 @@ bool SettingsModel::write()
     // Check for errors
     if (_settings->status() != QSettings::NoError)
     {
-        _errorString = "Internal QSettings error while writing data";
-        return false;
+        throw QString("Internal QSettings error while writing data");
     }
-    return true;
-}
-
-QString SettingsModel::errorString() const
-{
-    return _errorString;
 }
 
 bool SettingsModel::getIsMaster() const

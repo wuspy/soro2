@@ -56,10 +56,14 @@ void MainController::initInternal()
     // Create the settings model and load the main settings file
     //
     logInfo(LogTag, "Loading settings...");
-    _settingsModel = new SettingsModel;
-    if (!_settingsModel->load())
+    try
     {
-        panic(QString("Failed to load settings file: %1").arg(_settingsModel->errorString()));
+        _settingsModel = new SettingsModel;
+        _settingsModel->load();
+    }
+    catch (QString err)
+    {
+        panic(QString("Error loading settings: %1").arg(err));
         return;
     }
 
@@ -67,10 +71,14 @@ void MainController::initInternal()
     // Create camera settings model to load camera configuration
     //
     logInfo(LogTag, "Loading camera settings...");
-    _cameraSettingsModel = new CameraSettingsModel;
-    if (!_cameraSettingsModel->load())
+    try
     {
-        panic(QString("Failed to load camera settings file: %1").arg(_cameraSettingsModel->errorString()));
+        _cameraSettingsModel = new CameraSettingsModel;
+        _cameraSettingsModel->load();
+    }
+    catch (QString err)
+    {
+        panic(QString("Error loading camera settings: %1").arg(err));
         return;
     }
 
@@ -124,6 +132,45 @@ void MainController::initInternal()
     gamepadMap.close();
 
     //
+    // Create the GamepadController instance
+    //
+    try
+    {
+        _gamepadController = new GamepadController(this);
+    }
+    catch (QString err)
+    {
+        panic(QString("Error initializing gamepad system: %1").arg(err));
+        return;
+    }
+
+    //
+    // Create ROS connection controller
+    //
+    try
+    {
+        _rosConnectionController = new RosConnectionController(this);
+    }
+    catch (QString err)
+    {
+        panic(QString("Error initializing ROS controller: %1").arg(err));
+        return;
+    }
+
+    //
+    // Create drive control system
+    //
+    try
+    {
+        _driveControlSystem = new DriveControlSystem(this);
+    }
+    catch (QString err)
+    {
+        panic(QString("Error initializing drive control system: %1").arg(err));
+        return;
+    }
+
+    //
     // Create the QML application engine
     //
     logInfo(LogTag, "Initializing QML engine...");
@@ -131,29 +178,15 @@ void MainController::initInternal()
     _qmlEngine = new QQmlEngine(this);
 
     //
-    // Create the GamepadController instance
-    //
-    _gamepadController = new GamepadController(this);
-
-    //
-    // Create ROS connection controller
-    //
-    _rosConnectionController = new RosConnectionController(this);
-
-    //
-    // Create drive control system
-    //
-    _driveControlSystem = new DriveControlSystem(this);
-
-    //
     // Create the main UI
     //
-    QQmlComponent qmlComponent(_qmlEngine, QUrl("qrc:/main.qml"));
-    QQuickWindow *window = qobject_cast<QQuickWindow*>(qmlComponent.create());
-    if (!qmlComponent.errorString().isEmpty() || !window)
+    try {
+        _mainWindowController = new MainWindowController(_qmlEngine, this);
+    }
+    catch (QString err)
     {
-        // There was an error creating the QML window. This is most likely due to a QML syntax error
-        panic(QString("Failed to create QML window:  %1").arg(qmlComponent.errorString()));
+        panic(QString("Error creating main window: %1").arg(err));
+        return;
     }
 
     logInfo(LogTag, "Initialization complete");

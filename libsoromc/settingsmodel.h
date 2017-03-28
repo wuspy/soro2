@@ -18,21 +18,19 @@ public:
     /* Loads the main settings file. If unsuccessful, this will return false and
      * set the class error string, which can be accessed with errorString()
      */
-    bool load();
+    void load();
 
     /* Writes the current settings back to the file. If unsuccessful, this will return false
      * and set the class error string, which can be accessed with errorString()
      */
-    bool write();
+    void write();
 
     // Getters/Setters
 
     bool getIsMaster() const;
     void setIsMaster(bool master);
-    QString errorString() const;
 
 private:
-    QString _errorString;
     QSettings *_settings = nullptr;
 };
 
