@@ -61,26 +61,9 @@ void SettingsModel::load()
     }
 }
 
-void SettingsModel::write()
-{
-    // Write the changes to the file
-    _settings->sync();
-
-    // Check for errors
-    if (_settings->status() != QSettings::NoError)
-    {
-        throw QString("Internal QSettings error while writing data");
-    }
-}
-
 bool SettingsModel::getIsMaster() const
 {
     return _settings->value(KEY_MASTER).toBool();
-}
-
-void SettingsModel::setIsMaster(bool master)
-{
-    _settings->setValue(KEY_MASTER, master);
 }
 
 } // namespace Soro
