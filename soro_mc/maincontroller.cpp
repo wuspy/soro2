@@ -19,13 +19,11 @@ namespace Soro {
 
 MainController *MainController::_self = nullptr;
 
-MainController::MainController(QObject *parent) : QObject(parent)
-{
-}
+MainController::MainController(QObject *parent) : QObject(parent) { }
 
 void MainController::panic(QString message)
 {
-    logFatal(LogTag, QString("panic(): %1").arg(message));
+    logError(LogTag, QString("panic(): %1").arg(message));
     QMessageBox::critical(0, "Mission Control", message);
     QCoreApplication::exit(1);
 }
@@ -224,14 +222,6 @@ void MainController::logError(QString tag, QString message)
     }
 }
 
-void MainController::logFatal(QString tag, QString message)
-{
-    if (_self)
-    {
-        _self->log(LogLevelFatal, tag, message);
-    }
-}
-
 void MainController::log(LogLevel level, QString tag, QString message) {
     if (ros::isInitialized()) {
         const char* formatted = QString("[%1] %2").arg(tag, message).toLocal8Bit().constData();
@@ -247,9 +237,6 @@ void MainController::log(LogLevel level, QString tag, QString message) {
             break;
         case LogLevelError:
             ROS_ERROR(formatted);
-            break;
-        case LogLevelFatal:
-            ROS_FATAL(formatted);
             break;
         }
     }
@@ -267,9 +254,6 @@ void MainController::log(LogLevel level, QString tag, QString message) {
             break;
         case LogLevelError:
             qCritical(formatted);
-            break;
-        case LogLevelFatal:
-            qFatal(formatted);
             break;
         }
     }
