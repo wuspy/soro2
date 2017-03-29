@@ -1,11 +1,10 @@
-import QtQuick 2.0
+import QtQuick 2.7
+import QtGraphicalEffects 1.0
 
 Item {
     id: host
     width: 900
     height: 1200
-
-
 
     /*function show(title, text) {
         if(messagesBeingDisplayed == 0){
