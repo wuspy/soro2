@@ -25,7 +25,7 @@ RosConnectionController::RosConnectionController(QObject *parent) : QObject(pare
             MainController::panic(QString("Cannot bind to mission control UDP broadcast port: %1").arg(_udpSocket->errorString()));
             return;
         }
-        connect(_udpSocket, &QUdpSocket::readyRead, this, &RosConnectionController::udpReadyRead);
+        connect(_udpSocket, SIGNAL(readyRead()), this, SLOT(udpReadyRead()));
     }
 }
 
@@ -42,7 +42,7 @@ void RosConnectionController::udpReadyRead()
         {
             // Received message from master mission control
             setenv("ROS_MASTER_URI", (QString("http://%1:%2").arg(address.toString(), SORO_MC_ROS_MASTER_PORT)).toLocal8Bit().constData(), 1);
-            disconnect(_udpSocket, &QUdpSocket::readyRead, this, &RosConnectionController::udpReadyRead);
+            disconnect(_udpSocket, SIGNAL(readyRead()), this, SLOT(udpReadyRead()));
             delete _udpSocket;
             initRos();
             return;

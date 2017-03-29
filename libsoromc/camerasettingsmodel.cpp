@@ -8,7 +8,7 @@
 
 namespace Soro {
 
-bool CameraSettingsModel::load() {
+void CameraSettingsModel::load() {
     QByteArray rawJson;
     QJsonDocument jsonDocument;
     QJsonArray jsonCamerasArray;
@@ -19,27 +19,23 @@ bool CameraSettingsModel::load() {
 
     if (!file.exists())
     {
-        _errorString = QString("The camera settings file \"%1\" does not exist.").arg(SORO_CAMERA_SETTINGS_FILE);
-        return false;
+        throw QString("The camera settings file \"%1\" does not exist.").arg(SORO_CAMERA_SETTINGS_FILE);
     }
     if (!file.open(QIODevice::ReadOnly))
     {
-        _errorString = QString("Error opening camera settings file \"%1\".").arg(SORO_CAMERA_SETTINGS_FILE);
-        return false;
+        throw QString("Error opening camera settings file \"%1\".").arg(SORO_CAMERA_SETTINGS_FILE);
     }
 
     rawJson = file.readAll();
     jsonDocument = QJsonDocument::fromJson(rawJson, &jsonError);
     if (jsonError.error != QJsonParseError::NoError)
     {
-        _errorString = QString("Error parsing camera settings file \"%1\": %2").arg(SORO_CAMERA_SETTINGS_FILE, jsonError.errorString());
-        return false;
+        throw QString("Error parsing camera settings file \"%1\": %2").arg(SORO_CAMERA_SETTINGS_FILE, jsonError.errorString());
     }
 
     if (!jsonDocument.object().contains("cameras"))
     {
-        _errorString = "Error parsing camera settings file: Item \"camera\" not found.";
-        return false;
+        throw QString("Error parsing camera settings file: Item \"camera\" not found.");
     }
 
     jsonCamerasArray = jsonDocument.object()["cameras"].toArray();
@@ -54,17 +50,10 @@ bool CameraSettingsModel::load() {
 
         if (camera.id == -1)
         {
-            _errorString = QString("Error parsing camera settings file \"%1\": Camera entry is missing an id.").arg(SORO_CAMERA_SETTINGS_FILE);
-            return false;
+            throw QString("Error parsing camera settings file \"%1\": Camera entry is missing an id.").arg(SORO_CAMERA_SETTINGS_FILE);
         }
         _cameras.append(camera);
     }
-    return true;
-}
-
-QString CameraSettingsModel::errorString() const
-{
-    return _errorString;
 }
 
 const QVector<CameraSettingsModel::Camera>& CameraSettingsModel::getCameras() const

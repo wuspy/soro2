@@ -1,5 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file>main.qml</file>
+        <file>Host.qml</file>
+        <file>Message.qml</file>
     </qresource>
 </RCC>
