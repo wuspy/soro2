@@ -22,6 +22,7 @@
 #include <QJsonDocument>
 
 #define KEY_MASTER "Master"
+#define KEY_CONFIGURATION "Configuration"
 
 namespace Soro {
 
@@ -59,11 +60,24 @@ void SettingsModel::load()
     {
         throw QString("Entry for '%1' was not found in the settings file.").arg(KEY_MASTER);
     }
+    if (!_settings->contains(KEY_CONFIGURATION)) {
+        throw QString("Entry for '%1' was not found in the settings file.").arg(KEY_CONFIGURATION);
+    }
 }
 
 bool SettingsModel::getIsMaster() const
 {
     return _settings->value(KEY_MASTER).toBool();
+}
+
+SettingsModel::Configuration SettingsModel::getConfiguration() const
+{
+    QString value = _settings->value(KEY_CONFIGURATION).toString().toLower();
+    if (value == "driver") return DriverConfiguration;
+    if (value == "armoperator") return ArmOperatorConfiguration;
+    if (value == "cameraoperator") return CameraOperatorConfiguration;
+    if (value == "observer") return ObserverConfiguration;
+    throw QString("Invalid value for 'configuration' key in settings");
 }
 
 } // namespace Soro
