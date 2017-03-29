@@ -6,8 +6,6 @@ Item {
     width: 900
     height: 1200
 
-
-
     /*function show(title, text) {
         if(messagesBeingDisplayed == 0){
             messages.push(eval("message" + messagesBeingDisplayed))
@@ -47,7 +45,7 @@ Item {
         id: message0
         anchors.top: parent.top
     }
-    Message {
+    /*Message {
         id: message1
         anchors.top: message0.visible ? message0.bottom : parent.top
     }
@@ -62,6 +60,5 @@ Item {
     Message {
         id: message4
         anchors.top: message3.visible ? message3.bottom : parent.top
-    }
-
+    }*/
 }

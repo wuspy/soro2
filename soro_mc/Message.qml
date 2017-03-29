@@ -3,7 +3,7 @@ import QtGraphicalEffects 1.0
 Item {
    anchors.horizontalCenter: parent.horizontalCenter
    width: 400
-   height: 100
+   height: 120
    anchors.margins: 10
 
    DropShadow {
@@ -22,33 +22,37 @@ Item {
        id: notificationPane
        anchors.fill: parent
        state: "visible"
+       color: "#88000000"
 
        Text {
            id: notificationTitleLabel
-           text:"Network Driving Disabled"
+           text:"Test Message"
            font.pointSize: 12
            font.bold: true
            anchors.right: parent.right
-           anchors.rightMargin: 0
+           anchors.rightMargin: 8
            anchors.left: notificationImage.right
            anchors.leftMargin: 12
            anchors.top: parent.top
-           anchors.topMargin: 0
+           anchors.topMargin: 8
+           color: "white"
        }
 
        Text {
            id: notificationLabel
-           text: "The rover is being driven by serial override. Network drive commands will not be accepted."
+           text: "This is a test notification."
            anchors.topMargin: 0
            anchors.leftMargin: 12
            anchors.bottom: parent.bottom
-           anchors.bottomMargin: 0
+           anchors.bottomMargin: 8
+           anchors.rightMargin: 8
            anchors.right: parent.right
            anchors.left: notificationImage.right
            anchors.top: notificationTitleLabel.bottom
            verticalAlignment: Text.AlignTop
            wrapMode: Text.WordWrap
            font.pointSize: 10
+           color: "white"
        }
 
 
@@ -62,14 +66,14 @@ Item {
            anchors.left: parent.left
            anchors.bottom: parent.bottom
            anchors.top: parent.top
-           source: "qrc:/ic_check_circle_white_48px.svg"
+           source: "qrc:/icons/ic_check_circle_white_48px.svg"
        }
 
        ColorOverlay {
            id: notificationImageColorOverlay
            anchors.fill: notificationImage
            source: notificationImage
-           color: "#ff0000"
+           color: "#4CAF50"
        }
 
        MouseArea {
@@ -98,27 +102,6 @@ Item {
                    target: notificationPane
                    anchors.rightMargin: 0
                    opacity: 0.7
-               }
-           }
-
-       ]
-
-       transitions: [
-           Transition {
-               from: "hidden"
-               to: "visible"
-               PropertyAnimation {
-                   properties: "anchors.rightMargin,opacity"
-                   duration: 500
-                   easing.type: Easing.InOutExpo
-               }
-           },
-           Transition {
-               from: "visible"
-               to: "hidden"
-               PropertyAnimation {
-                   properties: "opacity"
-                   duration: 100
                }
            }
        ]

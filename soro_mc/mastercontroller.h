@@ -10,11 +10,15 @@ class MasterController: public QObject
 {
     Q_OBJECT
 public:
-    MasterController();
+    MasterController(QObject *parent=0);
+    ~MasterController();
+
+private slots:
+    void processStarted();
+    void processFinished(int exitCode);
 
 private:
     QProcess _masterProcess;
-
 };
 
 } // namespace Soro

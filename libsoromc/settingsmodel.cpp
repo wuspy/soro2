@@ -22,6 +22,7 @@
 #include <QJsonDocument>
 
 #define KEY_MASTER "Master"
+#define KEY_CONFIGURATION "Configuration"
 
 namespace Soro {
 
@@ -36,13 +37,12 @@ SettingsModel::~SettingsModel() {
     }
 }
 
-bool SettingsModel::load()
+void SettingsModel::load()
 {
     // Check that the settings file exists
     if (!QFile(SORO_MC_SETTINGS_FILE).exists())
     {
-        _errorString = QString("The settings file %1 does not exist.").arg(SORO_MC_SETTINGS_FILE);
-        return false;
+        throw QString("The settings file %1 does not exist.").arg(SORO_MC_SETTINGS_FILE);
     }
     _settings->sync();
 
@@ -50,41 +50,19 @@ bool SettingsModel::load()
     switch (_settings->status())
     {
     case QSettings::AccessError:
-        _errorString = QString("The settings file %1 could not be accessed. This could mean it's in use by another program.").arg(SORO_MC_SETTINGS_FILE);
-        return false;
+        throw QString("The settings file %1 could not be accessed. This could mean it's in use by another program.").arg(SORO_MC_SETTINGS_FILE);
     case QSettings::FormatError:
-        _errorString = QString("The settings file %1 is malformed.").arg(SORO_MC_SETTINGS_FILE);
-        return false;
+        throw QString("The settings file %1 is malformed.").arg(SORO_MC_SETTINGS_FILE);
     default: break;
     }
 
     if (!_settings->contains(KEY_MASTER))
     {
-        _errorString = QString("Entry for '%1' was not found in the settings file.").arg(KEY_MASTER);
-        return false;
+        throw QString("Entry for '%1' was not found in the settings file.").arg(KEY_MASTER);
     }
-
-
-    return true;
-}
-
-bool SettingsModel::write()
-{
-    // Write the changes to the file
-    _settings->sync();
-
-    // Check for errors
-    if (_settings->status() != QSettings::NoError)
-    {
-        _errorString = "Internal QSettings error while writing data";
-        return false;
+    if (!_settings->contains(KEY_CONFIGURATION)) {
+        throw QString("Entry for '%1' was not found in the settings file.").arg(KEY_CONFIGURATION);
     }
-    return true;
-}
-
-QString SettingsModel::errorString() const
-{
-    return _errorString;
 }
 
 bool SettingsModel::getIsMaster() const
@@ -92,9 +70,14 @@ bool SettingsModel::getIsMaster() const
     return _settings->value(KEY_MASTER).toBool();
 }
 
-void SettingsModel::setIsMaster(bool master)
+SettingsModel::Configuration SettingsModel::getConfiguration() const
 {
-    _settings->setValue(KEY_MASTER, master);
+    QString value = _settings->value(KEY_CONFIGURATION).toString().toLower();
+    if (value == "driver") return DriverConfiguration;
+    if (value == "armoperator") return ArmOperatorConfiguration;
+    if (value == "cameraoperator") return CameraOperatorConfiguration;
+    if (value == "observer") return ObserverConfiguration;
+    throw QString("Invalid value for 'configuration' key in settings");
 }
 
 } // namespace Soro

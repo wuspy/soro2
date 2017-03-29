@@ -279,7 +279,6 @@ ApplicationWindow {
     }
 
     Host {
-
+        anchors.horizontalCenter: parent.horizontalCenter
     }
-
 }
