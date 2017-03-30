@@ -1,5 +1,10 @@
 <RCC>
     <qresource prefix="/">
         <file>main.qml</file>
+        <file>Host.qml</file>
+        <file>Message.qml</file>
+        <file>ViewSelector.qml</file>
+        <file>CameraThumbnailView.qml</file>
+        <file>ShaderEffectSourceThumbnailView.qml</file>
     </qresource>
 </RCC>

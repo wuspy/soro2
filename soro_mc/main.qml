@@ -38,6 +38,18 @@ ApplicationWindow {
       */
     property alias sidebarState: sidebar.state
 
+    property int latency: 0
+    property int bitrateDown: 0
+    property int bitrateUp: 0
+
+    onLatencyChanged: {
+        pingLabel.text = latency + "ms"
+    }
+
+    onBitrateDownChanged: {
+        bitrateLabel.text = "▲ <b>" + bitrateUp + "</b>  b/s<br>▼ <b>" + bitrateDown + "</b> Mb/s"
+    }
+
     /*
       Fullscreen state of the application, boolean
       */
@@ -203,7 +215,7 @@ ApplicationWindow {
 
         Label {
             id: bitrateLabel
-            text: qsTr("▲ <b>13</b>  b/s<br>▼ <b>9</b> Mb/s")
+            text: "▲ <b>13</b>  b/s<br>▼ <b>9</b> Mb/s"
             anchors.top: connectionStatusImage.bottom
             anchors.left: connectionStatusImage.left
             anchors.right: parent.horizontalCenter
