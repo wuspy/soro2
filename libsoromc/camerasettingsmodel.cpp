@@ -52,13 +52,28 @@ void CameraSettingsModel::load() {
         {
             throw QString("Error parsing camera settings file \"%1\": Camera entry is missing an id.").arg(SORO_CAMERA_SETTINGS_FILE);
         }
-        _cameras.append(camera);
+        _cameras.insert(camera.id, camera);
     }
 }
 
-const QVector<CameraSettingsModel::Camera>& CameraSettingsModel::getCameras() const
+const QList<CameraSettingsModel::Camera> CameraSettingsModel::getCameras() const
 {
-    return _cameras;
+    return _cameras.values();
+}
+
+int CameraSettingsModel::getCameraIndexById(int id) const
+{
+    QList<CameraSettingsModel::Camera> cameras = getCameras();
+    for (int i = 0; i < cameras.count(); ++i)
+    {
+        if (cameras[i].id == id) return i;
+    }
+    return -1;
+}
+
+int CameraSettingsModel::getCameraCount() const
+{
+    return _cameras.count();
 }
 
 } // namespace Soro

@@ -4,15 +4,16 @@
 #include <QObject>
 #include <QApplication>
 #include <QQmlEngine>
+#include <QUdpSocket>
+
 #include "libsoromc/settingsmodel.h"
 #include "libsoromc/camerasettingsmodel.h"
+
 #include "gamepadcontroller.h"
 #include "mastercontroller.h"
-#include "rosconnectioncontroller.h"
 #include "gamepadcontroller.h"
 #include "mainwindowcontroller.h"
 #include "drivecontrolsystem.h"
-#include "rosconnectioncontroller.h"
 
 namespace Soro {
 
@@ -25,14 +26,19 @@ public:
 
     static GamepadController* getGamepadController();
     static SettingsModel* getSettingsModel();
+    static CameraSettingsModel* getCameraSettingsModel();
     static QString getMissionControlId();
     static MainWindowController* getMainWindowController();
+    static ros::NodeHandle* getNodeHandle();
 
     static void logDebug(QString tag, QString message);
     static void logInfo(QString tag, QString message);
     static void logWarning(QString tag, QString message);
     static void logError(QString tag, QString message);
     static void logFatal(QString tag, QString message);
+
+signals:
+    void initialized();
 
 private:
     enum LogLevel {
@@ -49,19 +55,21 @@ private:
 
     static MainController *_self;
 
+    QUdpSocket *_rosInitUdpSocket = nullptr;
+    ros::NodeHandle *_nodeHandle = nullptr;
     QString _mcId;
-    QQmlEngine *_qmlEngine;
+    QQmlEngine *_qmlEngine = nullptr;
     GamepadController* _gamepadController = nullptr;
     MasterController *_masterController = nullptr;
-    RosConnectionController *_rosConnectionController = nullptr;
     SettingsModel* _settingsModel = nullptr;
     CameraSettingsModel *_cameraSettingsModel = nullptr;
     MainWindowController *_mainWindowController = nullptr;
     DriveControlSystem *_driveControlSystem = nullptr;
-    RosConnectionController *_rosController = nullptr;
 
 private slots:
     void initInternal();
+    void onRosMasterFound();
+    void rosInitUdpReadyRead();
 };
 
 } // namespace Soro

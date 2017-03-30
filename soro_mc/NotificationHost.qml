@@ -41,11 +41,11 @@ Item {
     }*/
 
 
-    Message {
+    /*Message {
         id: message0
         anchors.top: parent.top
     }
-    /*Message {
+    Message {
         id: message1
         anchors.top: message0.visible ? message0.bottom : parent.top
     }

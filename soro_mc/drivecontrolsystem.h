@@ -23,10 +23,9 @@ private:
     Soro::Messages::drive buildDriveMessage();
 
     QString _gamepadName;
-    //ros::NodeHandle driveHandle;
-    //ros::Publisher drivePublisher;
+    ros::Publisher _drivePublisher;
 
-    int sendTimerId;
+    int _sendTimerId;
 
 protected:
     void timerEvent(QTimerEvent* e);

@@ -2,7 +2,8 @@
 #define CAMERASETTINGSMODEL_H
 
 #include <QString>
-#include <QVector>
+#include <QMap>
+#include <QList>
 
 namespace Soro {
 
@@ -28,10 +29,12 @@ public:
      * or an empty list if the file has not yet been loaded or if an error
      * occurred when loading the file
      */
-    const QVector<Camera>& getCameras() const;
+    const QList<CameraSettingsModel::Camera> getCameras() const;
+    int getCameraIndexById(int id) const;
+    int getCameraCount() const;
 
 private:
-    QVector<Camera> _cameras;
+    QMap<int, CameraSettingsModel::Camera> _cameras;
 };
 
 } // namespace Soro

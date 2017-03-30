@@ -25,7 +25,7 @@ namespace Soro {
 GamepadController::GamepadController(QObject *parent) : QObject(parent) {
     // Start poll timer immediately
     _deadzone = 0.05;
-    _pollInterval = 20;
+    _pollInterval = 5;
     _timerId = startTimer(_pollInterval);
 }
 
