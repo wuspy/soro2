@@ -3,18 +3,18 @@
 #include <SDL2/SDL.h>
 #include <climits>
 
-#define LOG_TAG "DriveControlSystem"
+#define LogTag "DriveControlSystem"
 
-// ***TODO***
-// ROS hangs the application if connection to master is not immediately successful
-// All functionality associated with ROS has been commented out until this can be resolved
 namespace Soro
 {
 
-DriveControlSystem::DriveControlSystem(QObject *parent) : QObject(parent){
+DriveControlSystem::DriveControlSystem(QObject *parent) : QObject(parent)
+{
     // TODO allow adjustment of send interval
-    sendTimerId = startTimer(20);
-    //drivePublisher = driveHandle.advertise<Soro::Messages::drive>("drive", 10);
+    _sendTimerId = startTimer(20);
+    MainController::logInfo(LogTag, "Creating publisher...");
+    _drivePublisher = MainController::getNodeHandle()->advertise<Soro::Messages::drive>("drive", 1);
+    MainController::logInfo(LogTag, "Publisher created");
 }
 
 Soro::Messages::drive DriveControlSystem::buildDriveMessage()
@@ -36,11 +36,10 @@ Soro::Messages::drive DriveControlSystem::buildDriveMessage()
 //Timer loop to get latest controller axis changes
 void DriveControlSystem::timerEvent(QTimerEvent* e)
 {
-    if(e->timerId() == sendTimerId)
+    if(e->timerId() == _sendTimerId)
     {
         Soro::Messages::drive driveMessage = buildDriveMessage();
-
-        //drivePublisher.publish(driveMessage);
+        _drivePublisher.publish(driveMessage);
     }
 }
 
