@@ -5,6 +5,8 @@
 #include <QQmlEngine>
 #include <QQuickWindow>
 
+#include <SDL2/SDL.h>
+
 namespace Soro {
 
 class MainWindowController : public QObject
@@ -15,6 +17,9 @@ public:
 
 private:
     QQuickWindow *_window;
+
+private slots:
+    void onGamepadButtonPressed(SDL_GameControllerButton button, bool pressed);
 };
 
 } // namespace Soro

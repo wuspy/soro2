@@ -382,6 +382,11 @@ SettingsModel* MainController::getSettingsModel()
     return _self->_settingsModel;
 }
 
+CameraSettingsModel* MainController::getCameraSettingsModel()
+{
+    return _self->_cameraSettingsModel;
+}
+
 ros::NodeHandle* MainController::getNodeHandle() {
     return _self->_nodeHandle;
 }
