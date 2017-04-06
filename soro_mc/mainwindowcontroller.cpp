@@ -1,11 +1,10 @@
 #include "mainwindowcontroller.h"
 #include "maincontroller.h"
 #include "qquickgstreamersurface.h"
+#include "libsoromc/constants.h"
 
 #include <QQmlComponent>
 
-#include <Qt5GStreamer/QGst/Pipeline>
-#include <Qt5GStreamer/QGst/Element>
 #include <Qt5GStreamer/QGst/ElementFactory>
 
 namespace Soro {
@@ -21,40 +20,86 @@ MainWindowController::MainWindowController(QQmlEngine *engine, QObject *parent) 
     }
 
     // Setup the camera views in the UI
-    _window->setProperty("cameraCount", MainController::getCameraSettingsModel()->getCameraCount());
+    int videoCount = MainController::getCameraSettingsModel()->getCameraCount();
+    if (videoCount > 10)
+    {
+        MainController::panic("UI does not support more than 10 different camera views");
+        return;
+    }
+    _window->setProperty("videoCount", videoCount);
+
     QList<CameraSettingsModel::Camera> cameras = MainController::getCameraSettingsModel()->getCameras();
     for (int i = 0; i < cameras.count(); i++)
     {
-        QQuickGStreamerSurface *vidSurface = qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("cameraThumbnail%1GstreamerSurface").arg(i).toLatin1().constData()));
-
-        ///////////////////////////
-        //////  TESTING  //////////
-
-        QGst::PipelinePtr pipeline = QGst::Pipeline::create("pipeline1");
-        QGst::BinPtr source = QGst::Bin::fromDescription("videotestsrc pattern=snow ! videoconvert");
-        QGst::ElementPtr sink = QGst::ElementFactory::make("qt5videosink");
-        pipeline->add(source, sink);
-        source->link(sink);
-        vidSurface->setSink(sink);
-        pipeline->setState(QGst::StatePlaying);
-
-        _window->setProperty(QString("camera%1Name").arg(i).toLatin1().constData(), cameras[i].name);
+        // Set camera name
+        _window->setProperty(QString("video%1Name").arg(i).toLatin1().constData(), cameras[i].name);
+        // Show no video pattern
+        stopVideo(cameras[i].id);
     }
 
-    QQuickGStreamerSurface *vidSurface = qvariant_cast<QQuickGStreamerSurface*>(_window->property("mainGstreamerSurface"));
-    QGst::PipelinePtr pipeline = QGst::Pipeline::create("pipeline1");
-    QGst::BinPtr source = QGst::Bin::fromDescription("videotestsrc pattern=snow ! videoconvert");
-    QGst::ElementPtr sink = QGst::ElementFactory::make("qt5videosink");
-    pipeline->add(source, sink);
-    source->link(sink);
-    vidSurface->setSink(sink);
-    pipeline->setState(QGst::StatePlaying);
-
-    _window->setProperty("selectedViewIndex", 0);
+    _window->setProperty("selectedView", "video0");
 
     // Connect to gamepad events
     connect(MainController::getGamepadController(), SIGNAL(buttonPressed(SDL_GameControllerButton,bool)),
             this, SLOT(onGamepadButtonPressed(SDL_GameControllerButton,bool)));
+}
+
+void MainWindowController::clearVideo(int cameraId)
+{
+    int cameraIndex = MainController::getCameraSettingsModel()->getCameraIndexById(cameraId);
+    if (!_videoPipelines[cameraIndex].isNull()) {
+        _videoPipelines[cameraIndex]->setState(QGst::StateNull);
+        _videoPipelines[cameraIndex].clear();
+        _videoBins[cameraIndex].clear();
+        _videoSinks[cameraIndex].clear();
+    }
+}
+
+void MainWindowController::stopVideo(int cameraId, QString pattern)
+{
+    clearVideo(cameraId);
+    int cameraIndex = MainController::getCameraSettingsModel()->getCameraIndexById(cameraId);
+    QGst::PipelinePtr pipeline = QGst::Pipeline::create(QString("camera%1Pipeline").arg(cameraId).toLatin1().constData());
+    QGst::BinPtr source = QGst::Bin::fromDescription(QString("videotestsrc pattern=%1 ! video/x-raw,width=640,height=480 ! videoconvert").arg(pattern));
+    QGst::ElementPtr sink = QGst::ElementFactory::make("qt5videosink");
+    QQuickGStreamerSurface *surface = qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("video%1Surface").arg(cameraIndex).toLatin1().constData()));
+
+    _videoPipelines[cameraIndex] = pipeline;
+    _videoBins[cameraIndex] = source;
+    _videoSinks[cameraIndex] = sink;
+
+    pipeline->add(source, sink);
+    source->link(sink);
+    surface->setSink(sink);
+    pipeline->setState(QGst::StatePlaying);
+}
+
+void MainWindowController::playVideo(int cameraId, VideoFormat format)
+{
+    clearVideo(cameraId);
+    int cameraIndex = MainController::getCameraSettingsModel()->getCameraIndexById(cameraId);
+    QGst::PipelinePtr pipeline = QGst::Pipeline::create(QString("camera%1Pipeline").arg(cameraId).toLatin1().constData());
+    QGst::BinPtr source = QGst::Bin::fromDescription("udpsrc port=" + QString::number(SORO_MC_FIRST_VIDEO_PORT + cameraIndex) + " ! " + format.createGstEncodingArgs());
+    QGst::ElementPtr sink = QGst::ElementFactory::make("qt5videosink");
+    QQuickGStreamerSurface *surface = qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("video%1Surface").arg(cameraIndex).toLatin1().constData()));
+
+    _videoPipelines[cameraIndex] = pipeline;
+    _videoBins[cameraIndex] = source;
+    _videoSinks[cameraIndex] = sink;
+
+    pipeline->add(source, sink);
+    source->link(sink);
+    surface->setSink(sink);
+    pipeline->setState(QGst::StatePlaying);
+}
+
+void MainWindowController::notify(MessageType type, QString message)
+{
+
+}
+
+void MainWindowController::notifyAll(MessageType type, QString message) {
+
 }
 
 void MainWindowController::onGamepadButtonPressed(SDL_GameControllerButton button, bool pressed)
@@ -73,23 +118,7 @@ void MainWindowController::onGamepadButtonPressed(SDL_GameControllerButton butto
                 _window->setProperty("sidebarState", "visible");
             }
             break;
-        case SDL_CONTROLLER_BUTTON_DPAD_UP:
-        {
-            int newIndex = _window->property("selectedViewIndex").toInt() - 1;
-            if (newIndex >= 0)
-            {
-                _window->setProperty("selectedViewIndex", newIndex);
-            }
-        }
-            break;
-        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-        {
-            int newIndex = _window->property("selectedViewIndex").toInt() + 1;
-            if (newIndex < MainController::getCameraSettingsModel()->getCameraCount() + 1)
-            {
-                _window->setProperty("selectedViewIndex", newIndex);
-            }
-        }
+        default:
             break;
         }
     }

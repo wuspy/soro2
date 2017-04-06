@@ -16,7 +16,10 @@ DESTDIR = ../lib
 
 SOURCES += \
     camerasettingsmodel.cpp \
-    settingsmodel.cpp
+    settingsmodel.cpp \
+    videoformat.cpp \
+    audioformat.cpp \
+    logger.cpp
 
 HEADERS +=\
     libsoromc_global.h \
@@ -24,7 +27,11 @@ HEADERS +=\
     constants.h \
     settingsmodel.h \
     drivemessage.h \
-    videomessage.h
+    videomessage.h \
+    mediaformat.h \
+    videoformat.h \
+    audioformat.h \
+    logger.h
 
 # Include ROS headers
 INCLUDEPATH += /opt/ros/kinetic/include/

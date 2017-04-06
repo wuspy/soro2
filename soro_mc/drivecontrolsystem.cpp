@@ -1,5 +1,6 @@
 #include "drivecontrolsystem.h"
 #include "maincontroller.h"
+#include "libsoromc/logger.h"
 #include <SDL2/SDL.h>
 #include <climits>
 
@@ -12,9 +13,9 @@ DriveControlSystem::DriveControlSystem(QObject *parent) : QObject(parent)
 {
     // TODO allow adjustment of send interval
     _sendTimerId = startTimer(20);
-    MainController::logInfo(LogTag, "Creating publisher...");
+    Logger::logInfo(LogTag, "Creating publisher...");
     _drivePublisher = MainController::getNodeHandle()->advertise<Soro::Messages::drive>("drive", 1);
-    MainController::logInfo(LogTag, "Publisher created");
+    Logger::logInfo(LogTag, "Publisher created");
 }
 
 Soro::Messages::drive DriveControlSystem::buildDriveMessage()

@@ -16,6 +16,7 @@
 
 #include "gamepadcontroller.h"
 #include "maincontroller.h"
+#include "libsoromc/logger.h"
 #include <climits>
 
 #define LOG_TAG "GamepadController"
@@ -72,7 +73,7 @@ void GamepadController::setDeadzone(float deadzone)
 void GamepadController::setPollInterval(int rate)
 {
     _pollInterval = rate;
-    MainController::logInfo(LOG_TAG, QString("The %1's polling rate has been changed").arg(_gamepadName));
+    Logger::logInfo(LOG_TAG, QString("The %1's polling rate has been changed").arg(_gamepadName));
     killTimer(_timerId);
     _timerId = startTimer(_pollInterval);
 }
@@ -146,7 +147,7 @@ void GamepadController::timerEvent(QTimerEvent *e)
                         break;
                     }
                     SDL_GameControllerClose(controller);
-                    MainController::logWarning(LOG_TAG, "The gamepad has been disconnected");
+                    Logger::logWarn(LOG_TAG, "The gamepad has been disconnected");
                 }
             }
         }
@@ -159,7 +160,7 @@ void GamepadController::setGamepad(SDL_GameController *controller)
     {
         _gameController = controller;
         _gamepadName = _gameController ? QString(SDL_GameControllerName(_gameController)) : "";
-        MainController::logInfo(LOG_TAG, "Active controller is \'" + _gamepadName + "\'");
+        Logger::logInfo(LOG_TAG, "Active controller is \'" + _gamepadName + "\'");
         emit gamepadChanged(isGamepadConnected(), _gamepadName);
     }
 }

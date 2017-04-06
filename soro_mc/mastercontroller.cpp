@@ -1,5 +1,6 @@
 #include "mastercontroller.h"
 #include "maincontroller.h"
+#include "libsoromc/logger.h"
 
 #include <QCoreApplication>
 
@@ -25,7 +26,7 @@ MasterController::~MasterController()
 
 void MasterController::processStarted()
 {
-    MainController::logInfo(LOG_TAG, "Master process is running");
+    Logger::logInfo(LOG_TAG, "Master process is running");
 }
 
 void MasterController::processFinished(int exitCode)

@@ -11,6 +11,7 @@
 
 #include "qquickgstreamersurface.h"
 #include "libsoromc/constants.h"
+#include "libsoromc/logger.h"
 
 #include <ros/ros.h>
 
@@ -24,7 +25,7 @@ MainController::MainController(QObject *parent) : QObject(parent) { }
 
 void MainController::panic(QString message)
 {
-    logError(LogTag, QString("panic(): %1").arg(message));
+    Logger::logError(LogTag, QString("panic(): %1").arg(message));
     QMessageBox::critical(0, "Mission Control", message);
     QCoreApplication::exit(1);
 }
@@ -33,11 +34,11 @@ void MainController::init(QApplication *app)
 {
     if (_self)
     {
-        logError(LogTag, "init() called when already initialized");
+        Logger::logError(LogTag, "init() called when already initialized");
     }
     else
     {
-        logInfo(LogTag, "Starting...");
+        Logger::logInfo(LogTag, "Starting...");
         _self = new MainController(app);
         QTimer::singleShot(0, _self, &MainController::initInternal);
     }
@@ -49,12 +50,12 @@ void MainController::initInternal()
     // Create a unique identifier for this mission control, it is mainly used as a unique node name for ROS
     //
     _mcId = genId();
-    logInfo(LogTag, QString("Mission Control ID is: %1").arg(_mcId).toLocal8Bit().constData());
+    Logger::logInfo(LogTag, QString("Mission Control ID is: %1").arg(_mcId).toLocal8Bit().constData());
 
     //
     // Create the settings model and load the main settings file
     //
-    logInfo(LogTag, "Loading settings...");
+    Logger::logInfo(LogTag, "Loading settings...");
     try
     {
         _settingsModel = new SettingsModel;
@@ -69,7 +70,7 @@ void MainController::initInternal()
     //
     // Create camera settings model to load camera configuration
     //
-    logInfo(LogTag, "Loading camera settings...");
+    Logger::logInfo(LogTag, "Loading camera settings...");
     try
     {
         _cameraSettingsModel = new CameraSettingsModel;
@@ -84,7 +85,7 @@ void MainController::initInternal()
     //
     // Initialize Qt5GStreamer, must be called before anything else is done with it
     //
-    logInfo(LogTag, "Initializing QtGstreamer...");
+    Logger::logInfo(LogTag, "Initializing QtGstreamer...");
     try
     {
         QGst::init();
@@ -98,13 +99,13 @@ void MainController::initInternal()
     //
     // Initiaize the Qt webengine (i.e. blink web engine) for use in QML
     //
-    logInfo(LogTag, "Initializing QtWebEngine...");
+    Logger::logInfo(LogTag, "Initializing QtWebEngine...");
     QtWebEngine::initialize();
 
     //
     // Initialize SDL (for gamepad reading)
     //
-    logInfo(LogTag, "Initializing SDL...");
+    Logger::logInfo(LogTag, "Initializing SDL...");
     if (SDL_Init(SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) != 0)
     {
         panic(QString("Failed to initialize SDL:  %1").arg(SDL_GetError()));
@@ -116,7 +117,7 @@ void MainController::initInternal()
     // This map file allows SDL to know which button/axis (i.e. "Left X Axis") corresponds
     // to the raw reading from the controller (i.e. "Axis 0")
     //
-    logInfo(LogTag, "Initializing SDL gamepad map...");
+    Logger::logInfo(LogTag, "Initializing SDL gamepad map...");
     QFile gamepadMap(":/config/gamecontrollerdb.txt"); // Loads from assets.qrc
     gamepadMap.open(QIODevice::ReadOnly);
     while (gamepadMap.bytesAvailable())
@@ -134,7 +135,7 @@ void MainController::initInternal()
     // Start master controller process
     //
     if (_settingsModel->getIsMaster()) {
-        logInfo(LogTag, "Starting master controller process...");
+        Logger::logInfo(LogTag, "Starting master controller process...");
         _masterController = new MasterController(this);
 
     }
@@ -142,19 +143,19 @@ void MainController::initInternal()
     //
     // Setup ROS
     //
-    logInfo(LogTag, "Initializing ROS...");
+    Logger::logInfo(LogTag, "Initializing ROS...");
     try
     {
         if (_settingsModel->getIsMaster())
         {
             // We are the master mission control
-            logInfo(LogTag, "This is not the master mission control, waiting for broadcast from master");
+            Logger::logInfo(LogTag, "This is not the master mission control, waiting for broadcast from master");
             setenv("ROS_MASTER_URI", QString("http://localhost:%1").arg(SORO_MC_ROS_MASTER_PORT).toLocal8Bit().constData(), 1);
             onRosMasterFound();
         }
         else
         {
-            logInfo(LogTag, "This is the master mission control, starting ROS master");
+            Logger::logInfo(LogTag, "This is the master mission control, starting ROS master");
             // We are not the master mission control, we should try to find the ros master
             _rosInitUdpSocket = new QUdpSocket(this);
             if (!_rosInitUdpSocket->bind(SORO_MC_BROADCAST_PORT))
@@ -195,7 +196,7 @@ void MainController::rosInitUdpReadyRead()
         }
         else
         {
-            logError(LogTag, "Got invalid message on mission control broadcast port");
+            Logger::logError(LogTag, "Got invalid message on mission control broadcast port");
         }
     }
 }
@@ -212,13 +213,13 @@ void MainController::onRosMasterFound() {
         argv[i] = QCoreApplication::arguments()[i].toLocal8Bit().data();
     }
 
-    logInfo(LogTag, QString("Calling ros::init() with master URI \'%1\'").arg(getenv("ROS_MASTER_URI")));
+    Logger::logInfo(LogTag, QString("Calling ros::init() with master URI \'%1\'").arg(getenv("ROS_MASTER_URI")));
     try
     {
         ros::init(argc, argv, MainController::getMissionControlId().toStdString());
-        logInfo(LogTag, "Creating ROS NodeHandle...");
+        Logger::logInfo(LogTag, "Creating ROS NodeHandle...");
         _nodeHandle = new ros::NodeHandle;
-        logInfo(LogTag, "ROS initialized");
+        Logger::logInfo(LogTag, "ROS initialized");
     }
     catch(ros::InvalidNameException e)
     {
@@ -229,7 +230,7 @@ void MainController::onRosMasterFound() {
     //
     // Create the GamepadController instance
     //
-    logInfo(LogTag, "Initializing Gamepad Controller...");
+    Logger::logInfo(LogTag, "Initializing Gamepad Controller...");
     try
     {
         _gamepadController = new GamepadController(this);
@@ -245,7 +246,7 @@ void MainController::onRosMasterFound() {
         //
         // Create drive control system
         //
-        logInfo(LogTag, "Initializing drive control system...");
+        Logger::logInfo(LogTag, "Initializing drive control system...");
         try
         {
             _driveControlSystem = new DriveControlSystem(this);
@@ -267,14 +268,14 @@ void MainController::onRosMasterFound() {
     //
     // Create the QML application engine
     //
-    logInfo(LogTag, "Initializing QML engine...");
+    Logger::logInfo(LogTag, "Initializing QML engine...");
     qmlRegisterType<QQuickGStreamerSurface>("Soro", 1, 0, "GStreamerSurface");
     _qmlEngine = new QQmlEngine(this);
 
     //
     // Create the main UI
     //
-    logInfo(LogTag, "Creating main window...");
+    Logger::logInfo(LogTag, "Creating main window...");
     try {
         _mainWindowController = new MainWindowController(_qmlEngine, this);
     }
@@ -284,83 +285,8 @@ void MainController::onRosMasterFound() {
         return;
     }
 
-    logInfo(LogTag, "Initialization complete");
+    Logger::logInfo(LogTag, "Initialization complete");
     emit initialized();
-}
-
-//
-// Logging functions
-//
-
-void MainController::logDebug(QString tag, QString message)
-{
-    if (_self)
-    {
-        _self->log(LogLevelDebug, tag, message);
-    }
-}
-
-void MainController::logInfo(QString tag, QString message)
-{
-    if (_self)
-    {
-        _self->log(LogLevelInfo, tag, message);
-    }
-}
-
-void MainController::logWarning(QString tag, QString message)
-{
-    if (_self)
-    {
-        _self->log(LogLevelWarning, tag, message);
-    }
-}
-
-void MainController::logError(QString tag, QString message)
-{
-    if (_self)
-    {
-        _self->log(LogLevelError, tag, message);
-    }
-}
-
-void MainController::log(LogLevel level, QString tag, QString message) {
-    if (ros::isInitialized() && false) {
-        const char* formatted = QString("[%1] %2").arg(tag, message).toLocal8Bit().constData();
-        switch (level) {
-        case LogLevelDebug:
-            ROS_DEBUG(formatted);
-            break;
-        case LogLevelInfo:
-            ROS_INFO(formatted);
-            break;
-        case LogLevelWarning:
-            ROS_WARN(formatted);
-            break;
-        case LogLevelError:
-            ROS_ERROR(formatted);
-            break;
-        }
-    }
-    else {
-        QString levelString;
-        switch (level) {
-        case LogLevelDebug:
-            levelString = "DEBUG";
-            break;
-        case LogLevelInfo:
-            levelString = "INFO";
-            break;
-        case LogLevelWarning:
-            levelString = "WARN";
-            break;
-        case LogLevelError:
-            levelString = "ERROR";
-            break;
-        }
-        QString formatted = QString("[%1] [%2] %3").arg(levelString, tag, message);
-        QTextStream(stdout) << formatted << endl;
-    }
 }
 
 //

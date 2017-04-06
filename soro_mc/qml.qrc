@@ -5,6 +5,7 @@
         <file>Message.qml</file>
         <file>ViewSelector.qml</file>
         <file>CameraThumbnailView.qml</file>
-        <file>ShaderEffectSourceThumbnailView.qml</file>
+        <file>ItemThumbnailView.qml</file>
+        <file>MainContentView.qml</file>
     </qresource>
 </RCC>

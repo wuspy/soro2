@@ -31,27 +31,13 @@ public:
     static MainWindowController* getMainWindowController();
     static ros::NodeHandle* getNodeHandle();
 
-    static void logDebug(QString tag, QString message);
-    static void logInfo(QString tag, QString message);
-    static void logWarning(QString tag, QString message);
-    static void logError(QString tag, QString message);
-    static void logFatal(QString tag, QString message);
-
 signals:
     void initialized();
 
 private:
-    enum LogLevel {
-        LogLevelDebug = 0,
-        LogLevelInfo,
-        LogLevelWarning,
-        LogLevelError,
-        LogLevelFatal
-    };
 
     explicit MainController(QObject *parent=0);
     QString genId();
-    void log(LogLevel level, QString tag, QString message);
 
     static MainController *_self;
 
