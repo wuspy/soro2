@@ -53,10 +53,6 @@ Item {
         clip: true
         anchors.fill: parent
 
-        contentWidth: width
-        contentHeight: mapThumbnailView.y + mapThumbnailView.height + (2 * itemMargins)
-        flickableDirection: Flickable.VerticalFlick
-
         ItemThumbnailView {
             id: video0ThumbnailView
             width: parent.width

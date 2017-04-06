@@ -31,7 +31,10 @@ HEADERS +=\
     mediaformat.h \
     videoformat.h \
     audioformat.h \
-    logger.h
+    logger.h \
+    armmessage.h \
+    notificationmessage.h \
+    pingmessage.h
 
 # Include ROS headers
 INCLUDEPATH += /opt/ros/kinetic/include/

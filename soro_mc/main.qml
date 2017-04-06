@@ -99,6 +99,100 @@ ApplicationWindow {
         }
     }
 
+    function toggleSidebar()
+    {
+        switch (sidebarState)
+        {
+        case "visible":
+            sidebarState = "hidden"
+            break
+        case "hidden":
+        default:
+            sidebarState = "visible"
+            break
+        }
+    }
+
+    function selectViewAbove()
+    {
+        switch (selectedView)
+        {
+        case "video0":
+            selectedView = videoCount > 1 ? "video1" : "map"
+            break
+        case "video1":
+            selectedView = videoCount > 2 ? "video2" : "map"
+            break
+        case "video2":
+            selectedView = videoCount > 3 ? "video3" : "map"
+            break
+        case "video3":
+            selectedView = videoCount > 4 ? "video4" : "map"
+            break
+        case "video4":
+            selectedView = videoCount > 5 ? "video5" : "map"
+            break
+        case "video5":
+            selectedView = videoCount > 6 ? "video6" : "map"
+            break
+        case "video6":
+            selectedView = videoCount > 7 ? "video7" : "map"
+            break
+        case "video7":
+            selectedView = videoCount > 8 ? "video8" : "map"
+            break
+        case "video8":
+            selectedView = videoCount > 9 ? "video9" : "map"
+            break
+        case "video9":
+            selectedView = "map"
+            break
+        case "map":
+            selectedView = videoCount > 0 ? "video0" : "map"
+            break
+        }
+    }
+
+    function selectViewBelow()
+    {
+        switch (selectedView)
+        {
+        case "video0":
+            selectedView = "map"
+            break
+        case "video1":
+            selectedView = "video0"
+            break
+        case "video2":
+            selectedView = "video1"
+            break
+        case "video3":
+            selectedView = "video2"
+            break
+        case "video4":
+            selectedView = "video3"
+            break
+        case "video5":
+            selectedView = "video4"
+            break
+        case "video6":
+            selectedView = "video5"
+            break
+        case "video7":
+            selectedView = "video6"
+            break
+        case "video8":
+            selectedView = "video7"
+            break
+        case "video9":
+            selectedView = "video8"
+            break
+        case "map":
+            selectedView = videoCount > 0 ? "video" + (videoCount - 1) : "map"
+            break
+        }
+    }
+
     MainContentView {
         id: mainContentView
         anchors.fill: parent
@@ -324,6 +418,7 @@ ApplicationWindow {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: bitrateLabel.bottom
+            anchors.bottom: parent.bottom
             itemMargins: parent.width / 20
             anchors.leftMargin: itemMargins
             anchors.rightMargin: itemMargins

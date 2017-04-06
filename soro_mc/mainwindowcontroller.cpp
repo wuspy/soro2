@@ -18,8 +18,9 @@ MainWindowController::MainWindowController(QQmlEngine *engine, QObject *parent) 
         // There was an error creating the QML window. This is most likely due to a QML syntax error
         throw QString("Failed to create QML window:  %1").arg(qmlComponent.errorString());
     }
-
+    //
     // Setup the camera views in the UI
+    //
     int videoCount = MainController::getCameraSettingsModel()->getCameraCount();
     if (videoCount > 10)
     {
@@ -38,6 +39,15 @@ MainWindowController::MainWindowController(QQmlEngine *engine, QObject *parent) 
     }
 
     _window->setProperty("selectedView", "video0");
+
+    //
+    // Setup ROS communication
+    //
+
+    _notifyPublisher = MainController::getNodeHandle()->advertise<Soro::Messages::notification>("notification", 10);
+    _notifySubscriber = MainController::getNodeHandle()->subscribe
+            <Soro::Messages::notification, Soro::MainWindowController>
+            ("notification", 10, &MainWindowController::onNewNotification, this);
 
     // Connect to gamepad events
     connect(MainController::getGamepadController(), SIGNAL(buttonPressed(SDL_GameControllerButton,bool)),
@@ -93,13 +103,53 @@ void MainWindowController::playVideo(int cameraId, VideoFormat format)
     pipeline->setState(QGst::StatePlaying);
 }
 
-void MainWindowController::notify(MessageType type, QString message)
+void MainWindowController::onNewNotification(const Messages::notification msg)
 {
-
+    // Show this message in the UI
+    notify(intToMessageType(msg.type), QString(msg.title.c_str()), QString(msg.message.c_str()));
 }
 
-void MainWindowController::notifyAll(MessageType type, QString message) {
+void MainWindowController::notify(MessageType type, QString title, QString message)
+{
+    //TODO
+}
 
+void MainWindowController::notifyAll(MessageType type, QString title, QString message)
+{
+    Soro::Messages::notification msg;
+    msg.type = messageTypeToInt(type);
+    msg.title = title.toStdString();
+    msg.message = message.toStdString();
+
+    // Publish this notification on the notification topic. We will get this message back,
+    // since we are also subscribed to it, and that's when we'll show it from the onNewNotification() function
+    _notifyPublisher.publish(msg);
+}
+
+int MainWindowController::messageTypeToInt(MessageType type)
+{
+    switch (type)
+    {
+    case MessageType_Info:
+        return 0;
+    case MessageType_Warning:
+        return 1;
+    default:
+        return 2;
+    }
+}
+
+MainWindowController::MessageType MainWindowController::intToMessageType(int type)
+{
+    switch (type)
+    {
+    case 0:
+        return MessageType_Info;
+    case 1:
+        return MessageType_Warning;
+    default:
+        return MessageType_Error;
+    }
 }
 
 void MainWindowController::onGamepadButtonPressed(SDL_GameControllerButton button, bool pressed)
@@ -109,14 +159,22 @@ void MainWindowController::onGamepadButtonPressed(SDL_GameControllerButton butto
         switch (button)
         {
         case SDL_CONTROLLER_BUTTON_Y:
-            if (_window->property("sidebarState").toString() == "visible")
-            {
-                _window->setProperty("sidebarState", "hidden");
-            }
-            else
-            {
-                _window->setProperty("sidebarState", "visible");
-            }
+            //
+            // Toggle sidebar
+            //
+            QMetaObject::invokeMethod(_window, "toggleSidebar");
+            break;
+        case SDL_CONTROLLER_BUTTON_DPAD_UP:
+            //
+            // Move to view above
+            //
+            QMetaObject::invokeMethod(_window, "selectViewAbove");
+            break;
+        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+            //
+            // Move to view below
+            //
+            QMetaObject::invokeMethod(_window, "selectViewBelow");
             break;
         default:
             break;

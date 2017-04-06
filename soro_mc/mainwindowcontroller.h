@@ -9,7 +9,10 @@
 #include <Qt5GStreamer/QGst/Bin>
 #include <SDL2/SDL.h>
 
+#include <ros/ros.h>
+
 #include "libsoromc/videoformat.h"
+#include "libsoromc/notificationmessage.h"
 
 namespace Soro {
 
@@ -27,16 +30,25 @@ public:
 
     void stopVideo(int cameraId, QString pattern="snow");
     void playVideo(int cameraId, VideoFormat format);
-    void notify(MessageType type, QString message);
-    void notifyAll(MessageType type, QString message);
+    void notify(MessageType type, QString title, QString message);
+    void notifyAll(MessageType type, QString title, QString message);
 
 private:
     void clearVideo(int cameraId);
+
+    void onNewNotification(const Soro::Messages::notification msg);
+
+    int messageTypeToInt(MessageType type);
+    MessageType intToMessageType(int type);
 
     QQuickWindow *_window;
     QGst::PipelinePtr _videoPipelines[8];
     QGst::ElementPtr _videoSinks[8];
     QGst::BinPtr _videoBins[8];
+
+    ros::Publisher _notifyPublisher;
+    ros::Subscriber _notifySubscriber;
+
 
 private slots:
     void onGamepadButtonPressed(SDL_GameControllerButton button, bool pressed);
