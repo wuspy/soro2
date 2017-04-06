@@ -2,16 +2,26 @@
 #define MAINWINDOWCONTROLLER_H
 
 #include <QObject>
+#include <QQmlEngine>
+#include <QQuickWindow>
+
+#include <SDL2/SDL.h>
+
+namespace Soro {
 
 class MainWindowController : public QObject
 {
     Q_OBJECT
 public:
-    explicit MainWindowController(QObject *parent = 0);
+    explicit MainWindowController(QQmlEngine *engine, QObject *parent = 0);
 
-signals:
+private:
+    QQuickWindow *_window;
 
-public slots:
+private slots:
+    void onGamepadButtonPressed(SDL_GameControllerButton button, bool pressed);
 };
+
+} // namespace Soro
 
 #endif // MAINWINDOWCONTROLLER_H

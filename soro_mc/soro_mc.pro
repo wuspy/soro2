@@ -27,7 +27,6 @@ HEADERS += \
     drivecontrolsystem.h \
     gamepadcontroller.h \
     mastercontroller.h \
-    rosconnectioncontroller.h \
     maincontroller.h \
     mainwindowcontroller.h \
     qquickgstreamersurface.h
@@ -35,7 +34,6 @@ HEADERS += \
 SOURCES += main.cpp \
     gamepadcontroller.cpp \
     mastercontroller.cpp \
-    rosconnectioncontroller.cpp \
     maincontroller.cpp \
     mainwindowcontroller.cpp \
     qquickgstreamersurface.cpp \

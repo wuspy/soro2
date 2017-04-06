@@ -5,10 +5,11 @@
 #include <gamepadcontroller.h>
 #include "libsoromc/drivemessage.h"
 #include "ros/ros.h"
-#include <SDL2/SDL.h>
 #include <QTimerEvent>
 
-
+// ***TODO***
+// ROS hangs the application if connection to master is not immediately successful
+// All functionality associated with ROS has been commented out until this can be resolved
 namespace Soro {
 
 class DriveControlSystem : public QObject
@@ -18,20 +19,13 @@ class DriveControlSystem : public QObject
 public:
     explicit DriveControlSystem(QObject *parent = 0);
 
-    Soro::Messages::drive* buildDriveMessage(float x, float y);
-    void setDriveMode(int i);
-    int getDriveMode();
-    void setDriveEnabled(bool e);
-    bool getDriveEnabled();
-
 private:
+    Soro::Messages::drive buildDriveMessage();
+
+    QString _gamepadName;
+    ros::Publisher _drivePublisher;
 
     int _sendTimerId;
-    int _mode;          //mode: 1 for single stick, 2 for dual
-    bool _enabled;       //is drivecontrol enabled
-
-    ros::NodeHandle _driveHandle;
-    ros::Publisher _drivePublisher;
 
 protected:
     void timerEvent(QTimerEvent* e);

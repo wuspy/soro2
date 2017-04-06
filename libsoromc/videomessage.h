@@ -164,7 +164,7 @@ struct DataType< ::Soro::Messages::video_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "Soro::Messages/video";
+    return "beginner_tutorials/video";
   }
 
   static const char* value(const ::Soro::Messages::video_<ContainerAllocator>&) { return value(); }

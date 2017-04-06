@@ -10,6 +10,7 @@
 #include <Qt5GStreamer/QGlib/Error>
 
 #include "qquickgstreamersurface.h"
+#include "libsoromc/constants.h"
 
 #include <ros/ros.h>
 
@@ -19,13 +20,11 @@ namespace Soro {
 
 MainController *MainController::_self = nullptr;
 
-MainController::MainController(QObject *parent) : QObject(parent)
-{
-}
+MainController::MainController(QObject *parent) : QObject(parent) { }
 
 void MainController::panic(QString message)
 {
-    logFatal(LogTag, QString("panic(): %1").arg(message));
+    logError(LogTag, QString("panic(): %1").arg(message));
     QMessageBox::critical(0, "Mission Control", message);
     QCoreApplication::exit(1);
 }
@@ -38,7 +37,7 @@ void MainController::init(QApplication *app)
     }
     else
     {
-        logInfo(LogTag, "Initializing");
+        logInfo(LogTag, "Starting...");
         _self = new MainController(app);
         QTimer::singleShot(0, _self, &MainController::initInternal);
     }
@@ -56,10 +55,14 @@ void MainController::initInternal()
     // Create the settings model and load the main settings file
     //
     logInfo(LogTag, "Loading settings...");
-    _settingsModel = new SettingsModel;
-    if (!_settingsModel->load())
+    try
     {
-        panic(QString("Failed to load settings file: %1").arg(_settingsModel->errorString()));
+        _settingsModel = new SettingsModel;
+        _settingsModel->load();
+    }
+    catch (QString err)
+    {
+        panic(QString("Error loading settings: %1").arg(err));
         return;
     }
 
@@ -67,10 +70,14 @@ void MainController::initInternal()
     // Create camera settings model to load camera configuration
     //
     logInfo(LogTag, "Loading camera settings...");
-    _cameraSettingsModel = new CameraSettingsModel;
-    if (!_cameraSettingsModel->load())
+    try
     {
-        panic(QString("Failed to load camera settings file: %1").arg(_cameraSettingsModel->errorString()));
+        _cameraSettingsModel = new CameraSettingsModel;
+        _cameraSettingsModel->load();
+    }
+    catch (QString err)
+    {
+        panic(QString("Error loading camera settings: %1").arg(err));
         return;
     }
 
@@ -124,6 +131,140 @@ void MainController::initInternal()
     gamepadMap.close();
 
     //
+    // Start master controller process
+    //
+    if (_settingsModel->getIsMaster()) {
+        logInfo(LogTag, "Starting master controller process...");
+        _masterController = new MasterController(this);
+
+    }
+
+    //
+    // Setup ROS
+    //
+    logInfo(LogTag, "Initializing ROS...");
+    try
+    {
+        if (_settingsModel->getIsMaster())
+        {
+            // We are the master mission control
+            logInfo(LogTag, "This is not the master mission control, waiting for broadcast from master");
+            setenv("ROS_MASTER_URI", QString("http://localhost:%1").arg(SORO_MC_ROS_MASTER_PORT).toLocal8Bit().constData(), 1);
+            onRosMasterFound();
+        }
+        else
+        {
+            logInfo(LogTag, "This is the master mission control, starting ROS master");
+            // We are not the master mission control, we should try to find the ros master
+            _rosInitUdpSocket = new QUdpSocket(this);
+            if (!_rosInitUdpSocket->bind(SORO_MC_BROADCAST_PORT))
+            {
+                MainController::panic(QString("Cannot bind to mission control UDP broadcast port: %1").arg(_rosInitUdpSocket->errorString()));
+                return;
+            }
+            connect(_rosInitUdpSocket, SIGNAL(readyRead()), this, SLOT(rosInitUdpReadyRead()));
+        }
+    }
+    catch (QString err)
+    {
+        panic(QString("Error initializing ROS controller: %1").arg(err));
+        return;
+    }
+
+    // Setup will resume once ROS is initialized
+}
+
+void MainController::rosInitUdpReadyRead()
+{
+    while (_rosInitUdpSocket->hasPendingDatagrams())
+    {
+        char data[100];
+        QHostAddress address;
+        quint16 port;
+        qint64 len = _rosInitUdpSocket->readDatagram(data, 100, &address, &port);
+
+        if (strncmp(data, "master", qMax(strlen("master"), (size_t)len)) == 0)
+        {
+            // Received message from master mission control
+            setenv("ROS_MASTER_URI", (QString("http://%1:%2").arg(address.toString(), SORO_MC_ROS_MASTER_PORT)).toLocal8Bit().constData(), 1);
+            disconnect(_rosInitUdpSocket, SIGNAL(readyRead()), this, SLOT(rosInitUdpReadyRead()));
+            delete _rosInitUdpSocket;
+            _rosInitUdpSocket = nullptr;
+            onRosMasterFound();
+            break;
+        }
+        else
+        {
+            logError(LogTag, "Got invalid message on mission control broadcast port");
+        }
+    }
+}
+
+void MainController::onRosMasterFound() {
+
+    //
+    // Finish setting up ROS now that ROS_MASTER_URI is set
+    //
+    int argc = QCoreApplication::arguments().size();
+    char *argv[argc];
+
+    for (int i = 0; i < argc; i++) {
+        argv[i] = QCoreApplication::arguments()[i].toLocal8Bit().data();
+    }
+
+    logInfo(LogTag, QString("Calling ros::init() with master URI \'%1\'").arg(getenv("ROS_MASTER_URI")));
+    try
+    {
+        ros::init(argc, argv, MainController::getMissionControlId().toStdString());
+        logInfo(LogTag, "Creating ROS NodeHandle...");
+        _nodeHandle = new ros::NodeHandle;
+        logInfo(LogTag, "ROS initialized");
+    }
+    catch(ros::InvalidNameException e)
+    {
+        panic(QString("Invalid name exception initializing ROS: %1").arg(e.what()));
+        return;
+    }
+
+    //
+    // Create the GamepadController instance
+    //
+    logInfo(LogTag, "Initializing Gamepad Controller...");
+    try
+    {
+        _gamepadController = new GamepadController(this);
+    }
+    catch (QString err)
+    {
+        panic(QString("Error initializing gamepad system: %1").arg(err));
+        return;
+    }
+
+    switch (_settingsModel->getConfiguration()) {
+    case SettingsModel::DriverConfiguration:
+        //
+        // Create drive control system
+        //
+        logInfo(LogTag, "Initializing drive control system...");
+        try
+        {
+            _driveControlSystem = new DriveControlSystem(this);
+        }
+        catch (QString err)
+        {
+            panic(QString("Error initializing drive control system: %1").arg(err));
+            return;
+        }
+        break;
+    case SettingsModel::ArmOperatorConfiguration:
+        break;
+    case SettingsModel::CameraOperatorConfiguration:
+        break;
+    case SettingsModel::ObserverConfiguration:
+        break;
+    }
+
+    //
     // Create the QML application engine
     //
     logInfo(LogTag, "Initializing QML engine...");
@@ -131,30 +272,25 @@ void MainController::initInternal()
     _qmlEngine = new QQmlEngine(this);
 
     //
-    // Create the GamepadController instance
-    //
-    _gamepadController = new GamepadController(this);
-
-    //
     // Create the main UI
     //
-    QQmlComponent qmlComponent(_qmlEngine, QUrl("qrc:/main.qml"));
-    QQuickWindow *window = qobject_cast<QQuickWindow*>(qmlComponent.create());
-    if (!qmlComponent.errorString().isEmpty() || !window)
+    logInfo(LogTag, "Creating main window...");
+    try {
+        _mainWindowController = new MainWindowController(_qmlEngine, this);
+    }
+    catch (QString err)
     {
-        // There was an error creating the QML window. This is most likely due to a QML syntax error
-        panic(QString("Failed to create QML window:  %1").arg(qmlComponent.errorString()));
+        panic(QString("Error creating main window: %1").arg(err));
+        return;
     }
 
-    ///////////////////////////
-    //////  TESTING  //////////
-
-
-
-    ///////////////////////////
-    ///////////////////////////
     logInfo(LogTag, "Initialization complete");
+    emit initialized();
 }
+
+//
+// Logging functions
+//
 
 void MainController::logDebug(QString tag, QString message)
 {
@@ -188,16 +324,8 @@ void MainController::logError(QString tag, QString message)
     }
 }
 
-void MainController::logFatal(QString tag, QString message)
-{
-    if (_self)
-    {
-        _self->log(LogLevelFatal, tag, message);
-    }
-}
-
 void MainController::log(LogLevel level, QString tag, QString message) {
-    if (ros::isInitialized()) {
+    if (ros::isInitialized() && false) {
         const char* formatted = QString("[%1] %2").arg(tag, message).toLocal8Bit().constData();
         switch (level) {
         case LogLevelDebug:
@@ -212,32 +340,32 @@ void MainController::log(LogLevel level, QString tag, QString message) {
         case LogLevelError:
             ROS_ERROR(formatted);
             break;
-        case LogLevelFatal:
-            ROS_FATAL(formatted);
-            break;
         }
     }
     else {
-        const char* formatted = QString("[No ROS] [%1] %2").arg(tag, message).toLocal8Bit().constData();
+        QString levelString;
         switch (level) {
         case LogLevelDebug:
-            qDebug(formatted);
+            levelString = "DEBUG";
             break;
         case LogLevelInfo:
-            qInfo(formatted);
+            levelString = "INFO";
             break;
         case LogLevelWarning:
-            qWarning(formatted);
+            levelString = "WARN";
             break;
         case LogLevelError:
-            qCritical(formatted);
-            break;
-        case LogLevelFatal:
-            qFatal(formatted);
+            levelString = "ERROR";
             break;
         }
+        QString formatted = QString("[%1] [%2] %3").arg(levelString, tag, message);
+        QTextStream(stdout) << formatted << endl;
     }
 }
+
+//
+// Getters
+//
 
 QString MainController::getMissionControlId()
 {
@@ -253,6 +381,19 @@ SettingsModel* MainController::getSettingsModel()
 {
     return _self->_settingsModel;
 }
+
+CameraSettingsModel* MainController::getCameraSettingsModel()
+{
+    return _self->_cameraSettingsModel;
+}
+
+ros::NodeHandle* MainController::getNodeHandle() {
+    return _self->_nodeHandle;
+}
+
+//
+// Misc private functions
+//
 
 QString MainController::genId()
 {

@@ -2,7 +2,10 @@
     <qresource prefix="/html">
         <file>map.html</file>
     </qresource>
-    <qresource prefix="/icons"/>
+    <qresource prefix="/icons">
+        <file>ic_check_circle_white_48px.svg</file>
+        <file>ic_error_white_48px.svg</file>
+    </qresource>
     <qresource prefix="/config">
         <file>gamecontrollerdb.txt</file>
     </qresource>

@@ -18,7 +18,6 @@ SUBDIRS =\
     soro_mc \
     soro_mc_master \
     soro_mc_vid_master \
-    sandbox \
     tests \
     libsoromc
 

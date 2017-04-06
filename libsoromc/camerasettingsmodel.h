@@ -2,7 +2,8 @@
 #define CAMERASETTINGSMODEL_H
 
 #include <QString>
-#include <QVector>
+#include <QMap>
+#include <QList>
 
 namespace Soro {
 
@@ -22,19 +23,18 @@ public:
     /* Loads the camera definitions from the camera settings file. If unsuccessful,
      * this will return false and set the class error string, which can be accessed with errorString()
      */
-    bool load();
+    void load();
 
     /* Returns a list of the camera definitions loaded from the settings file,
      * or an empty list if the file has not yet been loaded or if an error
      * occurred when loading the file
      */
-    const QVector<Camera>& getCameras() const;
-
-    QString errorString() const;
+    const QList<CameraSettingsModel::Camera> getCameras() const;
+    int getCameraIndexById(int id) const;
+    int getCameraCount() const;
 
 private:
-    QVector<Camera> _cameras;
-    QString _errorString;
+    QMap<int, CameraSettingsModel::Camera> _cameras;
 };
 
 } // namespace Soro
