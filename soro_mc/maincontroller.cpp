@@ -47,12 +47,6 @@ void MainController::init(QApplication *app)
 void MainController::initInternal()
 {
     //
-    // Create a unique identifier for this mission control, it is mainly used as a unique node name for ROS
-    //
-    _mcId = genId();
-    Logger::logInfo(LogTag, QString("Mission Control ID is: %1").arg(_mcId).toLocal8Bit().constData());
-
-    //
     // Create the settings model and load the main settings file
     //
     Logger::logInfo(LogTag, "Loading settings...");
@@ -66,6 +60,12 @@ void MainController::initInternal()
         panic(QString("Error loading settings: %1").arg(err));
         return;
     }
+
+    //
+    // Create a unique identifier for this mission control, it is mainly used as a unique node name for ROS
+    //
+    _mcId = genId();
+    Logger::logInfo(LogTag, QString("Mission Control ID is: %1").arg(_mcId).toLocal8Bit().constData());
 
     //
     // Create camera settings model to load camera configuration
@@ -228,6 +228,20 @@ void MainController::onRosMasterFound() {
     }
 
     //
+    // Create connection status controller
+    //
+    Logger::logInfo(LogTag, "Initializing connection status controller...");
+    try
+    {
+        _connectionStatusController = new ConnectionStatusController(this);
+    }
+    catch (QString err)
+    {
+        panic(QString("Error initializing connection status controller: %1").arg(err));
+        return;
+    }
+
+    //
     // Create the GamepadController instance
     //
     Logger::logInfo(LogTag, "Initializing Gamepad Controller...");
@@ -313,6 +327,11 @@ CameraSettingsModel* MainController::getCameraSettingsModel()
     return _self->_cameraSettingsModel;
 }
 
+ConnectionStatusController* MainController::getConnectionStatusController()
+{
+    return _self->_connectionStatusController;
+}
+
 ros::NodeHandle* MainController::getNodeHandle() {
     return _self->_nodeHandle;
 }
@@ -326,11 +345,27 @@ QString MainController::genId()
     const QString chars("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
 
     qsrand(QTime::currentTime().msec());
-    QString randomString = "mc_";
-    for(int i = 0; i < 12; ++i) {
-        randomString.append(chars.at(qrand() % chars.length()));
+    QString id;
+    switch (_settingsModel->getConfiguration())
+    {
+    case SettingsModel::ArmOperatorConfiguration:
+        id = "mc_arm";
+        break;
+    case SettingsModel::DriverConfiguration:
+        id = "mc_drive";
+        break;
+    case SettingsModel::CameraOperatorConfiguration:
+        id = "mc_camera";
+        break;
+    case SettingsModel::ObserverConfiguration:
+        id = "mc_observer";
+        for(int i = 0; i < 12; ++i) {
+            id.append(chars.at(qrand() % chars.length()));
+        }
+        return id;
     }
-    return randomString;
+
+    return id;
 }
 
 } // namespace Soro

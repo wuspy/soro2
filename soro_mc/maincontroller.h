@@ -13,6 +13,7 @@
 #include "mastercontroller.h"
 #include "gamepadcontroller.h"
 #include "mainwindowcontroller.h"
+#include "connectionstatuscontroller.h"
 #include "drivecontrolsystem.h"
 
 namespace Soro {
@@ -29,6 +30,7 @@ public:
     static CameraSettingsModel* getCameraSettingsModel();
     static QString getMissionControlId();
     static MainWindowController* getMainWindowController();
+    static ConnectionStatusController* getConnectionStatusController();
     static ros::NodeHandle* getNodeHandle();
 
 signals:
@@ -51,6 +53,7 @@ private:
     CameraSettingsModel *_cameraSettingsModel = nullptr;
     MainWindowController *_mainWindowController = nullptr;
     DriveControlSystem *_driveControlSystem = nullptr;
+    ConnectionStatusController *_connectionStatusController = nullptr;
 
 private slots:
     void initInternal();

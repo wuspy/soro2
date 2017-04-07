@@ -41,6 +41,7 @@ void DriveControlSystem::timerEvent(QTimerEvent* e)
     {
         Soro::Messages::drive driveMessage = buildDriveMessage();
         _drivePublisher.publish(driveMessage);
+        MainController::getConnectionStatusController()->logBitsUp(6 * 8);
     }
 }
 

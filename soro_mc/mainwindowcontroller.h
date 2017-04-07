@@ -52,6 +52,9 @@ private:
 
 private slots:
     void onGamepadButtonPressed(SDL_GameControllerButton button, bool pressed);
+    void onConnectedChanged(bool connected);
+    void onLatencyUpdated(int latency);
+    void onBitrateUpdated(int bitsUp, int bitsDown);
 };
 
 } // namespace Soro

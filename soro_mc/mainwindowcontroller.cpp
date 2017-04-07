@@ -52,6 +52,14 @@ MainWindowController::MainWindowController(QQmlEngine *engine, QObject *parent) 
     // Connect to gamepad events
     connect(MainController::getGamepadController(), SIGNAL(buttonPressed(SDL_GameControllerButton,bool)),
             this, SLOT(onGamepadButtonPressed(SDL_GameControllerButton,bool)));
+
+    // Connect to connection events
+    connect(MainController::getConnectionStatusController(), SIGNAL(bitrateUpdate(int,int)),
+            this, SLOT(onBitrateUpdated(int,int)));
+    connect(MainController::getConnectionStatusController(), SIGNAL(latencyUpdate(int)),
+            this, SLOT(onLatencyUpdated(int)));
+    connect(MainController::getConnectionStatusController(), SIGNAL(connectedChanged(bool)),
+            this, SLOT(onConnectedChanged(bool)));
 }
 
 void MainWindowController::clearVideo(int cameraId)
@@ -124,6 +132,22 @@ void MainWindowController::notifyAll(MessageType type, QString title, QString me
     // Publish this notification on the notification topic. We will get this message back,
     // since we are also subscribed to it, and that's when we'll show it from the onNewNotification() function
     _notifyPublisher.publish(msg);
+}
+
+void MainWindowController::onConnectedChanged(bool connected)
+{
+    _window->setProperty("connected", connected);
+}
+
+void MainWindowController::onLatencyUpdated(int latency)
+{
+    _window->setProperty("latency", latency);
+}
+
+void MainWindowController::onBitrateUpdated(int bitsUp, int bitsDown)
+{
+    _window->setProperty("bitrateUp", bitsUp);
+    _window->setProperty("bitrateDown", bitsDown);
 }
 
 int MainWindowController::messageTypeToInt(MessageType type)
