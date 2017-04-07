@@ -53,6 +53,8 @@ Item {
         clip: true
         anchors.fill: parent
 
+        contentHeight: mapThumbnailView.y + mapThumbnailView.height + itemMargins
+
         ItemThumbnailView {
             id: video0ThumbnailView
             width: parent.width
