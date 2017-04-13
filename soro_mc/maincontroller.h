@@ -14,6 +14,7 @@
 #include "gamepadcontroller.h"
 #include "mainwindowcontroller.h"
 #include "drivecontrolsystem.h"
+#include "armcontrolsystem.h"
 
 namespace Soro {
 
@@ -65,6 +66,7 @@ private:
     CameraSettingsModel *_cameraSettingsModel = nullptr;
     MainWindowController *_mainWindowController = nullptr;
     DriveControlSystem *_driveControlSystem = nullptr;
+    ArmControlSystem * _armControlSystem = nullptr;
 
 private slots:
     void initInternal();

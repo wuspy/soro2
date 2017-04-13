@@ -257,6 +257,19 @@ void MainController::onRosMasterFound() {
         }
         break;
     case SettingsModel::ArmOperatorConfiguration:
+        //
+        // Create arm control system
+        //
+        logInfo(LogTag, "Initializing arm control system...");
+        try
+        {
+            _armControlSystem = new ArmControlSystem(this);
+        }
+        catch(QString err)
+        {
+            panic(QString("Error initializing arm control system: %1").arg(err));
+            return;
+        }
         break;
     case SettingsModel::CameraOperatorConfiguration:
         break;
