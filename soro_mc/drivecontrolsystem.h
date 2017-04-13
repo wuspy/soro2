@@ -7,9 +7,6 @@
 #include "ros/ros.h"
 #include <QTimerEvent>
 
-// ***TODO***
-// ROS hangs the application if connection to master is not immediately successful
-// All functionality associated with ROS has been commented out until this can be resolved
 namespace Soro {
 
 class DriveControlSystem : public QObject
@@ -20,7 +17,7 @@ public:
     explicit DriveControlSystem(QObject *parent = 0);
 
 private:
-    Soro::Messages::drive buildDriveMessage();
+    message_gen::drive buildDriveMessage();
 
     QString _gamepadName;
     ros::Publisher _drivePublisher;

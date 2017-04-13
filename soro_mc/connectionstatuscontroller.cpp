@@ -8,47 +8,27 @@ namespace Soro {
 
 ConnectionStatusController::ConnectionStatusController(QObject *parent) : QObject(parent)
 {
-    Logger::logInfo(LogTag, "Creating ROS publisher and subscriber...");
-    _pingPublisher = MainController::getNodeHandle()->advertise<Soro::Messages::ping>("ping", 1);
-    _ackSubscriber = MainController::getNodeHandle()->subscribe
-            <Soro::Messages::ping, Soro::ConnectionStatusController>
-            ("ack", 1, &ConnectionStatusController::onNewAckMessage, this);
-    Logger::logInfo(LogTag, "ROS publisher and subscriber created");
+    Logger::logInfo(LogTag, "Creating ROS subscriber for latency topic...");
+    _latencySubscriber = MainController::getNodeHandle()->subscribe
+            <std_msgs::UInt32, Soro::ConnectionStatusController>
+            ("latency", 1, &ConnectionStatusController::onNewLatencyMessage, this);
 
-    _bitsDown = _bitsUp = 0;
-    _updateBitrateTimerId = -1;
-    _sendPingTimerId = -1;
-    _currentPingId = 0;
+    Logger::logInfo(LogTag, "Creating ROS subscriber for bitrate topic...");
+    _bitrateSubscriber = MainController::getNodeHandle()->subscribe
+            <message_gen::bitrate, Soro::ConnectionStatusController>
+            ("bitrate", 1, &ConnectionStatusController::onNewBitrateMessage, this);
+
+    Logger::logInfo(LogTag, "Creating ROS publisher for bits_up_log topic...");
+    _bitsUpPublisher = MainController::getNodeHandle()->advertise<std_msgs::UInt32>("bits_up_log", 1);
+
+    Logger::logInfo(LogTag, "Creating ROS publisher for bits_down_log topic...");
+    _bitsDownPublisher = MainController::getNodeHandle()->advertise<std_msgs::UInt32>("bits_down_log", 1);
+
+    Logger::logInfo(LogTag, "All ROS publishers and subscribers created");
+
     _disconnectWatchdogTimerId = -1;
     setDisconnectTimeThreshold(2000);
-    setBitrateUpdateInterval(500);
-    setPingRequestInterval(500);
-}
-
-void ConnectionStatusController::setBitrateUpdateInterval(int interval)
-{
-    if (_updateBitrateTimerId != -1) killTimer(_updateBitrateTimerId);
-    _bitrateUpdateInterval = interval;
-    _updateBitrateTimerId = startTimer(_bitrateUpdateInterval);
-    Logger::logInfo(LogTag, "Bitrate update interval is now set at " + QString::number(interval));
-}
-
-int ConnectionStatusController::getBitrateUpdateInterval() const
-{
-    return _bitrateUpdateInterval;
-}
-
-void ConnectionStatusController::setPingRequestInterval(int interval)
-{
-    if (_sendPingTimerId != -1) killTimer(_sendPingTimerId);
-    _pingRequestInterval = interval;
-    _sendPingTimerId = startTimer(_pingRequestInterval);
-    Logger::logInfo(LogTag, "Ping request interval is now set at " + QString::number(interval));
-}
-
-int ConnectionStatusController::getPingRequestInterval() const
-{
-    return _pingRequestInterval;
+    _connected = false;
 }
 
 void ConnectionStatusController::setDisconnectTimeThreshold(int threshold)
@@ -61,36 +41,34 @@ int ConnectionStatusController::getDisconnectTimeThreshold() const
     return _disconnectTimeThreshold;
 }
 
-void ConnectionStatusController::onNewAckMessage(Soro::Messages::ping msg)
+void ConnectionStatusController::onNewBitrateMessage(message_gen::bitrate msg)
 {
-    logBitsDown(strlen((msg.sender.c_str()) + 8) * 8);
-    if (QString(msg.sender.c_str()) != MainController::getMissionControlId()) return; // Not our message
+    Q_EMIT bitrateUpdate((quint64)msg.bitrateUp, (quint64)msg.bitrateDown);
+}
 
-    // Stop the disconnect watchdog
-    if (_disconnectWatchdogTimerId != -1)
-    {
+void ConnectionStatusController::onNewLatencyMessage(std_msgs::UInt32 msg)
+{
+    if (_disconnectWatchdogTimerId != -1) {
         killTimer(_disconnectWatchdogTimerId);
-        _disconnectWatchdogTimerId = -1;
     }
+    _disconnectWatchdogTimerId = startTimer(_disconnectTimeThreshold);
     setConnected(true);
 
-    int latency = _pingTimes.value((quint64)msg.id, -1);
-    if (latency == -1) return; // The message ID wasn't in our time table for some reason
-    _pingTimes.remove((quint64)msg.id);
-    latency = QDateTime::currentDateTime().toMSecsSinceEpoch() - latency;
-    Logger::logInfo(LogTag, "Latency: " + QString::number(latency));
-
-    emit latencyUpdate(latency);
+    Q_EMIT latencyUpdate((quint32)msg.data);
 }
 
-void ConnectionStatusController::logBitsDown(int bits)
+void ConnectionStatusController::logBitsDown(quint32 bits)
 {
-    _bitsDown += bits;
+    std_msgs::UInt32 msg;
+    msg.data = bits;
+    _bitsDownPublisher.publish<std_msgs::UInt32>(msg);
 }
 
-void ConnectionStatusController::logBitsUp(int bits)
+void ConnectionStatusController::logBitsUp(quint32 bits)
 {
-    _bitsUp += bits;
+    std_msgs::UInt32 msg;
+    msg.data = bits;
+    _bitsUpPublisher.publish<std_msgs::UInt32>(msg);
 }
 
 bool ConnectionStatusController::isConnected() const
@@ -100,39 +78,7 @@ bool ConnectionStatusController::isConnected() const
 
 void ConnectionStatusController::timerEvent(QTimerEvent *e)
 {
-    if (e->timerId() == _updateBitrateTimerId)
-    {
-        int bitsUpRate = _bitsUp / _bitrateUpdateInterval;
-        int bitsDownRate = _bitsDown / _bitrateUpdateInterval;
-        _bitsUp = 0;
-        _bitsDown = 0;
-
-        emit bitrateUpdate(bitsUpRate, bitsDownRate);
-    }
-    else if (e->timerId() == _sendPingTimerId)
-    {
-        Soro::Messages::ping msg;
-        msg.sender = MainController::getMissionControlId().toStdString();
-        msg.id = _currentPingId++;
-        _pingPublisher.publish(msg);
-        logBitsUp(strlen((msg.sender.c_str()) + 8) * 8);
-        if (_pingTimes.size() > 100)
-        {
-            // Prune old values from time table
-            QList<quint64> keys = _pingTimes.keys();
-            for (int i = 0; i < 50; ++i)
-            {
-                _pingTimes.remove(keys[i]);
-            }
-        }
-        // Start the disconnect watchdog if it isn't already started
-        if (_connected && (_disconnectWatchdogTimerId == -1))
-        {
-            _disconnectWatchdogTimerId = startTimer(_disconnectTimeThreshold);
-        }
-        _pingTimes.insert(msg.id, QDateTime::currentDateTime().toMSecsSinceEpoch());
-    }
-    else if (e->timerId() == _disconnectWatchdogTimerId)
+    if (e->timerId() == _disconnectWatchdogTimerId)
     {
         setConnected(false);
         killTimer(_disconnectWatchdogTimerId);
@@ -144,7 +90,7 @@ void ConnectionStatusController::setConnected(bool connected)
 {
     if (connected != _connected) {
         _connected = connected;
-        emit connectedChanged(_connected);
+        Q_EMIT connectedChanged(_connected);
     }
 }
 

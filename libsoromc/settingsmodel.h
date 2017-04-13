@@ -6,8 +6,7 @@
 
 namespace Soro {
 
-/* Main settings class for the application, handles loading settings and (if needed)
- * writing back to the settings file.
+/* Main settings class for the application, handles loading settings
  */
 class SettingsModel
 {
@@ -22,12 +21,10 @@ public:
         ObserverConfiguration
     };
 
-    /* Loads the main settings file. If unsuccessful, this will return false and
-     * set the class error string, which can be accessed with errorString()
+    /* Loads the main settings file. If unsuccessful, this will throw a QString containing an error message
      */
     void load();
 
-    bool getIsMaster() const;
     SettingsModel::Configuration getConfiguration() const;
 
 private:

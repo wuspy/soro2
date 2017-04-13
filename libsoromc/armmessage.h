@@ -16,11 +16,8 @@
 #include <ros/message_operations.h>
 
 
-namespace Soro
+namespace message_gen
 {
-namespace Messages
-{
-
 template <class ContainerAllocator>
 struct arm_
 {
@@ -42,29 +39,28 @@ struct arm_
 
 
 
-  typedef boost::shared_ptr< ::Soro::Messages::arm_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::Soro::Messages::arm_<ContainerAllocator> const> ConstPtr;
+  typedef boost::shared_ptr< ::message_gen::arm_<ContainerAllocator> > Ptr;
+  typedef boost::shared_ptr< ::message_gen::arm_<ContainerAllocator> const> ConstPtr;
 
 }; // struct arm_
 
-typedef ::Soro::Messages::arm_<std::allocator<void> > arm;
+typedef ::message_gen::arm_<std::allocator<void> > arm;
 
-typedef boost::shared_ptr< ::Soro::Messages::arm > armPtr;
-typedef boost::shared_ptr< ::Soro::Messages::arm const> armConstPtr;
+typedef boost::shared_ptr< ::message_gen::arm > armPtr;
+typedef boost::shared_ptr< ::message_gen::arm const> armConstPtr;
 
 // constants requiring out of line definition
 
 
 
 template<typename ContainerAllocator>
-std::ostream& operator<<(std::ostream& s, const ::Soro::Messages::arm_<ContainerAllocator> & v)
+std::ostream& operator<<(std::ostream& s, const ::message_gen::arm_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::Soro::Messages::arm_<ContainerAllocator> >::stream(s, "", v);
+ros::message_operations::Printer< ::message_gen::arm_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
-} // namespace Messages
-} // namespace Soro
+} // namespace message_gen
 
 namespace ros
 {
@@ -82,62 +78,62 @@ namespace message_traits
 
 
 template <class ContainerAllocator>
-struct IsFixedSize< ::Soro::Messages::arm_<ContainerAllocator> >
+struct IsFixedSize< ::message_gen::arm_<ContainerAllocator> >
   : FalseType
   { };
 
 template <class ContainerAllocator>
-struct IsFixedSize< ::Soro::Messages::arm_<ContainerAllocator> const>
+struct IsFixedSize< ::message_gen::arm_<ContainerAllocator> const>
   : FalseType
   { };
 
 template <class ContainerAllocator>
-struct IsMessage< ::Soro::Messages::arm_<ContainerAllocator> >
+struct IsMessage< ::message_gen::arm_<ContainerAllocator> >
   : TrueType
   { };
 
 template <class ContainerAllocator>
-struct IsMessage< ::Soro::Messages::arm_<ContainerAllocator> const>
+struct IsMessage< ::message_gen::arm_<ContainerAllocator> const>
   : TrueType
   { };
 
 template <class ContainerAllocator>
-struct HasHeader< ::Soro::Messages::arm_<ContainerAllocator> >
+struct HasHeader< ::message_gen::arm_<ContainerAllocator> >
   : FalseType
   { };
 
 template <class ContainerAllocator>
-struct HasHeader< ::Soro::Messages::arm_<ContainerAllocator> const>
+struct HasHeader< ::message_gen::arm_<ContainerAllocator> const>
   : FalseType
   { };
 
 
 template<class ContainerAllocator>
-struct MD5Sum< ::Soro::Messages::arm_<ContainerAllocator> >
+struct MD5Sum< ::message_gen::arm_<ContainerAllocator> >
 {
   static const char* value()
   {
     return "ac9c931aaf6ce145ea0383362e83c70b";
   }
 
-  static const char* value(const ::Soro::Messages::arm_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::message_gen::arm_<ContainerAllocator>&) { return value(); }
   static const uint64_t static_value1 = 0xac9c931aaf6ce145ULL;
   static const uint64_t static_value2 = 0xea0383362e83c70bULL;
 };
 
 template<class ContainerAllocator>
-struct DataType< ::Soro::Messages::arm_<ContainerAllocator> >
+struct DataType< ::message_gen::arm_<ContainerAllocator> >
 {
   static const char* value()
   {
     return "message_gen/arm";
   }
 
-  static const char* value(const ::Soro::Messages::arm_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::message_gen::arm_<ContainerAllocator>&) { return value(); }
 };
 
 template<class ContainerAllocator>
-struct Definition< ::Soro::Messages::arm_<ContainerAllocator> >
+struct Definition< ::message_gen::arm_<ContainerAllocator> >
 {
   static const char* value()
   {
@@ -145,7 +141,7 @@ struct Definition< ::Soro::Messages::arm_<ContainerAllocator> >
 ";
   }
 
-  static const char* value(const ::Soro::Messages::arm_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::message_gen::arm_<ContainerAllocator>&) { return value(); }
 };
 
 } // namespace message_traits
@@ -156,7 +152,7 @@ namespace ros
 namespace serialization
 {
 
-  template<class ContainerAllocator> struct Serializer< ::Soro::Messages::arm_<ContainerAllocator> >
+  template<class ContainerAllocator> struct Serializer< ::message_gen::arm_<ContainerAllocator> >
   {
     template<typename Stream, typename T> inline static void allInOne(Stream& stream, T m)
     {
@@ -175,9 +171,9 @@ namespace message_operations
 {
 
 template<class ContainerAllocator>
-struct Printer< ::Soro::Messages::arm_<ContainerAllocator> >
+struct Printer< ::message_gen::arm_<ContainerAllocator> >
 {
-  template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::Soro::Messages::arm_<ContainerAllocator>& v)
+  template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::message_gen::arm_<ContainerAllocator>& v)
   {
     s << indent << "data[]" << std::endl;
     for (size_t i = 0; i < v.data.size(); ++i)

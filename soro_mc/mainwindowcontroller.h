@@ -20,41 +20,32 @@ class MainWindowController : public QObject
 {
     Q_OBJECT
 public:
-    enum MessageType {
-        MessageType_Info,
-        MessageType_Warning,
-        MessageType_Error
-    };
 
     explicit MainWindowController(QQmlEngine *engine, QObject *parent = 0);
 
     void stopVideo(int cameraId, QString pattern="snow");
     void playVideo(int cameraId, VideoFormat format);
-    void notify(MessageType type, QString title, QString message);
-    void notifyAll(MessageType type, QString title, QString message);
+    void notify(int type, QString title, QString message);
+    void notifyAll(int type, QString title, QString message);
 
 private:
     void clearVideo(int cameraId);
 
-    void onNewNotification(const Soro::Messages::notification msg);
-
-    int messageTypeToInt(MessageType type);
-    MessageType intToMessageType(int type);
+    void onNewNotification(message_gen::notification msg);
 
     QQuickWindow *_window;
     QGst::PipelinePtr _videoPipelines[8];
-    QGst::ElementPtr _videoSinks[8];
     QGst::BinPtr _videoBins[8];
 
     ros::Publisher _notifyPublisher;
     ros::Subscriber _notifySubscriber;
 
 
-private slots:
+private Q_SLOTS:
     void onGamepadButtonPressed(SDL_GameControllerButton button, bool pressed);
     void onConnectedChanged(bool connected);
-    void onLatencyUpdated(int latency);
-    void onBitrateUpdated(int bitsUp, int bitsDown);
+    void onLatencyUpdated(quint32 latency);
+    void onBitrateUpdated(quint64 bitsUp, quint64 bitsDown);
 };
 
 } // namespace Soro

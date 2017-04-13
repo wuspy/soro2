@@ -89,7 +89,7 @@ void GamepadController::updateIfChangedAxis(SDL_GameControllerAxis axis, qint16 
     if (*currentValue != temp)
     {
         *currentValue = temp;
-        emit axisChanged(axis, convertToFloatWithDeadzone(temp, _deadzone));
+        Q_EMIT axisChanged(axis, convertToFloatWithDeadzone(temp, _deadzone));
     }
 }
 
@@ -99,7 +99,7 @@ void GamepadController::updateIfChangedButton(SDL_GameControllerButton button, b
     if (*currentValue != temp)
     {
         *currentValue = temp;
-        emit buttonPressed(button, temp);
+        Q_EMIT buttonPressed(button, temp);
     }
 }
 
@@ -132,7 +132,7 @@ void GamepadController::timerEvent(QTimerEvent *e)
             updateIfChangedButton(SDL_CONTROLLER_BUTTON_DPAD_LEFT, &_dpadLeft);
             updateIfChangedButton(SDL_CONTROLLER_BUTTON_DPAD_DOWN, &_dpadDown);
             updateIfChangedButton(SDL_CONTROLLER_BUTTON_DPAD_RIGHT, &_dpadRight);
-            emit poll();
+            Q_EMIT poll();
         }
         else
         {
@@ -161,7 +161,7 @@ void GamepadController::setGamepad(SDL_GameController *controller)
         _gameController = controller;
         _gamepadName = _gameController ? QString(SDL_GameControllerName(_gameController)) : "";
         Logger::logInfo(LOG_TAG, "Active controller is \'" + _gamepadName + "\'");
-        emit gamepadChanged(isGamepadConnected(), _gamepadName);
+        Q_EMIT gamepadChanged(isGamepadConnected(), _gamepadName);
     }
 }
 }

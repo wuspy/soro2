@@ -43,7 +43,7 @@ public:
     void updateIfChangedAxis(SDL_GameControllerAxis axis, qint16 *currentValue);
     void updateIfChangedButton(SDL_GameControllerButton button, bool *currentValue);
 
-signals:
+Q_SIGNALS:
     /* Emitted when a gamepad button is pressed */
     void buttonPressed(SDL_GameControllerButton button, bool isPressed);
     /* Emitted when a gamepad joystick is moved */

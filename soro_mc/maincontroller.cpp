@@ -132,39 +132,19 @@ void MainController::initInternal()
     gamepadMap.close();
 
     //
-    // Start master controller process
-    //
-    if (_settingsModel->getIsMaster()) {
-        Logger::logInfo(LogTag, "Starting master controller process...");
-        _masterController = new MasterController(this);
-
-    }
-
-    //
     // Setup ROS
     //
     Logger::logInfo(LogTag, "Initializing ROS...");
     try
     {
-        if (_settingsModel->getIsMaster())
+        Logger::logInfo(LogTag, "Waiting for broadcast from master...");
+        _rosInitUdpSocket = new QUdpSocket(this);
+        if (!_rosInitUdpSocket->bind(SORO_MC_BROADCAST_PORT))
         {
-            // We are the master mission control
-            Logger::logInfo(LogTag, "This is not the master mission control, waiting for broadcast from master");
-            setenv("ROS_MASTER_URI", QString("http://localhost:%1").arg(SORO_MC_ROS_MASTER_PORT).toLocal8Bit().constData(), 1);
-            onRosMasterFound();
+            MainController::panic(QString("Cannot bind to mission control UDP broadcast port: %1").arg(_rosInitUdpSocket->errorString()));
+            return;
         }
-        else
-        {
-            Logger::logInfo(LogTag, "This is the master mission control, starting ROS master");
-            // We are not the master mission control, we should try to find the ros master
-            _rosInitUdpSocket = new QUdpSocket(this);
-            if (!_rosInitUdpSocket->bind(SORO_MC_BROADCAST_PORT))
-            {
-                MainController::panic(QString("Cannot bind to mission control UDP broadcast port: %1").arg(_rosInitUdpSocket->errorString()));
-                return;
-            }
-            connect(_rosInitUdpSocket, SIGNAL(readyRead()), this, SLOT(rosInitUdpReadyRead()));
-        }
+        connect(_rosInitUdpSocket, SIGNAL(readyRead()), this, SLOT(rosInitUdpReadyRead()));
     }
     catch (QString err)
     {
@@ -300,7 +280,7 @@ void MainController::onRosMasterFound() {
     }
 
     Logger::logInfo(LogTag, "Initialization complete");
-    emit initialized();
+    Q_EMIT initialized();
 }
 
 //
@@ -358,7 +338,7 @@ QString MainController::genId()
         id = "mc_camera";
         break;
     case SettingsModel::ObserverConfiguration:
-        id = "mc_observer";
+        id = "mc_observer_";
         for(int i = 0; i < 12; ++i) {
             id.append(chars.at(qrand() % chars.length()));
         }

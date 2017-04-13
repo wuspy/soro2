@@ -39,7 +39,7 @@ void CameraSettingsModel::load() {
     }
 
     jsonCamerasArray = jsonDocument.object()["cameras"].toArray();
-    foreach (QJsonValue jsonCamera, jsonCamerasArray)
+    Q_FOREACH (QJsonValue jsonCamera, jsonCamerasArray)
     {
         Camera camera;
         camera.name = jsonCamera.toObject()["name"].toString();

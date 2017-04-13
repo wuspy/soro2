@@ -10,7 +10,6 @@
 #include "libsoromc/camerasettingsmodel.h"
 
 #include "gamepadcontroller.h"
-#include "mastercontroller.h"
 #include "gamepadcontroller.h"
 #include "mainwindowcontroller.h"
 #include "connectionstatuscontroller.h"
@@ -33,7 +32,7 @@ public:
     static ConnectionStatusController* getConnectionStatusController();
     static ros::NodeHandle* getNodeHandle();
 
-signals:
+Q_SIGNALS:
     void initialized();
 
 private:
@@ -48,14 +47,13 @@ private:
     QString _mcId;
     QQmlEngine *_qmlEngine = nullptr;
     GamepadController* _gamepadController = nullptr;
-    MasterController *_masterController = nullptr;
     SettingsModel* _settingsModel = nullptr;
     CameraSettingsModel *_cameraSettingsModel = nullptr;
     MainWindowController *_mainWindowController = nullptr;
     DriveControlSystem *_driveControlSystem = nullptr;
     ConnectionStatusController *_connectionStatusController = nullptr;
 
-private slots:
+private Q_SLOTS:
     void initInternal();
     void onRosMasterFound();
     void rosInitUdpReadyRead();

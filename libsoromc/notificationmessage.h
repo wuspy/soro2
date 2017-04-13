@@ -16,11 +16,8 @@
 #include <ros/message_operations.h>
 
 
-namespace Soro
+namespace message_gen
 {
-namespace Messages
-{
-
 template <class ContainerAllocator>
 struct notification_
 {
@@ -52,29 +49,28 @@ struct notification_
 
 
 
-  typedef boost::shared_ptr< ::Soro::Messages::notification_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::Soro::Messages::notification_<ContainerAllocator> const> ConstPtr;
+  typedef boost::shared_ptr< ::message_gen::notification_<ContainerAllocator> > Ptr;
+  typedef boost::shared_ptr< ::message_gen::notification_<ContainerAllocator> const> ConstPtr;
 
 }; // struct notification_
 
-typedef ::Soro::Messages::notification_<std::allocator<void> > notification;
+typedef ::message_gen::notification_<std::allocator<void> > notification;
 
-typedef boost::shared_ptr< ::Soro::Messages::notification > notificationPtr;
-typedef boost::shared_ptr< ::Soro::Messages::notification const> notificationConstPtr;
+typedef boost::shared_ptr< ::message_gen::notification > notificationPtr;
+typedef boost::shared_ptr< ::message_gen::notification const> notificationConstPtr;
 
 // constants requiring out of line definition
 
 
 
 template<typename ContainerAllocator>
-std::ostream& operator<<(std::ostream& s, const ::Soro::Messages::notification_<ContainerAllocator> & v)
+std::ostream& operator<<(std::ostream& s, const ::message_gen::notification_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::Soro::Messages::notification_<ContainerAllocator> >::stream(s, "", v);
+ros::message_operations::Printer< ::message_gen::notification_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
-} // namespace Messages
-} // namespace Soro
+} // namespace message_gen
 
 namespace ros
 {
@@ -92,62 +88,62 @@ namespace message_traits
 
 
 template <class ContainerAllocator>
-struct IsFixedSize< ::Soro::Messages::notification_<ContainerAllocator> >
+struct IsFixedSize< ::message_gen::notification_<ContainerAllocator> >
   : FalseType
   { };
 
 template <class ContainerAllocator>
-struct IsFixedSize< ::Soro::Messages::notification_<ContainerAllocator> const>
+struct IsFixedSize< ::message_gen::notification_<ContainerAllocator> const>
   : FalseType
   { };
 
 template <class ContainerAllocator>
-struct IsMessage< ::Soro::Messages::notification_<ContainerAllocator> >
+struct IsMessage< ::message_gen::notification_<ContainerAllocator> >
   : TrueType
   { };
 
 template <class ContainerAllocator>
-struct IsMessage< ::Soro::Messages::notification_<ContainerAllocator> const>
+struct IsMessage< ::message_gen::notification_<ContainerAllocator> const>
   : TrueType
   { };
 
 template <class ContainerAllocator>
-struct HasHeader< ::Soro::Messages::notification_<ContainerAllocator> >
+struct HasHeader< ::message_gen::notification_<ContainerAllocator> >
   : FalseType
   { };
 
 template <class ContainerAllocator>
-struct HasHeader< ::Soro::Messages::notification_<ContainerAllocator> const>
+struct HasHeader< ::message_gen::notification_<ContainerAllocator> const>
   : FalseType
   { };
 
 
 template<class ContainerAllocator>
-struct MD5Sum< ::Soro::Messages::notification_<ContainerAllocator> >
+struct MD5Sum< ::message_gen::notification_<ContainerAllocator> >
 {
   static const char* value()
   {
     return "9106a60b27669e93bbbdcc7e8010c5ec";
   }
 
-  static const char* value(const ::Soro::Messages::notification_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::message_gen::notification_<ContainerAllocator>&) { return value(); }
   static const uint64_t static_value1 = 0x9106a60b27669e93ULL;
   static const uint64_t static_value2 = 0xbbbdcc7e8010c5ecULL;
 };
 
 template<class ContainerAllocator>
-struct DataType< ::Soro::Messages::notification_<ContainerAllocator> >
+struct DataType< ::message_gen::notification_<ContainerAllocator> >
 {
   static const char* value()
   {
     return "message_gen/notification";
   }
 
-  static const char* value(const ::Soro::Messages::notification_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::message_gen::notification_<ContainerAllocator>&) { return value(); }
 };
 
 template<class ContainerAllocator>
-struct Definition< ::Soro::Messages::notification_<ContainerAllocator> >
+struct Definition< ::message_gen::notification_<ContainerAllocator> >
 {
   static const char* value()
   {
@@ -157,7 +153,7 @@ string message\n\
 ";
   }
 
-  static const char* value(const ::Soro::Messages::notification_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::message_gen::notification_<ContainerAllocator>&) { return value(); }
 };
 
 } // namespace message_traits
@@ -168,7 +164,7 @@ namespace ros
 namespace serialization
 {
 
-  template<class ContainerAllocator> struct Serializer< ::Soro::Messages::notification_<ContainerAllocator> >
+  template<class ContainerAllocator> struct Serializer< ::message_gen::notification_<ContainerAllocator> >
   {
     template<typename Stream, typename T> inline static void allInOne(Stream& stream, T m)
     {
@@ -189,9 +185,9 @@ namespace message_operations
 {
 
 template<class ContainerAllocator>
-struct Printer< ::Soro::Messages::notification_<ContainerAllocator> >
+struct Printer< ::message_gen::notification_<ContainerAllocator> >
 {
-  template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::Soro::Messages::notification_<ContainerAllocator>& v)
+  template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::message_gen::notification_<ContainerAllocator>& v)
   {
     s << indent << "type: ";
     Printer<uint8_t>::stream(s, indent + "  ", v.type);

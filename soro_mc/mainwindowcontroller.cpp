@@ -2,10 +2,13 @@
 #include "maincontroller.h"
 #include "qquickgstreamersurface.h"
 #include "libsoromc/constants.h"
+#include "libsoromc/logger.h"
 
 #include <QQmlComponent>
 
 #include <Qt5GStreamer/QGst/ElementFactory>
+
+#define LogTag "MainWindowController"
 
 namespace Soro {
 
@@ -44,22 +47,24 @@ MainWindowController::MainWindowController(QQmlEngine *engine, QObject *parent) 
     // Setup ROS communication
     //
 
-    _notifyPublisher = MainController::getNodeHandle()->advertise<Soro::Messages::notification>("notification", 10);
+    Logger::logInfo(LogTag, "Creating ROS publisher and subscriber for notificaiton topic...");
+    _notifyPublisher = MainController::getNodeHandle()->advertise<message_gen::notification>("notification", 10);
     _notifySubscriber = MainController::getNodeHandle()->subscribe
-            <Soro::Messages::notification, Soro::MainWindowController>
+            <message_gen::notification, Soro::MainWindowController>
             ("notification", 10, &MainWindowController::onNewNotification, this);
+    Logger::logInfo(LogTag, "ROS publisher and subscriber created");
 
     // Connect to gamepad events
-    connect(MainController::getGamepadController(), SIGNAL(buttonPressed(SDL_GameControllerButton,bool)),
-            this, SLOT(onGamepadButtonPressed(SDL_GameControllerButton,bool)));
+    connect(MainController::getGamepadController(), &GamepadController::buttonPressed,
+            this, &MainWindowController::onGamepadButtonPressed);
 
     // Connect to connection events
-    connect(MainController::getConnectionStatusController(), SIGNAL(bitrateUpdate(int,int)),
-            this, SLOT(onBitrateUpdated(int,int)));
-    connect(MainController::getConnectionStatusController(), SIGNAL(latencyUpdate(int)),
-            this, SLOT(onLatencyUpdated(int)));
-    connect(MainController::getConnectionStatusController(), SIGNAL(connectedChanged(bool)),
-            this, SLOT(onConnectedChanged(bool)));
+    connect(MainController::getConnectionStatusController(), &ConnectionStatusController::bitrateUpdate,
+            this, &MainWindowController::onBitrateUpdated);
+    connect(MainController::getConnectionStatusController(), &ConnectionStatusController::latencyUpdate,
+            this, &MainWindowController::onLatencyUpdated);
+    connect(MainController::getConnectionStatusController(), &ConnectionStatusController::connectedChanged,
+            this, &MainWindowController::onConnectedChanged);
 }
 
 void MainWindowController::clearVideo(int cameraId)
@@ -69,7 +74,6 @@ void MainWindowController::clearVideo(int cameraId)
         _videoPipelines[cameraIndex]->setState(QGst::StateNull);
         _videoPipelines[cameraIndex].clear();
         _videoBins[cameraIndex].clear();
-        _videoSinks[cameraIndex].clear();
     }
 }
 
@@ -79,16 +83,13 @@ void MainWindowController::stopVideo(int cameraId, QString pattern)
     int cameraIndex = MainController::getCameraSettingsModel()->getCameraIndexById(cameraId);
     QGst::PipelinePtr pipeline = QGst::Pipeline::create(QString("camera%1Pipeline").arg(cameraId).toLatin1().constData());
     QGst::BinPtr source = QGst::Bin::fromDescription(QString("videotestsrc pattern=%1 ! video/x-raw,width=640,height=480 ! videoconvert").arg(pattern));
-    QGst::ElementPtr sink = QGst::ElementFactory::make("qt5videosink");
     QQuickGStreamerSurface *surface = qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("video%1Surface").arg(cameraIndex).toLatin1().constData()));
 
     _videoPipelines[cameraIndex] = pipeline;
     _videoBins[cameraIndex] = source;
-    _videoSinks[cameraIndex] = sink;
 
-    pipeline->add(source, sink);
-    source->link(sink);
-    surface->setSink(sink);
+    pipeline->add(source, surface->videoSink());
+    source->link(surface->videoSink());
     pipeline->setState(QGst::StatePlaying);
 }
 
@@ -98,34 +99,46 @@ void MainWindowController::playVideo(int cameraId, VideoFormat format)
     int cameraIndex = MainController::getCameraSettingsModel()->getCameraIndexById(cameraId);
     QGst::PipelinePtr pipeline = QGst::Pipeline::create(QString("camera%1Pipeline").arg(cameraId).toLatin1().constData());
     QGst::BinPtr source = QGst::Bin::fromDescription("udpsrc port=" + QString::number(SORO_MC_FIRST_VIDEO_PORT + cameraIndex) + " ! " + format.createGstEncodingArgs());
-    QGst::ElementPtr sink = QGst::ElementFactory::make("qt5videosink");
     QQuickGStreamerSurface *surface = qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("video%1Surface").arg(cameraIndex).toLatin1().constData()));
 
     _videoPipelines[cameraIndex] = pipeline;
     _videoBins[cameraIndex] = source;
-    _videoSinks[cameraIndex] = sink;
 
-    pipeline->add(source, sink);
-    source->link(sink);
-    surface->setSink(sink);
+    pipeline->add(source, surface->videoSink());
+    source->link(surface->videoSink());
     pipeline->setState(QGst::StatePlaying);
 }
 
-void MainWindowController::onNewNotification(const Messages::notification msg)
+void MainWindowController::onNewNotification(message_gen::notification msg)
 {
     // Show this message in the UI
-    notify(intToMessageType(msg.type), QString(msg.title.c_str()), QString(msg.message.c_str()));
+    QString title = QString(msg.title.c_str());
+    QString message = QString(msg.message.c_str());
+    notify((int)msg.type, title, message);
+
+    switch (msg.type)
+    {
+    case NOTIFICATION_TYPE_ERROR:
+        Logger::logError(LogTag, QString("Received error notification: %1 - %2 ").arg(title, message));
+        break;
+    case NOTIFICATION_TYPE_WARNING:
+        Logger::logWarn(LogTag, QString("Received warning notification: %1 - %2 ").arg(title, message));
+        break;
+    case NOTIFICATION_TYPE_INFO:
+        Logger::logInfo(LogTag, QString("Received info notification: %1 - %2 ").arg(title, message));
+        break;
+    }
 }
 
-void MainWindowController::notify(MessageType type, QString title, QString message)
+void MainWindowController::notify(int type, QString title, QString message)
 {
     //TODO
 }
 
-void MainWindowController::notifyAll(MessageType type, QString title, QString message)
+void MainWindowController::notifyAll(int type, QString title, QString message)
 {
-    Soro::Messages::notification msg;
-    msg.type = messageTypeToInt(type);
+    message_gen::notification msg;
+    msg.type = (uint8_t)type;
     msg.title = title.toStdString();
     msg.message = message.toStdString();
 
@@ -139,41 +152,15 @@ void MainWindowController::onConnectedChanged(bool connected)
     _window->setProperty("connected", connected);
 }
 
-void MainWindowController::onLatencyUpdated(int latency)
+void MainWindowController::onLatencyUpdated(quint32 latency)
 {
     _window->setProperty("latency", latency);
 }
 
-void MainWindowController::onBitrateUpdated(int bitsUp, int bitsDown)
+void MainWindowController::onBitrateUpdated(quint64 bitsUp, quint64 bitsDown)
 {
     _window->setProperty("bitrateUp", bitsUp);
     _window->setProperty("bitrateDown", bitsDown);
-}
-
-int MainWindowController::messageTypeToInt(MessageType type)
-{
-    switch (type)
-    {
-    case MessageType_Info:
-        return 0;
-    case MessageType_Warning:
-        return 1;
-    default:
-        return 2;
-    }
-}
-
-MainWindowController::MessageType MainWindowController::intToMessageType(int type)
-{
-    switch (type)
-    {
-    case 0:
-        return MessageType_Info;
-    case 1:
-        return MessageType_Warning;
-    default:
-        return MessageType_Error;
-    }
 }
 
 void MainWindowController::onGamepadButtonPressed(SDL_GameControllerButton button, bool pressed)

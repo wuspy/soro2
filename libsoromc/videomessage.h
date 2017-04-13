@@ -16,11 +16,8 @@
 #include <ros/message_operations.h>
 
 
-namespace Soro
+namespace message_gen
 {
-namespace Messages
-{
-
 template <class ContainerAllocator>
 struct video_
 {
@@ -77,29 +74,28 @@ struct video_
 
 
 
-  typedef boost::shared_ptr< ::Soro::Messages::video_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::Soro::Messages::video_<ContainerAllocator> const> ConstPtr;
+  typedef boost::shared_ptr< ::message_gen::video_<ContainerAllocator> > Ptr;
+  typedef boost::shared_ptr< ::message_gen::video_<ContainerAllocator> const> ConstPtr;
 
 }; // struct video_
 
-typedef ::Soro::Messages::video_<std::allocator<void> > video;
+typedef ::message_gen::video_<std::allocator<void> > video;
 
-typedef boost::shared_ptr< ::Soro::Messages::video > videoPtr;
-typedef boost::shared_ptr< ::Soro::Messages::video const> videoConstPtr;
+typedef boost::shared_ptr< ::message_gen::video > videoPtr;
+typedef boost::shared_ptr< ::message_gen::video const> videoConstPtr;
 
 // constants requiring out of line definition
 
 
 
 template<typename ContainerAllocator>
-std::ostream& operator<<(std::ostream& s, const ::Soro::Messages::video_<ContainerAllocator> & v)
+std::ostream& operator<<(std::ostream& s, const ::message_gen::video_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::Soro::Messages::video_<ContainerAllocator> >::stream(s, "", v);
+ros::message_operations::Printer< ::message_gen::video_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
-} // namespace Messages
-} // namespace Soro
+} // namespace message_gen
 
 namespace ros
 {
@@ -117,62 +113,62 @@ namespace message_traits
 
 
 template <class ContainerAllocator>
-struct IsFixedSize< ::Soro::Messages::video_<ContainerAllocator> >
+struct IsFixedSize< ::message_gen::video_<ContainerAllocator> >
   : TrueType
   { };
 
 template <class ContainerAllocator>
-struct IsFixedSize< ::Soro::Messages::video_<ContainerAllocator> const>
+struct IsFixedSize< ::message_gen::video_<ContainerAllocator> const>
   : TrueType
   { };
 
 template <class ContainerAllocator>
-struct IsMessage< ::Soro::Messages::video_<ContainerAllocator> >
+struct IsMessage< ::message_gen::video_<ContainerAllocator> >
   : TrueType
   { };
 
 template <class ContainerAllocator>
-struct IsMessage< ::Soro::Messages::video_<ContainerAllocator> const>
+struct IsMessage< ::message_gen::video_<ContainerAllocator> const>
   : TrueType
   { };
 
 template <class ContainerAllocator>
-struct HasHeader< ::Soro::Messages::video_<ContainerAllocator> >
+struct HasHeader< ::message_gen::video_<ContainerAllocator> >
   : FalseType
   { };
 
 template <class ContainerAllocator>
-struct HasHeader< ::Soro::Messages::video_<ContainerAllocator> const>
+struct HasHeader< ::message_gen::video_<ContainerAllocator> const>
   : FalseType
   { };
 
 
 template<class ContainerAllocator>
-struct MD5Sum< ::Soro::Messages::video_<ContainerAllocator> >
+struct MD5Sum< ::message_gen::video_<ContainerAllocator> >
 {
   static const char* value()
   {
     return "47dd319158f05e19bfd56b17a7531da7";
   }
 
-  static const char* value(const ::Soro::Messages::video_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::message_gen::video_<ContainerAllocator>&) { return value(); }
   static const uint64_t static_value1 = 0x47dd319158f05e19ULL;
   static const uint64_t static_value2 = 0xbfd56b17a7531da7ULL;
 };
 
 template<class ContainerAllocator>
-struct DataType< ::Soro::Messages::video_<ContainerAllocator> >
+struct DataType< ::message_gen::video_<ContainerAllocator> >
 {
   static const char* value()
   {
     return "message_gen/video";
   }
 
-  static const char* value(const ::Soro::Messages::video_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::message_gen::video_<ContainerAllocator>&) { return value(); }
 };
 
 template<class ContainerAllocator>
-struct Definition< ::Soro::Messages::video_<ContainerAllocator> >
+struct Definition< ::message_gen::video_<ContainerAllocator> >
 {
   static const char* value()
   {
@@ -187,7 +183,7 @@ uint8 quality\n\
 ";
   }
 
-  static const char* value(const ::Soro::Messages::video_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::message_gen::video_<ContainerAllocator>&) { return value(); }
 };
 
 } // namespace message_traits
@@ -198,7 +194,7 @@ namespace ros
 namespace serialization
 {
 
-  template<class ContainerAllocator> struct Serializer< ::Soro::Messages::video_<ContainerAllocator> >
+  template<class ContainerAllocator> struct Serializer< ::message_gen::video_<ContainerAllocator> >
   {
     template<typename Stream, typename T> inline static void allInOne(Stream& stream, T m)
     {
@@ -224,9 +220,9 @@ namespace message_operations
 {
 
 template<class ContainerAllocator>
-struct Printer< ::Soro::Messages::video_<ContainerAllocator> >
+struct Printer< ::message_gen::video_<ContainerAllocator> >
 {
-  template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::Soro::Messages::video_<ContainerAllocator>& v)
+  template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::message_gen::video_<ContainerAllocator>& v)
   {
     s << indent << "cameraId: ";
     Printer<uint8_t>::stream(s, indent + "  ", v.cameraId);

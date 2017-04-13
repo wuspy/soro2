@@ -15,7 +15,7 @@
 QT += core network
 QT -= gui
 
-CONFIG += c++11
+CONFIG += no_keywords c++11
 
 TARGET = soro_mc_master
 CONFIG += console
@@ -29,7 +29,8 @@ TEMPLATE = app
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../..
 
-SOURCES += main.cpp
+SOURCES += main.cpp \
+    roscorecontroller.cpp
 
 # Include ROS headers
 INCLUDEPATH += /opt/ros/kinetic/include/
@@ -49,3 +50,6 @@ LIBS += -L/opt/ros/kinetic/lib -lrosconsole_bridge
 LIBS += -L/opt/ros/kinetic/lib -lrosconsole_log4cxx
 LIBS += -L/opt/ros/kinetic/lib -lrostime
 LIBS += -L/opt/ros/kinetic/lib -lrospack
+
+HEADERS += \
+    roscorecontroller.h

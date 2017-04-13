@@ -9,6 +9,8 @@ QT       -= gui
 TARGET = soromc
 TEMPLATE = lib
 
+CONFIG += no_keywords c++11
+
 DEFINES += LIBSOROMC_LIBRARY
 
 BUILD_DIR = ../build/soro_mc
@@ -34,7 +36,8 @@ HEADERS +=\
     logger.h \
     armmessage.h \
     notificationmessage.h \
-    pingmessage.h
+    bitratemessage.h \
+    gimbalmessage.h
 
 # Include ROS headers
 INCLUDEPATH += /opt/ros/kinetic/include/

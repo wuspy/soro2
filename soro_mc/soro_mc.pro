@@ -14,7 +14,7 @@
 
 QT += qml quick opengl quickcontrols2 network webengine
 
-CONFIG += c++11
+CONFIG += no_keywords c++11
 
 TARGET = soro_mc
 
@@ -26,7 +26,6 @@ INCLUDEPATH += $$PWD/..
 HEADERS += \
     drivecontrolsystem.h \
     gamepadcontroller.h \
-    mastercontroller.h \
     maincontroller.h \
     mainwindowcontroller.h \
     qquickgstreamersurface.h \
@@ -34,7 +33,6 @@ HEADERS += \
 
 SOURCES += main.cpp \
     gamepadcontroller.cpp \
-    mastercontroller.cpp \
     maincontroller.cpp \
     mainwindowcontroller.cpp \
     qquickgstreamersurface.cpp \

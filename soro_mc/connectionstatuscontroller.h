@@ -4,8 +4,10 @@
 #include <QObject>
 #include <QMap>
 #include <QTimerEvent>
+#include <std_msgs/UInt64.h>
+#include <std_msgs/UInt32.h>
 
-#include <libsoromc/pingmessage.h>
+#include <libsoromc/bitratemessage.h>
 
 #include <ros/ros.h>
 
@@ -17,42 +19,33 @@ class ConnectionStatusController : public QObject
 public:
     explicit ConnectionStatusController(QObject *parent = 0);
 
-    void setBitrateUpdateInterval(int interval);
-    int getBitrateUpdateInterval() const;
-
-    void setPingRequestInterval(int interval);
-    int getPingRequestInterval() const;
-
     void setDisconnectTimeThreshold(int threshold);
     int getDisconnectTimeThreshold() const;
 
     bool isConnected() const;
 
-public slots:
-    void logBitsDown(int bits);
-    void logBitsUp(int bits);
-
-signals:
-    void latencyUpdate(int latency);
+Q_SIGNALS:
+    void latencyUpdate(quint32 latency);
     void connectedChanged(bool connected);
-    void bitrateUpdate(int bitrateUp, int bitrateDown);
+    void bitrateUpdate(quint64 bitrateUp, quint64 bitrateDown);
+
+public Q_SLOTS:
+    void logBitsUp(quint32 bits);
+    void logBitsDown(quint32 bits);
 
 protected:
     void timerEvent(QTimerEvent *e);
 
 private:
-    void onNewAckMessage(Soro::Messages::ping msg);
+    void onNewLatencyMessage(std_msgs::UInt32 msg);
+    void onNewBitrateMessage(message_gen::bitrate msg);
     void setConnected(bool connected);
 
-    ros::Publisher _pingPublisher;
-    ros::Subscriber _ackSubscriber;
-    QMap<quint64, qint64> _pingTimes;
-    int _bitsDown, _bitsUp;
-    int _updateBitrateTimerId;
-    int _bitrateUpdateInterval;
-    int _sendPingTimerId;
-    int _pingRequestInterval;
-    int _currentPingId;
+    ros::Subscriber _latencySubscriber;
+    ros::Subscriber _bitrateSubscriber;
+    ros::Publisher _bitsUpPublisher;
+    ros::Publisher _bitsDownPublisher;
+
     int _disconnectTimeThreshold;
     int _disconnectWatchdogTimerId;
     bool _connected;
