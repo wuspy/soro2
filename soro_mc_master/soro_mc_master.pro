@@ -12,14 +12,11 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-QT += core network
-QT -= gui
+QT += network qml quick widgets
 
 CONFIG += no_keywords c++11
 
 TARGET = soro_mc_master
-CONFIG += console
-CONFIG -= app_bundle
 
 BUILD_DIR = ../build/soro_mc_master
 DESTDIR = ../bin
@@ -30,11 +27,18 @@ INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../..
 
 SOURCES += main.cpp \
-    roscorecontroller.cpp
+    roscorecontroller.cpp \
+    broadcaster.cpp \
+    mainwindowcontroller.cpp \
+    maincontroller.cpp \
+    masterconnectionstatuscontroller.cpp
 
 # Include ROS headers
 INCLUDEPATH += /opt/ros/kinetic/include/
 DEPENDPATH += /opt/ros/kinetic/include/
+
+# Link against libsoromc
+LIBS += -L../lib -lsoromc
 
 # Link against ROS
 LIBS += -L/opt/ros/kinetic/lib -lroslib
@@ -52,4 +56,12 @@ LIBS += -L/opt/ros/kinetic/lib -lrostime
 LIBS += -L/opt/ros/kinetic/lib -lrospack
 
 HEADERS += \
-    roscorecontroller.h
+    roscorecontroller.h \
+    broadcaster.h \
+    mainwindowcontroller.h \
+    maincontroller.h \
+    masterconnectionstatuscontroller.h
+
+RESOURCES += \
+    qml.qrc \
+    assets.qrc

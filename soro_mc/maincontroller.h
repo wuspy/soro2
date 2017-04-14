@@ -27,7 +27,7 @@ public:
     static GamepadController* getGamepadController();
     static SettingsModel* getSettingsModel();
     static CameraSettingsModel* getCameraSettingsModel();
-    static QString getMissionControlId();
+    static QString getId();
     static MainWindowController* getMainWindowController();
     static ConnectionStatusController* getConnectionStatusController();
     static ros::NodeHandle* getNodeHandle();

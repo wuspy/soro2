@@ -26,6 +26,8 @@ public:
     void load();
 
     SettingsModel::Configuration getConfiguration() const;
+    bool getEnableHwRendering() const;
+    bool getEnableHwDecoding() const;
 
 private:
     QSettings *_settings = nullptr;

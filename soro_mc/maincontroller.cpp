@@ -139,7 +139,7 @@ void MainController::initInternal()
     {
         Logger::logInfo(LogTag, "Waiting for broadcast from master...");
         _rosInitUdpSocket = new QUdpSocket(this);
-        if (!_rosInitUdpSocket->bind(SORO_MC_BROADCAST_PORT))
+        if (!_rosInitUdpSocket->bind(SORO_MC_MASTER_BROADCAST_PORT))
         {
             MainController::panic(QString("Cannot bind to mission control UDP broadcast port: %1").arg(_rosInitUdpSocket->errorString()));
             return;
@@ -196,7 +196,7 @@ void MainController::onRosMasterFound() {
     Logger::logInfo(LogTag, QString("Calling ros::init() with master URI \'%1\'").arg(getenv("ROS_MASTER_URI")));
     try
     {
-        ros::init(argc, argv, MainController::getMissionControlId().toStdString());
+        ros::init(argc, argv, MainController::getId().toStdString());
         Logger::logInfo(LogTag, "Creating ROS NodeHandle...");
         _nodeHandle = new ros::NodeHandle;
         Logger::logInfo(LogTag, "ROS initialized");
@@ -260,7 +260,7 @@ void MainController::onRosMasterFound() {
     }
 
     //
-    // Create the QML application engine
+    // Create the QML application engine and setup QQuickGStreamerSurface
     //
     Logger::logInfo(LogTag, "Initializing QML engine...");
     qmlRegisterType<QQuickGStreamerSurface>("Soro", 1, 0, "GStreamerSurface");
@@ -287,7 +287,7 @@ void MainController::onRosMasterFound() {
 // Getters
 //
 
-QString MainController::getMissionControlId()
+QString MainController::getId()
 {
     return _self->_mcId;
 }

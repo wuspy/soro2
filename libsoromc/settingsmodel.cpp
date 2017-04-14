@@ -22,6 +22,8 @@
 #include <QJsonDocument>
 
 #define KEY_CONFIGURATION "Configuration"
+#define KEY_ENABLE_HWDECODING "EnableHwDecoding"
+#define KEY_ENABLE_HWRENDERING "EnableHwRendering"
 
 namespace Soro {
 
@@ -58,6 +60,12 @@ void SettingsModel::load()
     if (!_settings->contains(KEY_CONFIGURATION)) {
         throw QString("Entry for '%1' was not found in the settings file.").arg(KEY_CONFIGURATION);
     }
+    if (!_settings->contains(KEY_ENABLE_HWDECODING)) {
+        throw QString("Entry for '%1' was not found in the settings file.").arg(KEY_ENABLE_HWDECODING);
+    }
+    if (!_settings->contains(KEY_ENABLE_HWRENDERING)) {
+        throw QString("Entry for '%1' was not found in the settings file.").arg(KEY_ENABLE_HWRENDERING);
+    }
 }
 
 SettingsModel::Configuration SettingsModel::getConfiguration() const
@@ -68,6 +76,16 @@ SettingsModel::Configuration SettingsModel::getConfiguration() const
     if (value == "cameraoperator") return CameraOperatorConfiguration;
     if (value == "observer") return ObserverConfiguration;
     throw QString("Invalid value for 'configuration' key in settings");
+}
+
+bool SettingsModel::getEnableHwDecoding() const
+{
+    return _settings->value(KEY_ENABLE_HWDECODING).toBool();
+}
+
+bool SettingsModel::getEnableHwRendering() const
+{
+    return _settings->value(KEY_ENABLE_HWRENDERING).toBool();
 }
 
 } // namespace Soro

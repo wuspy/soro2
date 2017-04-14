@@ -5,6 +5,7 @@
 #-------------------------------------------------
 
 QT       -= gui
+QT       += network
 
 TARGET = soromc
 TEMPLATE = lib
@@ -21,7 +22,8 @@ SOURCES += \
     settingsmodel.cpp \
     videoformat.cpp \
     audioformat.cpp \
-    logger.cpp
+    logger.cpp \
+    gstreamerutil.cpp
 
 HEADERS +=\
     libsoromc_global.h \
@@ -37,7 +39,8 @@ HEADERS +=\
     armmessage.h \
     notificationmessage.h \
     bitratemessage.h \
-    gimbalmessage.h
+    gimbalmessage.h \
+    gstreamerutil.h
 
 # Include ROS headers
 INCLUDEPATH += /opt/ros/kinetic/include/

@@ -37,6 +37,9 @@ MainWindowController::MainWindowController(QQmlEngine *engine, QObject *parent) 
     {
         // Set camera name
         _window->setProperty(QString("video%1Name").arg(i).toLatin1().constData(), cameras[i].name);
+        // Set hardware rendering flag
+        qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("video%1Surface").arg(i).toLatin1().constData()))
+                ->setEnableHardwareRendering(MainController::getSettingsModel()->getEnableHwRendering());
         // Show no video pattern
         stopVideo(cameras[i].id);
     }
