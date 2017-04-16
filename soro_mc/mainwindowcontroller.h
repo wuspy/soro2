@@ -12,7 +12,7 @@
 #include <ros/ros.h>
 
 #include "libsoromc/videoformat.h"
-#include "libsoromc/notificationmessage.h"
+#include "ros_generated/notification.h"
 
 namespace Soro {
 
@@ -31,7 +31,7 @@ public:
 private:
     void clearVideo(int cameraId);
 
-    void onNewNotification(message_gen::notification msg);
+    void onNewNotification(ros_generated::notification msg);
 
     QQuickWindow *_window;
     QGst::PipelinePtr _videoPipelines[8];

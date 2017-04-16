@@ -38,24 +38,16 @@ HEADERS +=\
     camerasettingsmodel.h \
     constants.h \
     settingsmodel.h \
-    drivemessage.h \
-    videomessage.h \
     mediaformat.h \
     videoformat.h \
     audioformat.h \
     logger.h \
     armmessage.h \
-    notificationmessage.h \
-    bitratemessage.h \
-    gimbalmessage.h \
     gstreamerutil.h
 
 # Include ROS headers
 INCLUDEPATH += /opt/ros/kinetic/include/
 DEPENDPATH += /opt/ros/kinetic/include/
-
-# Link against ros_generated
-LIBS += -L../lib -lros_generated
 
 # Link against SDL2
 LIBS += -lSDL2

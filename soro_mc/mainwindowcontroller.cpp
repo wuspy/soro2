@@ -67,9 +67,9 @@ MainWindowController::MainWindowController(QQmlEngine *engine, QObject *parent) 
     //
 
     Logger::logInfo(LogTag, "Creating ROS publisher and subscriber for notificaiton topic...");
-    _notifyPublisher = MainController::getNodeHandle()->advertise<message_gen::notification>("notification", 10);
+    _notifyPublisher = MainController::getNodeHandle()->advertise<ros_generated::notification>("notification", 10);
     _notifySubscriber = MainController::getNodeHandle()->subscribe
-            <message_gen::notification, Soro::MainWindowController>
+            <ros_generated::notification, Soro::MainWindowController>
             ("notification", 10, &MainWindowController::onNewNotification, this);
     Logger::logInfo(LogTag, "ROS publisher and subscriber created");
 
@@ -128,7 +128,7 @@ void MainWindowController::playVideo(int cameraId, VideoFormat format)
     pipeline->setState(QGst::StatePlaying);
 }
 
-void MainWindowController::onNewNotification(message_gen::notification msg)
+void MainWindowController::onNewNotification(ros_generated::notification msg)
 {
     // Show this message in the UI
     QString title = QString(msg.title.c_str());
@@ -156,7 +156,7 @@ void MainWindowController::notify(int type, QString title, QString message)
 
 void MainWindowController::notifyAll(int type, QString title, QString message)
 {
-    message_gen::notification msg;
+    ros_generated::notification msg;
     msg.type = (uint8_t)type;
     msg.title = title.toStdString();
     msg.message = message.toStdString();

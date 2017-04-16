@@ -18,10 +18,8 @@ SUBDIRS =\
     soro_mc \
     soro_mc_master \
     tests \
-    libsoromc \
-    ros_generated
+    libsoromc
 
-libsoromc.depends = ros_generated
-soro_mc.depends = libsoromc ros_generated
-soro_mc_master.depends = libsoromc ros_generated
-tests.depends = soro_mc soro_mc_master libsoromc ros_generated
+soro_mc.depends = libsoromc
+soro_mc_master.depends = libsoromc
+tests.depends = soro_mc soro_mc_master libsoromc

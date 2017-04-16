@@ -30,16 +30,16 @@ DriveControlSystem::DriveControlSystem(QObject *parent) : QObject(parent)
     // TODO allow adjustment of send interval
     _sendTimerId = startTimer(20);
     Logger::logInfo(LogTag, "Creating publisher...");
-    _drivePublisher = MainController::getNodeHandle()->advertise<message_gen::drive>("drive", 1);
+    _drivePublisher = MainController::getNodeHandle()->advertise<ros_generated::drive>("drive", 1);
     Logger::logInfo(LogTag, "Publisher created");
 }
 
-message_gen::drive DriveControlSystem::buildDriveMessage()
+ros_generated::drive DriveControlSystem::buildDriveMessage()
 {
     // TODO support different input modes
     qint8 leftY = MainController::getGamepadController()->getAxisValue(SDL_CONTROLLER_AXIS_LEFTY) * -0.5 * (INT8_MAX - 1);
     qint8 rightY = MainController::getGamepadController()->getAxisValue(SDL_CONTROLLER_AXIS_RIGHTY) * -0.5 * (INT8_MAX - 1);
-    message_gen::drive driveMessage;
+    ros_generated::drive driveMessage;
     driveMessage.wheelBL = leftY;
     driveMessage.wheelML = leftY;
     driveMessage.wheelFL = leftY;
@@ -55,7 +55,7 @@ void DriveControlSystem::timerEvent(QTimerEvent* e)
 {
     if(e->timerId() == _sendTimerId)
     {
-        message_gen::drive driveMessage = buildDriveMessage();
+        ros_generated::drive driveMessage = buildDriveMessage();
         _drivePublisher.publish(driveMessage);
         MainController::getConnectionStatusController()->logBitsUp(6 * 8);
     }

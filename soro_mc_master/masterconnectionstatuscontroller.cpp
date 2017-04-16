@@ -39,7 +39,7 @@ MasterConnectionStatusController::MasterConnectionStatusController
     if (!_bitsDownSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for bits_down_log topic");
 
     Logger::logInfo(LogTag, "Creating ROS publisher for bitrate topic...");
-    _bitratePublisher = _nh.advertise<message_gen::bitrate>("bitrate", 1);
+    _bitratePublisher = _nh.advertise<ros_generated::bitrate>("bitrate", 1);
     if (!_bitratePublisher) MainController::panic(LogTag, "Failed to create ROS publisher for bitrate topic");
 
     Logger::logInfo(LogTag, "Creating ROS publisher for bits_up_log topic...");
@@ -85,7 +85,7 @@ void MasterConnectionStatusController::onNewLatency(quint32 latency)
 
     std_msgs::UInt32 msg;
     msg.data = latency;
-    _latencyPublisher.publish<std_msgs::UInt32>(msg);
+    _latencyPublisher.publish(msg);
 
     Q_EMIT latencyUpdate(latency);
 }
@@ -119,12 +119,12 @@ void MasterConnectionStatusController::timerEvent(QTimerEvent *e)
         quint64 rateDown = (float)_bitsDown / (float)_bitrateInterval;
         _bitsUp = _bitsDown = 0;
 
-        message_gen::bitrate msg;
+        ros_generated::bitrate msg;
         msg.bitrateDown = rateDown;
         msg.bitrateUp = rateUp;
 
         // Send bitrate message on bitrate topic
-        _bitratePublisher.publish<message_gen::bitrate>(msg);
+        _bitratePublisher.publish(msg);
 
         Q_EMIT bitrateUpdate(rateUp, rateDown);
     }

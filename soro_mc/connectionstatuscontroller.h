@@ -7,7 +7,7 @@
 #include <std_msgs/UInt64.h>
 #include <std_msgs/UInt32.h>
 
-#include <libsoromc/bitratemessage.h>
+#include <ros_generated/bitrate.h>
 
 #include <ros/ros.h>
 
@@ -38,7 +38,7 @@ protected:
 
 private:
     void onNewLatencyMessage(std_msgs::UInt32 msg);
-    void onNewBitrateMessage(message_gen::bitrate msg);
+    void onNewBitrateMessage(ros_generated::bitrate msg);
     void setConnected(bool connected);
 
     ros::Subscriber _latencySubscriber;

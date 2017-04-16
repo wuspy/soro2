@@ -41,9 +41,6 @@ DEPENDPATH += /opt/ros/kinetic/include/
 # Link against libsoromc
 LIBS += -L../lib -lsoromc
 
-# Link against ros_generated
-LIBS += -L../lib -lros_generated
-
 # Link against ROS
 LIBS += -L/opt/ros/kinetic/lib -lroslib
 LIBS += -L/opt/ros/kinetic/lib -lroscpp

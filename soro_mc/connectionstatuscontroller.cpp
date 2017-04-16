@@ -31,7 +31,7 @@ ConnectionStatusController::ConnectionStatusController(QObject *parent) : QObjec
 
     Logger::logInfo(LogTag, "Creating ROS subscriber for bitrate topic...");
     _bitrateSubscriber = MainController::getNodeHandle()->subscribe
-            <message_gen::bitrate, Soro::ConnectionStatusController>
+            <ros_generated::bitrate, Soro::ConnectionStatusController>
             ("bitrate", 1, &ConnectionStatusController::onNewBitrateMessage, this);
 
     Logger::logInfo(LogTag, "Creating ROS publisher for bits_up_log topic...");
@@ -57,7 +57,7 @@ int ConnectionStatusController::getDisconnectTimeThreshold() const
     return _disconnectTimeThreshold;
 }
 
-void ConnectionStatusController::onNewBitrateMessage(message_gen::bitrate msg)
+void ConnectionStatusController::onNewBitrateMessage(ros_generated::bitrate msg)
 {
     Q_EMIT bitrateUpdate((quint64)msg.bitrateUp, (quint64)msg.bitrateDown);
 }
@@ -77,14 +77,14 @@ void ConnectionStatusController::logBitsDown(quint32 bits)
 {
     std_msgs::UInt32 msg;
     msg.data = bits;
-    _bitsDownPublisher.publish<std_msgs::UInt32>(msg);
+    _bitsDownPublisher.publish(msg);
 }
 
 void ConnectionStatusController::logBitsUp(quint32 bits)
 {
     std_msgs::UInt32 msg;
     msg.data = bits;
-    _bitsUpPublisher.publish<std_msgs::UInt32>(msg);
+    _bitsUpPublisher.publish(msg);
 }
 
 bool ConnectionStatusController::isConnected() const

@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <gamepadcontroller.h>
-#include "libsoromc/drivemessage.h"
+#include "ros_generated/drive.h"
 #include "ros/ros.h"
 #include <QTimerEvent>
 
@@ -17,7 +17,7 @@ public:
     explicit DriveControlSystem(QObject *parent = 0);
 
 private:
-    message_gen::drive buildDriveMessage();
+    ros_generated::drive buildDriveMessage();
 
     QString _gamepadName;
     ros::Publisher _drivePublisher;

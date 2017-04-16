@@ -9,7 +9,7 @@
 #include <std_msgs/UInt32.h>
 #include <ros_generated/ping.h>
 
-#include "libsoromc/bitratemessage.h"
+#include "ros_generated/bitrate.h"
 #include "pingworker.h"
 
 #include <ros/ros.h>
