@@ -5,13 +5,15 @@
 #include <QQmlEngine>
 #include <QQuickWindow>
 
+namespace Soro {
+
 class MainWindowController : public QObject
 {
     Q_OBJECT
 public:
     explicit MainWindowController(QQmlEngine *engine, QObject *parent = 0);
 
-private Q_SLOTS:
+public Q_SLOTS:
     void onBitrateUpdated(quint64 bitrateUp, quint64 bitrateDown);
     void onLatencyUpdated(quint32 latency);
     void onConnectedChanged(bool connected);
@@ -19,5 +21,7 @@ private Q_SLOTS:
 private:
     QQuickWindow *_window = nullptr;
 };
+
+} // namespace Soro
 
 #endif // MAINWINDOWCONTROLLER_H

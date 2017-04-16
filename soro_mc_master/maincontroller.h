@@ -6,6 +6,7 @@
 #include <QApplication>
 #include <QUdpSocket>
 
+#include "mastersettingsmodel.h"
 #include "mainwindowcontroller.h"
 #include "masterconnectionstatuscontroller.h"
 #include "roscorecontroller.h"
@@ -18,14 +19,9 @@ class MainController : public QObject
     Q_OBJECT
 public:
     static void init(QApplication *app);
-    static void panic(QString message);
+    static void panic(QString tag, QString message);
 
     static QString getId();
-    static MainWindowController* getMainWindowController();
-    static MasterConnectionStatusController* getMasterConnectionStatusController();
-    static Broadcaster* getBroadcaster();
-    static RosCoreController* getRoscoreController();
-    static ros::NodeHandle* getNodeHandle();
 
 Q_SIGNALS:
     void initialized();
@@ -33,10 +29,9 @@ Q_SIGNALS:
 private:
 
     explicit MainController(QObject *parent=0);
-
     static MainController *_self;
 
-    ros::NodeHandle *_nodeHandle = nullptr;
+    MasterSettingsModel *_masterSettings = nullptr;
     QQmlEngine *_qmlEngine = nullptr;
     MainWindowController *_mainWindowController = nullptr;
     MasterConnectionStatusController *_masterConnectionStatusController = nullptr;

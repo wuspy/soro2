@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 The University of Oklahoma.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "maincontroller.h"
 
 #include <QTimer>
@@ -16,11 +32,14 @@ MainController *MainController::_self = nullptr;
 
 MainController::MainController(QObject *parent) : QObject(parent) { }
 
-void MainController::panic(QString message)
+void MainController::panic(QString tag, QString message)
 {
-    Logger::logError(LogTag, QString("panic(): %1").arg(message));
-    QMessageBox::critical(0, "Mission Control", message);
-    QCoreApplication::exit(1);
+    Logger::logError(LogTag, QString("panic(): %1: %2").arg(tag, message));
+    QMessageBox::critical(0, "Mission Control", tag + ": " + message);
+    Logger::logInfo(LogTag, "Committing suicide...");
+    delete _self;
+    Logger::logInfo(LogTag, "Exiting with code 1");
+    exit(1);
 }
 
 void MainController::init(QApplication *app)
@@ -40,18 +59,16 @@ void MainController::init(QApplication *app)
 void MainController::initInternal()
 {
     //
+    // Load master settings
+    //
+    _masterSettings = new MasterSettingsModel;
+    _masterSettings->load();
+
+    //
     // Create roscore controller, which will start roscore
     //
     Logger::logInfo(LogTag, "Initializing roscore controller...");
-    try
-    {
-        _roscoreController = new RosCoreController(this);
-    }
-    catch (QString err)
-    {
-        panic(QString("Error initializing roscore controller: %1").arg(err));
-        return;
-    }
+    _roscoreController = new RosCoreController(this);
 
     //
     // Initialize ROS
@@ -65,17 +82,15 @@ void MainController::initInternal()
 
     setenv("ROS_MASTER_URI", QString("http://localhost:%1").arg(SORO_MC_ROS_MASTER_PORT).toLatin1().constData(), 1);
 
-    Logger::logInfo(LogTag, QString("Calling ros::init() with master URI \'%1\'").arg(getenv("ROS_MASTER_URI")));
     try
     {
+        Logger::logInfo(LogTag, QString("Calling ros::init() with master URI \'%1\'").arg(getenv("ROS_MASTER_URI")));
         ros::init(argc, argv, getId().toStdString());
-        Logger::logInfo(LogTag, "Creating ROS NodeHandle...");
-        _nodeHandle = new ros::NodeHandle;
         Logger::logInfo(LogTag, "ROS initialized");
     }
     catch(ros::InvalidNameException e)
     {
-        panic(QString("Invalid name exception initializing ROS: %1").arg(e.what()));
+        panic(LogTag, QString("Invalid name exception initializing ROS: %1").arg(e.what()));
         return;
     }
 
@@ -83,29 +98,15 @@ void MainController::initInternal()
     // Create master connection status controller
     //
     Logger::logInfo(LogTag, "Initializing master connection status controller...");
-    try
-    {
-        _masterConnectionStatusController = new MasterConnectionStatusController(this);
-    }
-    catch (QString err)
-    {
-        panic(QString("Error initializing master connection status controller: %1").arg(err));
-        return;
-    }
+    _masterConnectionStatusController = new MasterConnectionStatusController(_masterSettings->getPingInterval(),
+                                                                             _masterSettings->getBitrateInterval(),
+                                                                             this);
 
     //
     // Create broadcaster
     //
     Logger::logInfo(LogTag, "Initializing broadcaster...");
-    try
-    {
-        _broadcaster = new Broadcaster(this);
-    }
-    catch (QString err)
-    {
-        panic(QString("Error initializing broadcaster: %1").arg(err));
-        return;
-    }
+    _broadcaster = new Broadcaster(this);
 
     //
     // Create the QML application engine
@@ -117,14 +118,14 @@ void MainController::initInternal()
     // Create the main UI
     //
     Logger::logInfo(LogTag, "Creating main window...");
-    try {
-        _mainWindowController = new MainWindowController(_qmlEngine, this);
-    }
-    catch (QString err)
-    {
-        panic(QString("Error creating main window: %1").arg(err));
-        return;
-    }
+    _mainWindowController = new MainWindowController(_qmlEngine, this);
+
+    connect(_masterConnectionStatusController, &MasterConnectionStatusController::connectedChanged,
+            _mainWindowController, &MainWindowController::onConnectedChanged);
+    connect(_masterConnectionStatusController, &MasterConnectionStatusController::latencyUpdate,
+            _mainWindowController, &MainWindowController::onLatencyUpdated);
+    connect(_masterConnectionStatusController, &MasterConnectionStatusController::bitrateUpdate,
+            _mainWindowController, &MainWindowController::onBitrateUpdated);
 
     Logger::logInfo(LogTag, "Initialization complete");
     Q_EMIT initialized();
@@ -137,26 +138,6 @@ void MainController::initInternal()
 QString MainController::getId()
 {
     return "mc_master";
-}
-
-ros::NodeHandle* MainController::getNodeHandle()
-{
-    return _self->_nodeHandle;
-}
-
-MasterConnectionStatusController* MainController::getMasterConnectionStatusController()
-{
-    return _self->_masterConnectionStatusController;
-}
-
-RosCoreController* MainController::getRoscoreController()
-{
-    return _self->_roscoreController;
-}
-
-Broadcaster* MainController::getBroadcaster()
-{
-    return _self->_broadcaster;
 }
 
 } // namespace Soro

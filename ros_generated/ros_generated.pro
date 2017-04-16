@@ -12,37 +12,28 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-QT += network qml quick widgets
+QT       -= core gui
+
+TARGET = ros_generated
+TEMPLATE = lib
 
 CONFIG += no_keywords c++11
 
-TARGET = soro_mc_master
+DEFINES += ROS_GENERATED_LIBRARY
 
-BUILD_DIR = ../build/soro_mc_master
-DESTDIR = ../bin
+BUILD_DIR = ../build/soro_mc
+DESTDIR = ../lib
 
-TEMPLATE = app
-
-INCLUDEPATH += $$PWD/..
-
-SOURCES += main.cpp \
-    roscorecontroller.cpp \
-    broadcaster.cpp \
-    mainwindowcontroller.cpp \
-    maincontroller.cpp \
-    masterconnectionstatuscontroller.cpp \
-    mastersettingsmodel.cpp \
-    pingworker.cpp
+HEADERS +=\
+    ping.h \
+    pingRequest.h \
+    pingResponse.h
 
 # Include ROS headers
 INCLUDEPATH += /opt/ros/kinetic/include/
 DEPENDPATH += /opt/ros/kinetic/include/
 
-# Link against libsoromc
-LIBS += -L../lib -lsoromc
-
-# Link against ros_generated
-LIBS += -L../lib -lros_generated
+INCLUDEPATH += $$PWD/..
 
 # Link against ROS
 LIBS += -L/opt/ros/kinetic/lib -lroslib
@@ -58,16 +49,3 @@ LIBS += -L/opt/ros/kinetic/lib -lrosconsole_bridge
 LIBS += -L/opt/ros/kinetic/lib -lrosconsole_log4cxx
 LIBS += -L/opt/ros/kinetic/lib -lrostime
 LIBS += -L/opt/ros/kinetic/lib -lrospack
-
-HEADERS += \
-    roscorecontroller.h \
-    broadcaster.h \
-    mainwindowcontroller.h \
-    maincontroller.h \
-    masterconnectionstatuscontroller.h \
-    mastersettingsmodel.h \
-    pingworker.h
-
-RESOURCES += \
-    qml.qrc \
-    assets.qrc
