@@ -31,8 +31,8 @@ SOURCES += main.cpp \
     mainwindowcontroller.cpp \
     maincontroller.cpp \
     masterconnectionstatuscontroller.cpp \
-    mastersettingsmodel.cpp \
-    pingworker.cpp
+    pingworker.cpp \
+    settingsmodel.cpp
 
 # Include ROS headers
 INCLUDEPATH += /opt/ros/kinetic/include/
@@ -62,8 +62,8 @@ HEADERS += \
     mainwindowcontroller.h \
     maincontroller.h \
     masterconnectionstatuscontroller.h \
-    mastersettingsmodel.h \
-    pingworker.h
+    pingworker.h \
+    settingsmodel.h
 
 RESOURCES += \
     qml.qrc \

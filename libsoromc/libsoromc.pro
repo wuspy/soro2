@@ -26,23 +26,23 @@ DESTDIR = ../lib
 
 SOURCES += \
     camerasettingsmodel.cpp \
-    settingsmodel.cpp \
     videoformat.cpp \
     audioformat.cpp \
     logger.cpp \
-    gstreamerutil.cpp
+    gstreamerutil.cpp \
+    abstractsettingsmodel.cpp
 
 HEADERS +=\
     libsoromc_global.h \
     camerasettingsmodel.h \
     constants.h \
-    settingsmodel.h \
     mediaformat.h \
     videoformat.h \
     audioformat.h \
     logger.h \
     armmessage.h \
-    gstreamerutil.h
+    gstreamerutil.h \
+    abstractsettingsmodel.h
 
 # Include ROS headers
 INCLUDEPATH += /opt/ros/kinetic/include/

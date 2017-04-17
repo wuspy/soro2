@@ -11,6 +11,7 @@
 
 #include "ros_generated/bitrate.h"
 #include "pingworker.h"
+#include "settingsmodel.h"
 
 #include <ros/ros.h>
 
@@ -20,7 +21,7 @@ class MasterConnectionStatusController : public QObject
 {
     Q_OBJECT
 public:
-    explicit MasterConnectionStatusController(uint pingInterval, uint bitrateInterval, QObject *parent = 0);
+    explicit MasterConnectionStatusController(const SettingsModel *settings, QObject *parent = 0);
     ~MasterConnectionStatusController();
 
     bool isConnected() const;
@@ -56,10 +57,9 @@ private:
     int _bitrateCalcTimerId;
     bool _connected;
 
+    const SettingsModel *_settings;
     quint64 _bitsDown;
     quint64 _bitsUp;
-    uint _bitrateInterval;
-    uint _pingInterval;
     QThread _workerThread;
     PingWorker *_pingWorker = nullptr;
 };

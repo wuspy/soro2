@@ -22,6 +22,8 @@
 #include <QJsonValue>
 #include <QFile>
 
+#define FILE_PATH SORO_SETTINGS_DIR + "/cameras.json"
+
 namespace Soro {
 
 void CameraSettingsModel::load() {
@@ -29,24 +31,24 @@ void CameraSettingsModel::load() {
     QJsonDocument jsonDocument;
     QJsonArray jsonCamerasArray;
     QJsonParseError jsonError;
-    QFile file(SORO_CAMERA_SETTINGS_FILE);
+    QFile file(FILE_PATH);
 
     _cameras.clear();
 
     if (!file.exists())
     {
-        throw QString("The camera settings file \"%1\" does not exist.").arg(SORO_CAMERA_SETTINGS_FILE);
+        throw QString("The camera settings file \"%1\" does not exist.").arg(FILE_PATH);
     }
     if (!file.open(QIODevice::ReadOnly))
     {
-        throw QString("Error opening camera settings file \"%1\".").arg(SORO_CAMERA_SETTINGS_FILE);
+        throw QString("Error opening camera settings file \"%1\".").arg(FILE_PATH);
     }
 
     rawJson = file.readAll();
     jsonDocument = QJsonDocument::fromJson(rawJson, &jsonError);
     if (jsonError.error != QJsonParseError::NoError)
     {
-        throw QString("Error parsing camera settings file \"%1\": %2").arg(SORO_CAMERA_SETTINGS_FILE, jsonError.errorString());
+        throw QString("Error parsing camera settings file \"%1\": %2").arg(FILE_PATH, jsonError.errorString());
     }
 
     if (!jsonDocument.object().contains("cameras"))
@@ -66,7 +68,7 @@ void CameraSettingsModel::load() {
 
         if (camera.id == -1)
         {
-            throw QString("Error parsing camera settings file \"%1\": Camera entry is missing an id.").arg(SORO_CAMERA_SETTINGS_FILE);
+            throw QString("Error parsing camera settings file \"%1\": Camera entry is missing an id.").arg(FILE_PATH);
         }
         _cameras.insert(camera.id, camera);
     }

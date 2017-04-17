@@ -6,7 +6,7 @@
 #include <QQmlEngine>
 #include <QUdpSocket>
 
-#include "libsoromc/settingsmodel.h"
+#include "settingsmodel.h"
 #include "libsoromc/camerasettingsmodel.h"
 
 #include "gamepadcontroller.h"

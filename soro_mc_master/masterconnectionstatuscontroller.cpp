@@ -24,8 +24,10 @@
 namespace Soro {
 
 MasterConnectionStatusController::MasterConnectionStatusController
-            (uint pingInterval, uint bitrateInterval, QObject *parent) : QObject(parent)
+            (const SettingsModel *settings, QObject *parent) : QObject(parent)
 {
+    _settings = settings;
+
     Logger::logInfo(LogTag, "Creating ROS subscriber for bits_up_log topic...");
     _bitsUpSubscriber = _nh.subscribe
             <std_msgs::UInt32, Soro::MasterConnectionStatusController>
@@ -46,18 +48,16 @@ MasterConnectionStatusController::MasterConnectionStatusController
     _latencyPublisher = _nh.advertise<std_msgs::UInt32>("latency", 1);
     if (!_latencyPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for latency topic");
 
-    _pingWorker = new PingWorker(pingInterval);
+    _pingWorker = new PingWorker(_settings->getPingInterval());
     _pingWorker->moveToThread(&_workerThread);
     connect(_pingWorker, &PingWorker::ack, this, &MasterConnectionStatusController::onNewLatency, Qt::QueuedConnection);
 
     Logger::logInfo(LogTag, "All ROS connections created");
 
-    _bitrateInterval = bitrateInterval;
-    _pingInterval = pingInterval;
     _disconnectWatchdogTimerId = -1;
     _connected = false;
     _bitsDown = _bitsUp = 0;
-    _bitrateCalcTimerId = startTimer(bitrateInterval);
+    _bitrateCalcTimerId = startTimer(_settings->getBitrateInterval());
 }
 
 MasterConnectionStatusController::~MasterConnectionStatusController()
@@ -80,7 +80,7 @@ void MasterConnectionStatusController::onNewLatency(quint32 latency)
     if (_disconnectWatchdogTimerId != -1) {
         killTimer(_disconnectWatchdogTimerId);
     }
-    _disconnectWatchdogTimerId = startTimer(_pingInterval * 5);
+    _disconnectWatchdogTimerId = startTimer(_settings->getPingInterval() * 5);
     setConnected(true);
 
     std_msgs::UInt32 msg;
@@ -115,8 +115,8 @@ void MasterConnectionStatusController::timerEvent(QTimerEvent *e)
     }
     else if (e->timerId() == _bitrateCalcTimerId)
     {
-        quint64 rateUp = (float)_bitsUp / (float)_bitrateInterval;
-        quint64 rateDown = (float)_bitsDown / (float)_bitrateInterval;
+        quint64 rateUp = (float)_bitsUp / (float)_settings->getBitrateInterval();
+        quint64 rateDown = (float)_bitsDown / (float)_settings->getBitrateInterval();
         _bitsUp = _bitsDown = 0;
 
         ros_generated::bitrate msg;

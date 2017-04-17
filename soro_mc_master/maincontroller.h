@@ -6,7 +6,7 @@
 #include <QApplication>
 #include <QUdpSocket>
 
-#include "mastersettingsmodel.h"
+#include "settingsmodel.h"
 #include "mainwindowcontroller.h"
 #include "masterconnectionstatuscontroller.h"
 #include "roscorecontroller.h"
@@ -23,15 +23,12 @@ public:
 
     static QString getId();
 
-Q_SIGNALS:
-    void initialized();
-
 private:
 
     explicit MainController(QObject *parent=0);
     static MainController *_self;
 
-    MasterSettingsModel *_masterSettings = nullptr;
+    SettingsModel *_settings = nullptr;
     QQmlEngine *_qmlEngine = nullptr;
     MainWindowController *_mainWindowController = nullptr;
     MasterConnectionStatusController *_masterConnectionStatusController = nullptr;

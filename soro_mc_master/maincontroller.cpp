@@ -61,8 +61,14 @@ void MainController::initInternal()
     //
     // Load master settings
     //
-    _masterSettings = new MasterSettingsModel;
-    _masterSettings->load();
+    try {
+        _settings = new SettingsModel;
+        _settings->load();
+    }
+    catch (QString err)
+    {
+        panic(LogTag, QString("Error loading settings: %1").arg(err));
+    }
 
     //
     // Create roscore controller, which will start roscore
@@ -98,9 +104,7 @@ void MainController::initInternal()
     // Create master connection status controller
     //
     Logger::logInfo(LogTag, "Initializing master connection status controller...");
-    _masterConnectionStatusController = new MasterConnectionStatusController(_masterSettings->getPingInterval(),
-                                                                             _masterSettings->getBitrateInterval(),
-                                                                             this);
+    _masterConnectionStatusController = new MasterConnectionStatusController(_settings, this);
 
     //
     // Create broadcaster
@@ -128,7 +132,6 @@ void MainController::initInternal()
             _mainWindowController, &MainWindowController::onBitrateUpdated);
 
     Logger::logInfo(LogTag, "Initialization complete");
-    Q_EMIT initialized();
 }
 
 //

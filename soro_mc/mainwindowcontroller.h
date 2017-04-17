@@ -11,8 +11,8 @@
 
 #include <ros/ros.h>
 
+#include "settingsmodel.h"
 #include "libsoromc/videoformat.h"
-#include "libsoromc/settingsmodel.h"
 #include "libsoromc/camerasettingsmodel.h"
 #include "ros_generated/notification.h"
 

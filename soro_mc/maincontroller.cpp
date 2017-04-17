@@ -69,8 +69,15 @@ void MainController::initInternal()
     // Create the settings model and load the main settings file
     //
     Logger::logInfo(LogTag, "Loading settings...");
-    _settingsModel = new SettingsModel;
-    _settingsModel->load();
+    try
+    {
+        _settingsModel = new SettingsModel;
+        _settingsModel->load();
+    }
+    catch (QString err)
+    {
+        panic(LogTag, QString("Error loading settings: %1").arg(err));
+    }
 
     //
     // Create a unique identifier for this mission control, it is mainly used as a unique node name for ROS

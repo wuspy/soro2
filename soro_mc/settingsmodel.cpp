@@ -15,7 +15,7 @@
  */
 
 #include "settingsmodel.h"
-#include "constants.h"
+#include "libsoromc/constants.h"
 
 #include <QCoreApplication>
 #include <QFile>
@@ -28,48 +28,19 @@
 
 namespace Soro {
 
-SettingsModel::SettingsModel() {
-    _settings = new QSettings(SORO_MC_SETTINGS_FILE, QSettings::IniFormat);
-}
-
-SettingsModel::~SettingsModel() {
-    if (_settings) {
-        _settings->sync();
-        delete _settings;
-    }
-}
-
-void SettingsModel::load()
+QString SettingsModel::getFilePath() const
 {
-    // Check that the settings file exists
-    if (!QFile(SORO_MC_SETTINGS_FILE).exists())
-    {
-        throw QString("The settings file %1 does not exist.").arg(SORO_MC_SETTINGS_FILE);
-    }
-    _settings->sync();
+    return SORO_SETTINGS_DIR + "/mc.conf";
+}
 
-    // Check for any errors loading the settings file
-    switch (_settings->status())
-    {
-    case QSettings::AccessError:
-        throw QString("The settings file %1 could not be accessed. This could mean it's in use by another program.").arg(SORO_MC_SETTINGS_FILE);
-    case QSettings::FormatError:
-        throw QString("The settings file %1 is malformed.").arg(SORO_MC_SETTINGS_FILE);
-    default: break;
-    }
-
-    if (!_settings->contains(KEY_CONFIGURATION)) {
-        throw QString("Entry for '%1' was not found in the settings file.").arg(KEY_CONFIGURATION);
-    }
-    if (!_settings->contains(KEY_ENABLE_HWDECODING)) {
-        throw QString("Entry for '%1' was not found in the settings file.").arg(KEY_ENABLE_HWDECODING);
-    }
-    if (!_settings->contains(KEY_ENABLE_HWRENDERING)) {
-        throw QString("Entry for '%1' was not found in the settings file.").arg(KEY_ENABLE_HWRENDERING);
-    }
-    if (!_settings->contains(KEY_DRIVE_SEND_INTERVAL)) {
-        throw QString("Entry for '%1' was not found in the settings file.").arg(KEY_DRIVE_SEND_INTERVAL);
-    }
+QHash<QString, int> SettingsModel::getKeys() const
+{
+    QHash<QString, int> keys;
+    keys.insert(KEY_CONFIGURATION, QMetaType::QString);
+    keys.insert(KEY_DRIVE_SEND_INTERVAL, QMetaType::UInt);
+    keys.insert(KEY_ENABLE_HWDECODING, QMetaType::Bool);
+    keys.insert(KEY_ENABLE_HWRENDERING, QMetaType::Bool);
+    return keys;
 }
 
 SettingsModel::Configuration SettingsModel::getConfiguration() const

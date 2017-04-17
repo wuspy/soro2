@@ -4,16 +4,15 @@
 #include <QSettings>
 #include <QString>
 
+#include "libsoromc/abstractsettingsmodel.h"
+
 namespace Soro {
 
 /* Main settings class for the application, handles loading settings
  */
-class SettingsModel
+class SettingsModel: public AbstractSettingsModel
 {
 public:
-    SettingsModel();
-    ~SettingsModel();
-
     enum Configuration {
         DriverConfiguration,
         ArmOperatorConfiguration,
@@ -21,17 +20,14 @@ public:
         ObserverConfiguration
     };
 
-    /* Loads the main settings file. If unsuccessful, this will throw a QString containing an error message
-     */
-    void load();
-
     SettingsModel::Configuration getConfiguration() const;
     bool getEnableHwRendering() const;
     bool getEnableHwDecoding() const;
     uint getDriveSendInterval() const;
 
-private:
-    QSettings *_settings = nullptr;
+protected:
+    QString getFilePath() const;
+    QHash<QString, int> getKeys() const;
 };
 
 } // namespace Soro
