@@ -13,7 +13,6 @@ PingWorker::PingWorker(uint interval, QObject *parent): QObject(parent)
     Logger::logInfo(LogTag, "Creating ROS client for ping service...");
     _pingClient = _nh.serviceClient<ros_generated::ping>("ping");
     if (!_pingClient) MainController::panic(LogTag, "Failed to create ROS client for ping service");
-
     _interval = interval;
     _nextPing = 1;
     QTimer::singleShot(_interval, this, &PingWorker::work);

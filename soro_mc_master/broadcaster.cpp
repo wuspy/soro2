@@ -25,7 +25,7 @@ namespace Soro {
 Broadcaster::Broadcaster(QObject *parent) : QObject(parent)
 {
     _socket = new QUdpSocket(this);
-    if (!_socket->bind(SORO_MC_MASTER_BROADCAST_PORT))
+    if (!_socket->bind(SORO_MC_MASTER_BROADCAST_PORT, QUdpSocket::ShareAddress))
     {
         MainController::panic(LogTag, QString("Could not bind to UDP port %1. Ensure no other master processes are running.").arg(SORO_MC_MASTER_BROADCAST_PORT));
     }

@@ -157,7 +157,7 @@ void MainController::initInternal()
     {
         Logger::logInfo(LogTag, "Waiting for broadcast from master...");
         _rosInitUdpSocket = new QUdpSocket(this);
-        if (!_rosInitUdpSocket->bind(SORO_MC_MASTER_BROADCAST_PORT))
+        if (!_rosInitUdpSocket->bind(SORO_MC_MASTER_BROADCAST_PORT, QUdpSocket::ShareAddress))
         {
             MainController::panic(LogTag, QString("Cannot bind to mission control UDP broadcast port: %1").arg(_rosInitUdpSocket->errorString()));
             return;
@@ -185,7 +185,7 @@ void MainController::rosInitUdpReadyRead()
         if (strncmp(data, "master", qMax(strlen("master"), (size_t)len)) == 0)
         {
             // Received message from master mission control
-            setenv("ROS_MASTER_URI", (QString("http://%1:%2").arg(address.toString(), SORO_MC_ROS_MASTER_PORT)).toLocal8Bit().constData(), 1);
+            setenv("ROS_MASTER_URI", (QString("http://%1:%2").arg(address.toString(), QString::number(SORO_MC_ROS_MASTER_PORT))).toLocal8Bit().constData(), 1);
             disconnect(_rosInitUdpSocket, SIGNAL(readyRead()), this, SLOT(rosInitUdpReadyRead()));
             delete _rosInitUdpSocket;
             _rosInitUdpSocket = nullptr;
