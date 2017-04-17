@@ -18,12 +18,30 @@
 
 #include <ros/ros.h>
 #include <QTextStream>
+#include <QTime>
+
+//#define USE_ROSLOG
 
 namespace Soro {
 
 Logger *Logger::_self = nullptr;
 
-Logger::Logger() { }
+Logger::Logger()
+{
+    // create default text formatting
+    _stdoutFormat << "\033[31m[E]\033[0m %1 \033[35m%2\033[0m: %3";
+    _stdoutFormat << "\033[33m[W]\033[0m %1 \033[35m%2\033[0m: %3";
+    _stdoutFormat << "\033[34m[I]\033[0m %1 \033[35m%2\033[0m: %3";
+    _stdoutFormat << "[D] %1 \033[35m%2\033[0m: %3";
+
+    // default unless later set otherwise
+    _textFormat << "[E]\t%1\t%2:\t%3";
+    _textFormat << "[W]\t%1\t%2:\t%3";
+    _textFormat << "[I]\t%1\t%2:\t%3";
+    _textFormat << "[D]\t%1\t%2:\t%3";
+
+    _maxLevel = LogLevelDebug;
+}
 
 Logger* Logger::getInstance()
 {
@@ -54,41 +72,36 @@ void Logger::logError(QString tag, QString message)
     getInstance()->log(LogLevelError, tag, message);
 }
 
+void Logger::setMaxLogLevel(LogLevel level)
+{
+    getInstance()->_maxLevel = level;
+}
+
 void Logger::log(LogLevel level, QString tag, QString message) {
-    if (ros::isInitialized()) {
-        const char* formatted = QString("[%1] %2").arg(tag, message).toLocal8Bit().constData();
-        switch (level) {
-        case LogLevelDebug:
-            ROS_DEBUG(formatted);
-            break;
-        case LogLevelInfo:
-            ROS_INFO(formatted);
-            break;
-        case LogLevelWarning:
-            ROS_WARN(formatted);
-            break;
-        case LogLevelError:
-            ROS_ERROR(formatted);
-            break;
+    if (level <= _maxLevel) {
+#ifdef USE_ROSLOG
+        if (ros::isInitialized()) {
+            const char* formatted = QString("[%1] %2").arg(tag, message).toLocal8Bit().constData();
+            switch (level) {
+            case LogLevelDebug:
+                ROS_DEBUG(formatted);
+                break;
+            case LogLevelInfo:
+                ROS_INFO(formatted);
+                break;
+            case LogLevelWarning:
+                ROS_WARN(formatted);
+                break;
+            case LogLevelError:
+                ROS_ERROR(formatted);
+                break;
+            default:
+                return;
+            }
+            return;
         }
-    }
-    else {
-        QString levelString;
-        switch (level) {
-        case LogLevelDebug:
-            levelString = "DEBUG";
-            break;
-        case LogLevelInfo:
-            levelString = "INFO";
-            break;
-        case LogLevelWarning:
-            levelString = "WARN";
-            break;
-        case LogLevelError:
-            levelString = "ERROR";
-            break;
-        }
-        QString formatted = QString("[%1] [%2] %3").arg(levelString, tag, message);
+#endif
+        QString formatted = _stdoutFormat[reinterpret_cast<int&>(level) - 1].arg(QTime::currentTime().toString(), tag, message);
         QTextStream(stdout) << formatted << endl;
     }
 }
