@@ -30,7 +30,8 @@ HEADERS += \
     mainwindowcontroller.h \
     qquickgstreamersurface.h \
     connectionstatuscontroller.h \
-    settingsmodel.h
+    settingsmodel.h \
+    masterlocator.h
 
 SOURCES += main.cpp \
     gamepadcontroller.cpp \
@@ -39,7 +40,8 @@ SOURCES += main.cpp \
     qquickgstreamersurface.cpp \
     drivecontrolsystem.cpp \
     connectionstatuscontroller.cpp \
-    settingsmodel.cpp
+    settingsmodel.cpp \
+    masterlocator.cpp
 
 RESOURCES += qml.qrc \
     assets.qrc

@@ -150,56 +150,18 @@ void MainController::initInternal()
     gamepadMap.close();
 
     //
-    // Setup ROS
+    // Create master locator to find the ROS master address
     //
-    Logger::logInfo(LogTag, "Initializing ROS...");
-    try
-    {
-        Logger::logInfo(LogTag, "Waiting for broadcast from master...");
-        _rosInitUdpSocket = new QUdpSocket(this);
-        if (!_rosInitUdpSocket->bind(SORO_MC_MASTER_BROADCAST_PORT, QUdpSocket::ShareAddress))
-        {
-            MainController::panic(LogTag, QString("Cannot bind to mission control UDP broadcast port: %1").arg(_rosInitUdpSocket->errorString()));
-            return;
-        }
-        connect(_rosInitUdpSocket, SIGNAL(readyRead()), this, SLOT(rosInitUdpReadyRead()));
-    }
-    catch (QString err)
-    {
-        panic(LogTag, QString("Error initializing ROS controller: %1").arg(err));
-        return;
-    }
-
-    // Setup will resume once ROS is initialized
+    Logger::logInfo(LogTag, "Initializing master locator...");
+    _masterLocator = new MasterLocator(this);
+    Logger::logInfo(LogTag, "Waiting for broadcast from master before continuing...");
+    connect(_masterLocator, &MasterLocator::masterFound, this, &MainController::onRosMasterFound);
 }
 
-void MainController::rosInitUdpReadyRead()
+void MainController::onRosMasterFound(QHostAddress address)
 {
-    while (_rosInitUdpSocket->hasPendingDatagrams())
-    {
-        char data[100];
-        QHostAddress address;
-        quint16 port;
-        qint64 len = _rosInitUdpSocket->readDatagram(data, 100, &address, &port);
-
-        if (strncmp(data, "master", qMax(strlen("master"), (size_t)len)) == 0)
-        {
-            // Received message from master mission control
-            setenv("ROS_MASTER_URI", (QString("http://%1:%2").arg(address.toString(), QString::number(SORO_MC_ROS_MASTER_PORT))).toLocal8Bit().constData(), 1);
-            disconnect(_rosInitUdpSocket, SIGNAL(readyRead()), this, SLOT(rosInitUdpReadyRead()));
-            delete _rosInitUdpSocket;
-            _rosInitUdpSocket = nullptr;
-            onRosMasterFound();
-            break;
-        }
-        else
-        {
-            Logger::logError(LogTag, "Got invalid message on mission control broadcast port");
-        }
-    }
-}
-
-void MainController::onRosMasterFound() {
+    QString masterUrl = QString("http://%1:%2").arg(address.toString(), QString::number(SORO_MC_ROS_MASTER_PORT));
+    setenv("ROS_MASTER_URI", masterUrl.toLatin1().constData(), 1);
 
     //
     // Finish setting up ROS now that ROS_MASTER_URI is set
@@ -222,6 +184,13 @@ void MainController::onRosMasterFound() {
         panic(LogTag, QString("Invalid name exception initializing ROS: %1").arg(e.what()));
         return;
     }
+
+    //
+    // Delete master locator now that we are done with it
+    //
+    disconnect(_masterLocator, &MasterLocator::masterFound, this, &MainController::onRosMasterFound);
+    delete _masterLocator;
+    _masterLocator = nullptr;
 
     //
     // Create connection status controller

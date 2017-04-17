@@ -14,6 +14,7 @@
 #include "mainwindowcontroller.h"
 #include "connectionstatuscontroller.h"
 #include "drivecontrolsystem.h"
+#include "masterlocator.h"
 
 namespace Soro {
 
@@ -41,12 +42,12 @@ private:
     CameraSettingsModel *_cameraSettingsModel = nullptr;
     MainWindowController *_mainWindowController = nullptr;
     DriveControlSystem *_driveControlSystem = nullptr;
+    MasterLocator *_masterLocator = nullptr;
     ConnectionStatusController *_connectionStatusController = nullptr;
 
 private Q_SLOTS:
     void initInternal();
-    void onRosMasterFound();
-    void rosInitUdpReadyRead();
+    void onRosMasterFound(QHostAddress address);
 };
 
 } // namespace Soro
