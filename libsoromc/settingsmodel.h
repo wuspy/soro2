@@ -28,6 +28,7 @@ public:
     SettingsModel::Configuration getConfiguration() const;
     bool getEnableHwRendering() const;
     bool getEnableHwDecoding() const;
+    uint getDriveSendInterval() const;
 
 private:
     QSettings *_settings = nullptr;

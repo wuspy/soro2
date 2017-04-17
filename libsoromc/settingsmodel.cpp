@@ -22,6 +22,7 @@
 #include <QJsonDocument>
 
 #define KEY_CONFIGURATION "Configuration"
+#define KEY_DRIVE_SEND_INTERVAL "DriveSendInterval"
 #define KEY_ENABLE_HWDECODING "EnableHwDecoding"
 #define KEY_ENABLE_HWRENDERING "EnableHwRendering"
 
@@ -66,6 +67,9 @@ void SettingsModel::load()
     if (!_settings->contains(KEY_ENABLE_HWRENDERING)) {
         throw QString("Entry for '%1' was not found in the settings file.").arg(KEY_ENABLE_HWRENDERING);
     }
+    if (!_settings->contains(KEY_DRIVE_SEND_INTERVAL)) {
+        throw QString("Entry for '%1' was not found in the settings file.").arg(KEY_DRIVE_SEND_INTERVAL);
+    }
 }
 
 SettingsModel::Configuration SettingsModel::getConfiguration() const
@@ -76,6 +80,11 @@ SettingsModel::Configuration SettingsModel::getConfiguration() const
     if (value == "cameraoperator") return CameraOperatorConfiguration;
     if (value == "observer") return ObserverConfiguration;
     throw QString("Invalid value for 'configuration' key in settings");
+}
+
+uint SettingsModel::getDriveSendInterval() const
+{
+    return _settings->value(KEY_DRIVE_SEND_INTERVAL).toUInt();
 }
 
 bool SettingsModel::getEnableHwDecoding() const

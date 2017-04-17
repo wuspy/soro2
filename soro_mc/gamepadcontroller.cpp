@@ -50,12 +50,12 @@ bool GamepadController::isGamepadConnected() const {
     return _gameController != nullptr;
 }
 
-bool GamepadController::getButtonPressed(SDL_GameControllerButton button)
+bool GamepadController::getButtonPressed(SDL_GameControllerButton button) const
 {
     return SDL_GameControllerGetButton(_gameController, button);
 }
 
-float GamepadController::getAxisValue(SDL_GameControllerAxis axis)
+float GamepadController::getAxisValue(SDL_GameControllerAxis axis) const
 {
     return convertToFloatWithDeadzone(SDL_GameControllerGetAxis(_gameController, axis), _deadzone);
 }

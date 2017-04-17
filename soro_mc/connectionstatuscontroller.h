@@ -41,6 +41,7 @@ private:
     void onNewBitrateMessage(ros_generated::bitrate msg);
     void setConnected(bool connected);
 
+    ros::NodeHandle _nh;
     ros::Subscriber _latencySubscriber;
     ros::Subscriber _bitrateSubscriber;
     ros::Publisher _bitsUpPublisher;

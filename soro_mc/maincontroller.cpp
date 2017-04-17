@@ -39,11 +39,14 @@ MainController *MainController::_self = nullptr;
 
 MainController::MainController(QObject *parent) : QObject(parent) { }
 
-void MainController::panic(QString message)
+void MainController::panic(QString tag, QString message)
 {
-    Logger::logError(LogTag, QString("panic(): %1").arg(message));
-    QMessageBox::critical(0, "Mission Control", message);
-    QCoreApplication::exit(1);
+    Logger::logError(LogTag, QString("panic(): %1: %2").arg(tag, message));
+    QMessageBox::critical(0, "Mission Control", tag + ": " + message);
+    Logger::logInfo(LogTag, "Committing suicide...");
+    delete _self;
+    Logger::logInfo(LogTag, "Exiting with code 1");
+    exit(1);
 }
 
 void MainController::init(QApplication *app)
@@ -66,16 +69,8 @@ void MainController::initInternal()
     // Create the settings model and load the main settings file
     //
     Logger::logInfo(LogTag, "Loading settings...");
-    try
-    {
-        _settingsModel = new SettingsModel;
-        _settingsModel->load();
-    }
-    catch (QString err)
-    {
-        panic(QString("Error loading settings: %1").arg(err));
-        return;
-    }
+    _settingsModel = new SettingsModel;
+    _settingsModel->load();
 
     //
     // Create a unique identifier for this mission control, it is mainly used as a unique node name for ROS
@@ -94,7 +89,7 @@ void MainController::initInternal()
     }
     catch (QString err)
     {
-        panic(QString("Error loading camera settings: %1").arg(err));
+        panic(LogTag, QString("Error loading camera settings: %1").arg(err));
         return;
     }
 
@@ -108,7 +103,7 @@ void MainController::initInternal()
     }
     catch (QGlib::Error e)
     {
-        panic(QString("Failed to initialize QtGStreamer:  %1").arg(e.message()));
+        panic(LogTag, QString("Failed to initialize QtGStreamer:  %1").arg(e.message()));
         return;
     }
 
@@ -124,7 +119,7 @@ void MainController::initInternal()
     Logger::logInfo(LogTag, "Initializing SDL...");
     if (SDL_Init(SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) != 0)
     {
-        panic(QString("Failed to initialize SDL:  %1").arg(SDL_GetError()));
+        panic(LogTag, QString("Failed to initialize SDL:  %1").arg(SDL_GetError()));
         return;
     }
 
@@ -140,7 +135,7 @@ void MainController::initInternal()
     {
         if (SDL_GameControllerAddMapping(gamepadMap.readLine().data()) == -1)
         {
-            panic(QString("Failed to apply SDL gamepad map: %1").arg(SDL_GetError()));
+            panic(LogTag, QString("Failed to apply SDL gamepad map: %1").arg(SDL_GetError()));
             gamepadMap.close();
             return;
         }
@@ -157,14 +152,14 @@ void MainController::initInternal()
         _rosInitUdpSocket = new QUdpSocket(this);
         if (!_rosInitUdpSocket->bind(SORO_MC_MASTER_BROADCAST_PORT))
         {
-            MainController::panic(QString("Cannot bind to mission control UDP broadcast port: %1").arg(_rosInitUdpSocket->errorString()));
+            MainController::panic(LogTag, QString("Cannot bind to mission control UDP broadcast port: %1").arg(_rosInitUdpSocket->errorString()));
             return;
         }
         connect(_rosInitUdpSocket, SIGNAL(readyRead()), this, SLOT(rosInitUdpReadyRead()));
     }
     catch (QString err)
     {
-        panic(QString("Error initializing ROS controller: %1").arg(err));
+        panic(LogTag, QString("Error initializing ROS controller: %1").arg(err));
         return;
     }
 
@@ -209,17 +204,15 @@ void MainController::onRosMasterFound() {
         argv[i] = QCoreApplication::arguments()[i].toLocal8Bit().data();
     }
 
-    Logger::logInfo(LogTag, QString("Calling ros::init() with master URI \'%1\'").arg(getenv("ROS_MASTER_URI")));
     try
     {
+        Logger::logInfo(LogTag, QString("Calling ros::init() with master URI \'%1\'").arg(getenv("ROS_MASTER_URI")));
         ros::init(argc, argv, MainController::getId().toStdString());
-        Logger::logInfo(LogTag, "Creating ROS NodeHandle...");
-        _nodeHandle = new ros::NodeHandle;
         Logger::logInfo(LogTag, "ROS initialized");
     }
     catch(ros::InvalidNameException e)
     {
-        panic(QString("Invalid name exception initializing ROS: %1").arg(e.what()));
+        panic(LogTag, QString("Invalid name exception initializing ROS: %1").arg(e.what()));
         return;
     }
 
@@ -227,29 +220,13 @@ void MainController::onRosMasterFound() {
     // Create connection status controller
     //
     Logger::logInfo(LogTag, "Initializing connection status controller...");
-    try
-    {
-        _connectionStatusController = new ConnectionStatusController(this);
-    }
-    catch (QString err)
-    {
-        panic(QString("Error initializing connection status controller: %1").arg(err));
-        return;
-    }
+    _connectionStatusController = new ConnectionStatusController(this);
 
     //
     // Create the GamepadController instance
     //
     Logger::logInfo(LogTag, "Initializing Gamepad Controller...");
-    try
-    {
-        _gamepadController = new GamepadController(this);
-    }
-    catch (QString err)
-    {
-        panic(QString("Error initializing gamepad system: %1").arg(err));
-        return;
-    }
+    _gamepadController = new GamepadController(this);
 
     switch (_settingsModel->getConfiguration()) {
     case SettingsModel::DriverConfiguration:
@@ -257,19 +234,16 @@ void MainController::onRosMasterFound() {
         // Create drive control system
         //
         Logger::logInfo(LogTag, "Initializing drive control system...");
-        try
-        {
-            _driveControlSystem = new DriveControlSystem(this);
-        }
-        catch (QString err)
-        {
-            panic(QString("Error initializing drive control system: %1").arg(err));
-            return;
-        }
+        _driveControlSystem = new DriveControlSystem(_settingsModel->getDriveSendInterval(),
+                                                     _gamepadController,
+                                                     _connectionStatusController,
+                                                     this);
         break;
     case SettingsModel::ArmOperatorConfiguration:
+        //TODO
         break;
     case SettingsModel::CameraOperatorConfiguration:
+        //TODO
         break;
     case SettingsModel::ObserverConfiguration:
         break;
@@ -286,17 +260,18 @@ void MainController::onRosMasterFound() {
     // Create the main UI
     //
     Logger::logInfo(LogTag, "Creating main window...");
-    try {
-        _mainWindowController = new MainWindowController(_qmlEngine, this);
-    }
-    catch (QString err)
-    {
-        panic(QString("Error creating main window: %1").arg(err));
-        return;
-    }
+    _mainWindowController = new MainWindowController(_qmlEngine, _settingsModel, _cameraSettingsModel, this);
+
+    connect(_gamepadController, &GamepadController::buttonPressed,
+            _mainWindowController, &MainWindowController::onGamepadButtonPressed);
+    connect(_connectionStatusController, &ConnectionStatusController::bitrateUpdate,
+            _mainWindowController, &MainWindowController::onBitrateUpdated);
+    connect(_connectionStatusController, &ConnectionStatusController::latencyUpdate,
+            _mainWindowController, &MainWindowController::onLatencyUpdated);
+    connect(_connectionStatusController, &ConnectionStatusController::connectedChanged,
+            _mainWindowController, &MainWindowController::onConnectedChanged);
 
     Logger::logInfo(LogTag, "Initialization complete");
-    Q_EMIT initialized();
 }
 
 //
@@ -306,30 +281,6 @@ void MainController::onRosMasterFound() {
 QString MainController::getId()
 {
     return _self->_mcId;
-}
-
-GamepadController* MainController::getGamepadController()
-{
-    return _self->_gamepadController;
-}
-
-SettingsModel* MainController::getSettingsModel()
-{
-    return _self->_settingsModel;
-}
-
-CameraSettingsModel* MainController::getCameraSettingsModel()
-{
-    return _self->_cameraSettingsModel;
-}
-
-ConnectionStatusController* MainController::getConnectionStatusController()
-{
-    return _self->_connectionStatusController;
-}
-
-ros::NodeHandle* MainController::getNodeHandle() {
-    return _self->_nodeHandle;
 }
 
 //

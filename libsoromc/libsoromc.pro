@@ -12,8 +12,7 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-QT       -= gui
-QT       += network
+QT       += network widgets
 
 TARGET = soromc
 TEMPLATE = lib

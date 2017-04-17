@@ -37,8 +37,8 @@ public:
     bool isGamepadConnected() const;
 
     /* Returns true if button is pressed or value of axis respectively  */
-    bool getButtonPressed(SDL_GameControllerButton button);
-    float getAxisValue(SDL_GameControllerAxis axis);
+    bool getButtonPressed(SDL_GameControllerButton button) const;
+    float getAxisValue(SDL_GameControllerAxis axis) const;
 
     void updateIfChangedAxis(SDL_GameControllerAxis axis, qint16 *currentValue);
     void updateIfChangedButton(SDL_GameControllerButton button, bool *currentValue);
@@ -63,7 +63,7 @@ private:
 
     /* Sets the currently active controller to be polled */
     void setGamepad(SDL_GameController *controller);
-    float convertToFloatWithDeadzone(qint16 value, float deadzone);
+    static float convertToFloatWithDeadzone(qint16 value, float deadzone);
 
     SDL_GameController *_gameController = nullptr;
     QString _gamepadName;

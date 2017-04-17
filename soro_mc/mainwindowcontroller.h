@@ -12,6 +12,8 @@
 #include <ros/ros.h>
 
 #include "libsoromc/videoformat.h"
+#include "libsoromc/settingsmodel.h"
+#include "libsoromc/camerasettingsmodel.h"
 #include "ros_generated/notification.h"
 
 namespace Soro {
@@ -21,7 +23,8 @@ class MainWindowController : public QObject
     Q_OBJECT
 public:
 
-    explicit MainWindowController(QQmlEngine *engine, QObject *parent = 0);
+    explicit MainWindowController(QQmlEngine *engine, const SettingsModel *settings,
+                                  const CameraSettingsModel *cameraSettings, QObject *parent = 0);
 
     void stopVideo(int cameraId, QString pattern="snow");
     void playVideo(int cameraId, VideoFormat format);
@@ -37,11 +40,14 @@ private:
     QGst::PipelinePtr _videoPipelines[8];
     QGst::BinPtr _videoBins[8];
 
+    const CameraSettingsModel *_cameraSettings;
+
+    ros::NodeHandle _nh;
     ros::Publisher _notifyPublisher;
     ros::Subscriber _notifySubscriber;
 
 
-private Q_SLOTS:
+public Q_SLOTS:
     void onGamepadButtonPressed(SDL_GameControllerButton button, bool pressed);
     void onConnectedChanged(bool connected);
     void onLatencyUpdated(quint32 latency);

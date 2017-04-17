@@ -22,18 +22,9 @@ class MainController : public QObject
     Q_OBJECT
 public:
     static void init(QApplication *app);
-    static void panic(QString message);
+    static void panic(QString tag, QString message);
 
-    static GamepadController* getGamepadController();
-    static SettingsModel* getSettingsModel();
-    static CameraSettingsModel* getCameraSettingsModel();
     static QString getId();
-    static MainWindowController* getMainWindowController();
-    static ConnectionStatusController* getConnectionStatusController();
-    static ros::NodeHandle* getNodeHandle();
-
-Q_SIGNALS:
-    void initialized();
 
 private:
 
@@ -43,7 +34,6 @@ private:
     static MainController *_self;
 
     QUdpSocket *_rosInitUdpSocket = nullptr;
-    ros::NodeHandle *_nodeHandle = nullptr;
     QString _mcId;
     QQmlEngine *_qmlEngine = nullptr;
     GamepadController* _gamepadController = nullptr;

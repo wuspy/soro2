@@ -28,8 +28,11 @@
 
 namespace Soro {
 
-MainWindowController::MainWindowController(QQmlEngine *engine, QObject *parent) : QObject(parent)
+MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsModel *settings,
+                                           const CameraSettingsModel *cameraSettings, QObject *parent) : QObject(parent)
 {
+    _cameraSettings = cameraSettings;
+
     QQmlComponent qmlComponent(engine, QUrl("qrc:/main.qml"));
     _window = qobject_cast<QQuickWindow*>(qmlComponent.create());
     if (!qmlComponent.errorString().isEmpty() || !_window)
@@ -40,22 +43,22 @@ MainWindowController::MainWindowController(QQmlEngine *engine, QObject *parent) 
     //
     // Setup the camera views in the UI
     //
-    int videoCount = MainController::getCameraSettingsModel()->getCameraCount();
+    int videoCount = cameraSettings->getCameraCount();
     if (videoCount > 10)
     {
-        MainController::panic("UI does not support more than 10 different camera views");
+        MainController::panic(LogTag, "UI does not support more than 10 different camera views");
         return;
     }
     _window->setProperty("videoCount", videoCount);
 
-    QList<CameraSettingsModel::Camera> cameras = MainController::getCameraSettingsModel()->getCameras();
+    QList<CameraSettingsModel::Camera> cameras = cameraSettings->getCameras();
     for (int i = 0; i < cameras.count(); i++)
     {
         // Set camera name
         _window->setProperty(QString("video%1Name").arg(i).toLatin1().constData(), cameras[i].name);
         // Set hardware rendering flag
         qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("video%1Surface").arg(i).toLatin1().constData()))
-                ->setEnableHardwareRendering(MainController::getSettingsModel()->getEnableHwRendering());
+                ->setEnableHardwareRendering(settings->getEnableHwRendering());
         // Show no video pattern
         stopVideo(cameras[i].id);
     }
@@ -67,28 +70,16 @@ MainWindowController::MainWindowController(QQmlEngine *engine, QObject *parent) 
     //
 
     Logger::logInfo(LogTag, "Creating ROS publisher and subscriber for notificaiton topic...");
-    _notifyPublisher = MainController::getNodeHandle()->advertise<ros_generated::notification>("notification", 10);
-    _notifySubscriber = MainController::getNodeHandle()->subscribe
+    _notifyPublisher = _nh.advertise<ros_generated::notification>("notification", 10);
+    _notifySubscriber = _nh.subscribe
             <ros_generated::notification, Soro::MainWindowController>
             ("notification", 10, &MainWindowController::onNewNotification, this);
     Logger::logInfo(LogTag, "ROS publisher and subscriber created");
-
-    // Connect to gamepad events
-    connect(MainController::getGamepadController(), &GamepadController::buttonPressed,
-            this, &MainWindowController::onGamepadButtonPressed);
-
-    // Connect to connection events
-    connect(MainController::getConnectionStatusController(), &ConnectionStatusController::bitrateUpdate,
-            this, &MainWindowController::onBitrateUpdated);
-    connect(MainController::getConnectionStatusController(), &ConnectionStatusController::latencyUpdate,
-            this, &MainWindowController::onLatencyUpdated);
-    connect(MainController::getConnectionStatusController(), &ConnectionStatusController::connectedChanged,
-            this, &MainWindowController::onConnectedChanged);
 }
 
 void MainWindowController::clearVideo(int cameraId)
 {
-    int cameraIndex = MainController::getCameraSettingsModel()->getCameraIndexById(cameraId);
+    int cameraIndex = _cameraSettings->getCameraIndexById(cameraId);
     if (!_videoPipelines[cameraIndex].isNull()) {
         _videoPipelines[cameraIndex]->setState(QGst::StateNull);
         _videoPipelines[cameraIndex].clear();
@@ -99,7 +90,7 @@ void MainWindowController::clearVideo(int cameraId)
 void MainWindowController::stopVideo(int cameraId, QString pattern)
 {
     clearVideo(cameraId);
-    int cameraIndex = MainController::getCameraSettingsModel()->getCameraIndexById(cameraId);
+    int cameraIndex = _cameraSettings->getCameraIndexById(cameraId);
     QGst::PipelinePtr pipeline = QGst::Pipeline::create(QString("camera%1Pipeline").arg(cameraId).toLatin1().constData());
     QGst::BinPtr source = QGst::Bin::fromDescription(QString("videotestsrc pattern=%1 ! video/x-raw,width=640,height=480 ! videoconvert").arg(pattern));
     QQuickGStreamerSurface *surface = qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("video%1Surface").arg(cameraIndex).toLatin1().constData()));
@@ -115,7 +106,7 @@ void MainWindowController::stopVideo(int cameraId, QString pattern)
 void MainWindowController::playVideo(int cameraId, VideoFormat format)
 {
     clearVideo(cameraId);
-    int cameraIndex = MainController::getCameraSettingsModel()->getCameraIndexById(cameraId);
+    int cameraIndex = _cameraSettings->getCameraIndexById(cameraId);
     QGst::PipelinePtr pipeline = QGst::Pipeline::create(QString("camera%1Pipeline").arg(cameraId).toLatin1().constData());
     QGst::BinPtr source = QGst::Bin::fromDescription("udpsrc port=" + QString::number(SORO_MC_FIRST_VIDEO_PORT + cameraIndex) + " ! " + format.createGstEncodingArgs());
     QQuickGStreamerSurface *surface = qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("video%1Surface").arg(cameraIndex).toLatin1().constData()));

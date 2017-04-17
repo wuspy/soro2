@@ -25,20 +25,24 @@ namespace Soro {
 ConnectionStatusController::ConnectionStatusController(QObject *parent) : QObject(parent)
 {
     Logger::logInfo(LogTag, "Creating ROS subscriber for latency topic...");
-    _latencySubscriber = MainController::getNodeHandle()->subscribe
+    _latencySubscriber = _nh.subscribe
             <std_msgs::UInt32, Soro::ConnectionStatusController>
             ("latency", 1, &ConnectionStatusController::onNewLatencyMessage, this);
+    if (!_latencySubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for latency topic");
 
     Logger::logInfo(LogTag, "Creating ROS subscriber for bitrate topic...");
-    _bitrateSubscriber = MainController::getNodeHandle()->subscribe
+    _bitrateSubscriber = _nh.subscribe
             <ros_generated::bitrate, Soro::ConnectionStatusController>
             ("bitrate", 1, &ConnectionStatusController::onNewBitrateMessage, this);
+    if (!_bitrateSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for bitrate topic");
 
     Logger::logInfo(LogTag, "Creating ROS publisher for bits_up_log topic...");
-    _bitsUpPublisher = MainController::getNodeHandle()->advertise<std_msgs::UInt32>("bits_up_log", 1);
+    _bitsUpPublisher = _nh.advertise<std_msgs::UInt32>("bits_up_log", 1);
+    if (!_bitsUpPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for bits_up_log topic");
 
     Logger::logInfo(LogTag, "Creating ROS publisher for bits_down_log topic...");
-    _bitsDownPublisher = MainController::getNodeHandle()->advertise<std_msgs::UInt32>("bits_down_log", 1);
+    _bitsDownPublisher = _nh.advertise<std_msgs::UInt32>("bits_down_log", 1);
+    if (!_bitsDownPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for bits_down_log topic");
 
     Logger::logInfo(LogTag, "All ROS publishers and subscribers created");
 
