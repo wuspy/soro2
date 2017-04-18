@@ -217,16 +217,8 @@ void MainController::onRosMasterFound(QHostAddress address)
         //
         // Create arm control system
         //
-        logInfo(LogTag, "Initializing arm control system...");
-        try
-        {
-            _armControlSystem = new ArmControlSystem(this);
-        }
-        catch(QString err)
-        {
-            panic(LogTag, QString("Error initializing arm control system: %1").arg(err));
-            return;
-        }
+        Logger::logInfo(LogTag, "Initializing arm control system...");
+        _armControlSystem = new ArmControlSystem(this);
         break;
     case SettingsModel::CameraOperatorConfiguration:
         //TODO
@@ -265,7 +257,7 @@ void MainController::onRosMasterFound(QHostAddress address)
     connect(_videoController, &VideoController::eos,
             this, &MainController::onVideoEos);
     connect(_audioController, &AudioController::error,
-            this &MainController::onAudioError);
+            this, &MainController::onAudioError);
     connect(_audioController, &AudioController::eos,
             this, &MainController::onAudioEos);
 

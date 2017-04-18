@@ -15,6 +15,7 @@ public:
     explicit ArmControlSystem(QObject *parent=0);
 
 private:
+    ros::NodeHandle _nh;
     ros::Publisher _armPublisher;
 
 };

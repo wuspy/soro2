@@ -1,5 +1,6 @@
 #include "armcontrolsystem.h"
 #include "maincontroller.h"
+#include "libsoromc/logger.h"
 
 #define LogTag "ArmControlSystem"
 
@@ -8,9 +9,10 @@ namespace Soro
 
 ArmControlSystem::ArmControlSystem(QObject *parent) : QObject(parent)
 {
-    MainController::logInfo(LogTag, "Creating publisher...");
-    _armPublisher = MainController::getNodeHandle()->advertise<std_msgs::UInt8MultiArray>("arm", 1);
-    MainController::logInfo(LogTag, "Arm Publisher created");
+    Logger::logInfo(LogTag, "Creating publisher...");
+    _armPublisher = _nh.advertise<std_msgs::UInt8MultiArray>("arm", 1);
+    if (!_armPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for arm topic");
+    Logger::logInfo(LogTag, "Arm Publisher created");
 }
 
 }
