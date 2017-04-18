@@ -214,7 +214,19 @@ void MainController::onRosMasterFound(QHostAddress address)
                                                      this);
         break;
     case SettingsModel::ArmOperatorConfiguration:
-        //TODO
+        //
+        // Create arm control system
+        //
+        logInfo(LogTag, "Initializing arm control system...");
+        try
+        {
+            _armControlSystem = new ArmControlSystem(this);
+        }
+        catch(QString err)
+        {
+            panic(QString("Error initializing arm control system: %1").arg(err));
+            return;
+        }
         break;
     case SettingsModel::CameraOperatorConfiguration:
         //TODO

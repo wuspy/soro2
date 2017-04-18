@@ -35,6 +35,7 @@ HEADERS += \
     audiocontroller.h \
     videocontroller.h \
     gstreamerpipelinewatch.h
+    armcontrolsystem.h
 
 SOURCES += main.cpp \
     gamepadcontroller.cpp \
@@ -48,6 +49,7 @@ SOURCES += main.cpp \
     audiocontroller.cpp \
     videocontroller.cpp \
     gstreamerpipelinewatch.cpp
+    armcontrolsystem.cpp
 
 RESOURCES += qml.qrc \
     assets.qrc

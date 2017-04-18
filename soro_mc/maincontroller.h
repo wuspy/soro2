@@ -17,6 +17,7 @@
 #include "audiocontroller.h"
 #include "videocontroller.h"
 #include "masterlocator.h"
+#include "armcontrolsystem.h"
 
 namespace Soro {
 
@@ -48,6 +49,7 @@ private:
     DriveControlSystem *_driveControlSystem = nullptr;
     MasterLocator *_masterLocator = nullptr;
     ConnectionStatusController *_connectionStatusController = nullptr;
+    ArmControlSystem * _armControlSystem = nullptr;
 
 private Q_SLOTS:
     void initInternal();
