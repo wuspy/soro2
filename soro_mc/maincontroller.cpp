@@ -224,7 +224,7 @@ void MainController::onRosMasterFound(QHostAddress address)
         }
         catch(QString err)
         {
-            panic(QString("Error initializing arm control system: %1").arg(err));
+            panic(LogTag, QString("Error initializing arm control system: %1").arg(err));
             return;
         }
         break;
@@ -260,6 +260,15 @@ void MainController::onRosMasterFound(QHostAddress address)
     Logger::logInfo(LogTag, "Initializing video controller...");
     _videoController = new VideoController(_settingsModel, _cameraSettingsModel, _mainWindowController->getVideoSinks(), this);
 
+    connect(_videoController, &VideoController::error,
+            this, &MainController::onVideoError);
+    connect(_videoController, &VideoController::eos,
+            this, &MainController::onVideoEos);
+    connect(_audioController, &AudioController::error,
+            this &MainController::onAudioError);
+    connect(_audioController, &AudioController::eos,
+            this, &MainController::onAudioEos);
+
     connect(_gamepadController, &GamepadController::buttonPressed,
             _mainWindowController, &MainWindowController::onGamepadButtonPressed);
     connect(_connectionStatusController, &ConnectionStatusController::bitrateUpdate,
@@ -270,6 +279,34 @@ void MainController::onRosMasterFound(QHostAddress address)
             _mainWindowController, &MainWindowController::onConnectedChanged);
 
     Logger::logInfo(LogTag, "Initialization complete");
+}
+
+void MainController::onVideoError(QString message, uint cameraIndex)
+{
+    _mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
+                                  "Error playing " + _cameraSettingsModel->getCamera(cameraIndex).name,
+                                  "There was an error while decoding the video stream: " + message);
+}
+
+void MainController::onAudioError(QString message)
+{
+    _mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
+                                  "Error playing audio",
+                                  "There was an error while decoding the audio stream: " + message);
+}
+
+void MainController::onVideoEos(uint cameraIndex)
+{
+    _mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
+                                  "Error playing " + _cameraSettingsModel->getCamera(cameraIndex).name,
+                                  "Received end-of-stream message while streaming video");
+}
+
+void MainController::onAudioEos()
+{
+    _mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
+                                  "Error playing audio",
+                                  "Received end-of-stream message while streaming audio");
 }
 
 //
