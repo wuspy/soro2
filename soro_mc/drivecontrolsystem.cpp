@@ -35,6 +35,7 @@ DriveControlSystem::DriveControlSystem(int sendInterval, const GamepadController
     _sendTimerId = startTimer(qMax<int>(sendInterval, 10));
     Logger::logInfo(LogTag, "Creating publisher...");
     _drivePublisher = _nh.advertise<ros_generated::drive>("drive", 1);
+    if (!_drivePublisher) MainController::panic(LogTag, "Failed to create publisher for drive topic");
     Logger::logInfo(LogTag, "Publisher created");
 }
 

@@ -34,7 +34,7 @@ HEADERS += \
     masterlocator.h \
     audiocontroller.h \
     videocontroller.h \
-    gstreamerpipelinewatch.h
+    gstreamerpipelinewatch.h \
     armcontrolsystem.h
 
 SOURCES += main.cpp \
@@ -48,7 +48,7 @@ SOURCES += main.cpp \
     masterlocator.cpp \
     audiocontroller.cpp \
     videocontroller.cpp \
-    gstreamerpipelinewatch.cpp
+    gstreamerpipelinewatch.cpp \
     armcontrolsystem.cpp
 
 RESOURCES += qml.qrc \
