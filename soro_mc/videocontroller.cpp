@@ -41,6 +41,14 @@ VideoController::VideoController(const SettingsModel *settings, const CameraSett
     Logger::logInfo(LogTag, "All ROS publishers and subscribers created");
 }
 
+VideoController::~VideoController()
+{
+    for (int i = 0; i < _cameraSettings->getCameraCount(); ++i)
+    {
+        clearPipeline(i);
+    }
+}
+
 void VideoController::onVideoResponse(ros_generated::video msg)
 {
     if (msg.on)
@@ -81,6 +89,25 @@ void VideoController::constructPipelineOnSink(uint cameraIndex, QString sourceBi
     Logger::logInfo(LogTag, QString("Starting pipeline '%1' on sink %2").arg(sourceBinString, QString::number(cameraIndex)));
     _pipelines[cameraIndex] = QGst::Pipeline::create(QString("video%1Pipeline").arg(cameraIndex).toLatin1().constData());
     _bins[cameraIndex] = QGst::Bin::fromDescription(sourceBinString);
+
+    if (_sinks[cameraIndex].isNull())
+    {
+        Logger::logError(LogTag, QString("Supplied sink for video %1 is NULL").arg(cameraIndex));
+        Q_EMIT error("Supplied sink is null", cameraIndex);
+        return;
+    }
+    if (_pipelines[cameraIndex].isNull())
+    {
+        Logger::logError(LogTag, QString("Failed to create pipeline video%1Pipeline").arg(cameraIndex));
+        Q_EMIT error("Failed to create pipeline", cameraIndex);
+        return;
+    }
+    if (_bins[cameraIndex].isNull())
+    {
+        Logger::logError(LogTag, QString("Failed to create binary '%1' for video%2Pipeline").arg(sourceBinString, QString::number(cameraIndex)));
+        Q_EMIT error(QString("Failed to create binary '%1'").arg(sourceBinString), cameraIndex);
+        return;
+    }
 
     _pipelines[cameraIndex]->add(_bins[cameraIndex], _sinks[cameraIndex]);
     _bins[cameraIndex]->link(_sinks[cameraIndex]);
@@ -128,9 +155,9 @@ void VideoController::clearPipeline(uint cameraIndex)
 {
     if (!_pipelines.value(cameraIndex).isNull())
     {
-        _pipelines.value(cameraIndex)->setState(QGst::StateNull);
-        _pipelines.value(cameraIndex).clear();
-        _bins.value(cameraIndex).clear();
+        _pipelines[cameraIndex]->setState(QGst::StateNull);
+        _pipelines[cameraIndex].clear();
+        _bins[cameraIndex].clear();
     }
     if (_pipelineWatches.value(cameraIndex) != nullptr)
     {

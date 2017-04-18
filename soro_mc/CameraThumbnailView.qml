@@ -32,7 +32,6 @@ Rectangle {
         id: gstreamerSurface
         anchors.fill: parent
         anchors.margins: parent.border.width
-        backgroundColor: "red"
     }
 
     DropShadow {

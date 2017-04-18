@@ -113,7 +113,7 @@ ApplicationWindow {
         }
     }
 
-    function selectViewAbove()
+    function selectViewBelow()
     {
         switch (selectedView)
         {
@@ -153,7 +153,7 @@ ApplicationWindow {
         }
     }
 
-    function selectViewBelow()
+    function selectViewAbove()
     {
         switch (selectedView)
         {
@@ -206,7 +206,7 @@ ApplicationWindow {
         source: miniConnectionStatusImageColorOverlay
         anchors.fill: miniConnectionStatusImageColorOverlay
         radius: 20
-        samples: 40
+        samples: 20
         visible: miniConnectionStatusImageColorOverlay.visible
     }
 
@@ -226,8 +226,8 @@ ApplicationWindow {
       */
     Image {
         id: miniConnectionStatusImage
-        width: 96
-        height: 96
+        width: 64
+        height: 64
         anchors.top: parent.toptheme_yellow
         anchors.left: parent.left
         anchors.leftMargin: 10
@@ -235,6 +235,43 @@ ApplicationWindow {
         visible: false
         sourceSize: Qt.size(width, height)
         source: connectionStatusImage.source
+    }
+
+    DropShadow {
+        source: miniPingLabel
+        anchors.fill: miniPingLabel
+        radius: 10
+        samples: 20
+        color: "black"
+    }
+
+    Text {
+        id: miniPingLabel
+        visible: sidebar.state == "hidden"
+        color: "white"
+        font.pixelSize: 48
+        text: pingLabel.text
+        anchors.leftMargin: 10
+        anchors.verticalCenter: miniConnectionStatusImage.verticalCenter
+        anchors.left: miniConnectionStatusImage.right
+    }
+
+    DropShadow {
+        source: activeViewLabel
+        anchors.fill: activeViewLabel
+        radius: 10
+        samples: 20
+        color: "black"
+    }
+
+    Text {
+        id: activeViewLabel
+        color: "white"
+        font.pixelSize: 48
+        anchors.rightMargin: 10
+        anchors.right: parent.right
+        anchors.verticalCenter: miniConnectionStatusImage.verticalCenter
+        text: sidebarViewSelector.selectedViewTitle
     }
 
     /*

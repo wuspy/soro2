@@ -17,15 +17,19 @@ GStreamerPipelineWatch::GStreamerPipelineWatch(int id, QGst::PipelinePtr pipelin
 
 void GStreamerPipelineWatch::onBusMessage(const QGst::MessagePtr &message)
 {
-    Logger::logInfo(LogTag, "onBusMessage(): Got bus message type " + message->typeName());
     switch (message->type()) {
     case QGst::MessageEos:
         Q_EMIT eos(_id);
         break;
     case QGst::MessageError: {
-        QString errorMessage = message.staticCast<QGst::ErrorMessage>()->error().message().toLatin1();
-        Logger::logError(LogTag, "onBusMessage(): Received error message from gstreamer '" + errorMessage + "'");
-        Q_EMIT error(errorMessage, _id);
+        QString msg = message.staticCast<QGst::ErrorMessage>()->debugMessage();
+        Logger::logError(LogTag, "onBusMessage(): Received error message from gstreamer '" + msg + "'");
+        Q_EMIT error(msg, _id);
+        break;
+    }
+    case QGst::MessageInfo: {
+        QString msg = message.staticCast<QGst::InfoMessage>()->debugMessage();
+        Logger::logInfo(LogTag, "onBusMessage(): Received info message from gstreamer '" + msg + "'");
         break;
     }
     default:

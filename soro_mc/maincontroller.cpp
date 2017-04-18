@@ -189,8 +189,6 @@ void MainController::onRosMasterFound(QHostAddress address)
     // Delete master locator now that we are done with it
     //
     disconnect(_masterLocator, &MasterLocator::masterFound, this, &MainController::onRosMasterFound);
-    delete _masterLocator;
-    _masterLocator = nullptr;
 
     //
     // Create connection status controller

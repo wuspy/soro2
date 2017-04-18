@@ -20,7 +20,7 @@ private Q_SLOTS:
     void udpReadyRead();
 
 private:
-    QUdpSocket *_socket;
+    QUdpSocket _socket;
 };
 
 } // namespace Soro

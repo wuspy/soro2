@@ -16,6 +16,7 @@ class AudioController : public QObject
     Q_OBJECT
 public:
     explicit AudioController(QObject *parent = 0);
+    ~AudioController();
 
     bool isPlaying() const;
     quint8 getCodec() const;

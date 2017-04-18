@@ -28,6 +28,11 @@ AudioController::AudioController(QObject *parent) : QObject(parent)
     _pipelineWatch = nullptr;
 }
 
+AudioController::~AudioController()
+{
+    clearPipeline();
+}
+
 void AudioController::onAudioResponse(ros_generated::audio msg)
 {
     // Rover is notifying us of a change in its audio stream

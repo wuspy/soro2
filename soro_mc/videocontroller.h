@@ -22,6 +22,7 @@ class VideoController : public QObject
     Q_OBJECT
 public:
     explicit VideoController(const SettingsModel *settings, const CameraSettingsModel *cameraSettings, QList<QGst::ElementPtr> sinks, QObject *parent = 0);
+    ~VideoController();
 
     bool isPlaying(uint cameraIndex) const;
     quint8 getCodec(uint cameraIndex) const;

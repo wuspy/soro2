@@ -49,7 +49,25 @@ Item {
 
     property int itemMargins: 10
 
+    readonly property string selectedViewTitle: {
+        switch (selectedView) {
+        case "video0": return video0Name
+        case "video1": return video1Name
+        case "video2": return video2Name
+        case "video3": return video3Name
+        case "video4": return video4Name
+        case "video5": return video5Name
+        case "video6": return video6Name
+        case "video7": return video7Name
+        case "video8": return video8Name
+        case "video9": return video9Name
+        case "map": return "Map"
+        }
+    }
+
+
     Flickable {
+        id: flickable
         clip: true
         anchors.fill: parent
 
@@ -64,6 +82,11 @@ Item {
             anchors.top: parent.top
             anchors.topMargin: visible ? itemMargins : 0
             anchors.horizontalCenter: parent.horizontalCenter
+            onSelectedChanged: {
+                if (selected) {
+                    flickable.contentY = y - anchors.topMargin
+                }
+            }
         }
 
         ItemThumbnailView {
@@ -75,6 +98,11 @@ Item {
             anchors.top: video0ThumbnailView.bottom
             anchors.topMargin: visible ? itemMargins : 0
             anchors.horizontalCenter: parent.horizontalCenter
+            onSelectedChanged: {
+                if (selected) {
+                    flickable.contentY = y - anchors.topMargin
+                }
+            }
         }
 
         ItemThumbnailView {
@@ -86,6 +114,11 @@ Item {
             anchors.top: video1ThumbnailView.bottom
             anchors.topMargin: visible ? itemMargins : 0
             anchors.horizontalCenter: parent.horizontalCenter
+            onSelectedChanged: {
+                if (selected) {
+                    flickable.contentY = y - anchors.topMargin
+                }
+            }
         }
 
         ItemThumbnailView {
@@ -97,6 +130,11 @@ Item {
             anchors.top: video2ThumbnailView.bottom
             anchors.topMargin: visible ? itemMargins : 0
             anchors.horizontalCenter: parent.horizontalCenter
+            onSelectedChanged: {
+                if (selected) {
+                    flickable.contentY = y - anchors.topMargin
+                }
+            }
         }
 
         ItemThumbnailView {
@@ -108,6 +146,11 @@ Item {
             anchors.top: video3ThumbnailView.bottom
             anchors.topMargin: visible ? itemMargins : 0
             anchors.horizontalCenter: parent.horizontalCenter
+            onSelectedChanged: {
+                if (selected) {
+                    flickable.contentY = y - anchors.topMargin
+                }
+            }
         }
 
         ItemThumbnailView {
@@ -119,6 +162,11 @@ Item {
             anchors.top: video4ThumbnailView.bottom
             anchors.topMargin: visible ? itemMargins : 0
             anchors.horizontalCenter: parent.horizontalCenter
+            onSelectedChanged: {
+                if (selected) {
+                    flickable.contentY = y - anchors.topMargin
+                }
+            }
         }
 
         ItemThumbnailView {
@@ -130,6 +178,11 @@ Item {
             anchors.top: video5ThumbnailView.bottom
             anchors.topMargin: visible ? itemMargins : 0
             anchors.horizontalCenter: parent.horizontalCenter
+            onSelectedChanged: {
+                if (selected) {
+                    flickable.contentY = y - anchors.topMargin
+                }
+            }
         }
 
         ItemThumbnailView {
@@ -141,6 +194,11 @@ Item {
             anchors.top: video6ThumbnailView.bottom
             anchors.topMargin: visible ? itemMargins : 0
             anchors.horizontalCenter: parent.horizontalCenter
+            onSelectedChanged: {
+                if (selected) {
+                    flickable.contentY = y - anchors.topMargin
+                }
+            }
         }
 
         ItemThumbnailView {
@@ -152,6 +210,11 @@ Item {
             anchors.top: video7ThumbnailView.bottom
             anchors.topMargin: visible ? itemMargins : 0
             anchors.horizontalCenter: parent.horizontalCenter
+            onSelectedChanged: {
+                if (selected) {
+                    flickable.contentY = y - anchors.topMargin
+                }
+            }
         }
 
         ItemThumbnailView {
@@ -163,6 +226,11 @@ Item {
             anchors.top: video8ThumbnailView.bottom
             anchors.topMargin: visible ? itemMargins : 0
             anchors.horizontalCenter: parent.horizontalCenter
+            onSelectedChanged: {
+                if (selected) {
+                    flickable.contentY = y - anchors.topMargin
+                }
+            }
         }
 
         ItemThumbnailView {
@@ -173,6 +241,11 @@ Item {
             anchors.top: video9ThumbnailView.bottom
             anchors.topMargin: visible ? itemMargins : 0
             anchors.horizontalCenter: parent.horizontalCenter
+            onSelectedChanged: {
+                if (selected) {
+                    flickable.contentY = y - anchors.topMargin
+                }
+            }
             text: "Map"
         }
     }

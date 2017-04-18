@@ -24,29 +24,26 @@ namespace Soro {
 
 MasterLocator::MasterLocator(QObject *parent) : QObject(parent)
 {
-    _socket = new QUdpSocket(this);
-    if (!_socket->bind(SORO_NET_MASTER_BROADCAST_PORT, QUdpSocket::ShareAddress))
+    if (!_socket.bind(SORO_NET_MASTER_BROADCAST_PORT, QUdpSocket::ShareAddress))
     {
         MainController::panic(LogTag, QString("Cannot bind to UDP port %1 to receive master broadcast").arg(SORO_NET_MASTER_BROADCAST_PORT));
     }
-    connect(_socket, &QUdpSocket::readyRead, this, &MasterLocator::udpReadyRead);
+    connect(&_socket, &QUdpSocket::readyRead, this, &MasterLocator::udpReadyRead);
 }
 
 void MasterLocator::udpReadyRead()
 {
-    while (_socket->hasPendingDatagrams())
+    while (_socket.hasPendingDatagrams())
     {
         char data[100];
         QHostAddress address;
         quint16 port;
-        qint64 len = _socket->readDatagram(data, 100, &address, &port);
+        qint64 len = _socket.readDatagram(data, 100, &address, &port);
 
         if (strncmp(data, "master", qMax(strlen("master"), (size_t)len)) == 0)
         {
             // Found master
-            disconnect(_socket, &QUdpSocket::readyRead, this, &MasterLocator::udpReadyRead);
-            delete _socket;
-            _socket = nullptr;
+            disconnect(&_socket, &QUdpSocket::readyRead, this, &MasterLocator::udpReadyRead);
             if (address.protocol() == QAbstractSocket::IPv6Protocol)
             {
                 // We got an IPv6 address, which ROS won't like. Hopefully we can convert it to IPv4
