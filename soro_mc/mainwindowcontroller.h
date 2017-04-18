@@ -4,15 +4,12 @@
 #include <QObject>
 #include <QQmlEngine>
 #include <QQuickWindow>
-#include <Qt5GStreamer/QGst/Pipeline>
 #include <Qt5GStreamer/QGst/Element>
-#include <Qt5GStreamer/QGst/Bin>
 #include <SDL2/SDL.h>
 
 #include <ros/ros.h>
 
 #include "settingsmodel.h"
-#include "libsoromc/videoformat.h"
 #include "libsoromc/camerasettingsmodel.h"
 #include "ros_generated/notification.h"
 
@@ -26,26 +23,22 @@ public:
     explicit MainWindowController(QQmlEngine *engine, const SettingsModel *settings,
                                   const CameraSettingsModel *cameraSettings, QObject *parent = 0);
 
-    void stopVideo(int cameraId, QString pattern="snow");
-    void playVideo(int cameraId, VideoFormat format);
     void notify(int type, QString title, QString message);
     void notifyAll(int type, QString title, QString message);
 
-private:
-    void clearVideo(int cameraId);
+    QList<QGst::ElementPtr> getVideoSinks();
 
+private:
     void onNewNotification(ros_generated::notification msg);
 
     QQuickWindow *_window;
-    QGst::PipelinePtr _videoPipelines[8];
-    QGst::BinPtr _videoBins[8];
 
+    const SettingsModel *_settings;
     const CameraSettingsModel *_cameraSettings;
 
     ros::NodeHandle _nh;
     ros::Publisher _notifyPublisher;
     ros::Subscriber _notifySubscriber;
-
 
 public Q_SLOTS:
     void onGamepadButtonPressed(SDL_GameControllerButton button, bool pressed);

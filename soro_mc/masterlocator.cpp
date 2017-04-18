@@ -25,9 +25,9 @@ namespace Soro {
 MasterLocator::MasterLocator(QObject *parent) : QObject(parent)
 {
     _socket = new QUdpSocket(this);
-    if (!_socket->bind(SORO_MC_MASTER_BROADCAST_PORT, QUdpSocket::ShareAddress))
+    if (!_socket->bind(SORO_NET_MASTER_BROADCAST_PORT, QUdpSocket::ShareAddress))
     {
-        MainController::panic(LogTag, QString("Cannot bind to UDP port %1 to receive master broadcast").arg(SORO_MC_MASTER_BROADCAST_PORT));
+        MainController::panic(LogTag, QString("Cannot bind to UDP port %1 to receive master broadcast").arg(SORO_NET_MASTER_BROADCAST_PORT));
     }
     connect(_socket, &QUdpSocket::readyRead, this, &MasterLocator::udpReadyRead);
 }
@@ -64,6 +64,7 @@ void MasterLocator::udpReadyRead()
                 Logger::logInfo(LogTag, QString("Found master at %1").arg(address.toString()));
                 Q_EMIT masterFound(address);
             }
+            return;
         }
         else
         {

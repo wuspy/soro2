@@ -20,12 +20,28 @@
 namespace Soro {
 namespace GStreamerUtil {
 
-QString createRtpVideoDecodeBinString(QHostAddress address, quint16 port, int codec, bool vaapi)
+QString createRtpAudioPlayBinString(QHostAddress address, quint16 port, uint codec)
+{
+    return createRtpAudioDecodeBinString(address, port, codec) + " ! audioconvert ! autoaudiosink";
+}
+
+QString createRtpAudioDecodeBinString(QHostAddress address, quint16 port, uint codec)
+{
+    return createRtpDepayBinString(address, port, codec) + " ! " + getAudioCodecDecodeElement(codec);
+}
+
+QString createRtpVideoDecodeBinString(QHostAddress address, quint16 port, uint codec, bool vaapi)
 {
     return createRtpDepayBinString(address, port, codec) + " ! " + getVideoCodecDecodeElement(codec, vaapi);
 }
 
-QString createRtpDepayBinString(QHostAddress address, quint16 port, int codec)
+QString createVideoTestSrcBinString(QString pattern, uint width, uint height, uint framerate)
+{
+    return QString("videotestsrc pattern=%1 ! video/x-raw,width=%2,height=%3,framerate=%4/1 ! videoconvert")
+            .arg(pattern, QString::number(width), QString::number(height), QString::number(framerate));
+}
+
+QString createRtpDepayBinString(QHostAddress address, quint16 port, uint codec)
 {
     return QString("udpsrc address=%1 port=%2 ! %3").arg(
                 address.toString(),
@@ -33,7 +49,7 @@ QString createRtpDepayBinString(QHostAddress address, quint16 port, int codec)
                 getCodecRtpDepayElement(codec));
 }
 
-QString getCodecRtpDepayElement(int codec)
+QString getCodecRtpDepayElement(uint codec)
 {
     switch (codec)
     {
@@ -49,13 +65,15 @@ QString getCodecRtpDepayElement(int codec)
         return "application/x-rtp,media=video,encoding-name=VP9,clock-rate=90000,payload=96 ! rtpvp9depay";
     case VIDEO_CODEC_H265:
         return "application/x-rtp,media=video,encoding-name=H265,clock-rate=90000,payload=96 ! rtph265depay";
+    case AUDIO_CODEC_AC3:
+        return "application/x-rtp,media=audio,clock-rate=44100,encoding-name=AC3 ! rtpac3depay";
     default:
         // unknown codec
         return "";
     }
 }
 
-QString getAudioCodecDecodeElement(int codec)
+QString getAudioCodecDecodeElement(uint codec)
 {
     switch (codec)
     {
@@ -71,7 +89,7 @@ QString getAudioCodecDecodeElement(int codec)
     }
 }
 
-QString getVideoCodecDecodeElement(int codec, bool vaapi)
+QString getVideoCodecDecodeElement(uint codec, bool vaapi)
 {
     // Single decode element for all VAAPI codecs
     if (vaapi) return "vaapidecode";
@@ -93,6 +111,34 @@ QString getVideoCodecDecodeElement(int codec, bool vaapi)
     default:
         // unknown codec
         return "";
+    }
+}
+
+QString getCodecName(uint codec)
+{
+    switch (codec)
+    {
+    case VIDEO_CODEC_MPEG4:
+        return "MPEG4";
+    case VIDEO_CODEC_H264:
+        return "H264";
+    case VIDEO_CODEC_MJPEG:
+        return "MJPEG";
+    case VIDEO_CODEC_VP8:
+        return "VP8";
+    case VIDEO_CODEC_VP9:
+        return "VP9";
+    case VIDEO_CODEC_H265:
+        return "H265";
+    case AUDIO_CODEC_AC3:
+        return "AC3";
+    case AUDIO_CODEC_MP3:
+        return "MP3";
+    case AUDIO_CODEC_VORBIS:
+        return "Vorbis";
+    default:
+        // unknown codec
+        return "INVALID";
     }
 }
 

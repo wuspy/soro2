@@ -86,7 +86,7 @@ void MainController::initInternal()
         argv[i] = QCoreApplication::arguments()[i].toLocal8Bit().data();
     }
 
-    setenv("ROS_MASTER_URI", QString("http://localhost:%1").arg(SORO_MC_ROS_MASTER_PORT).toLatin1().constData(), 1);
+    setenv("ROS_MASTER_URI", QString("http://localhost:%1").arg(SORO_NET_ROS_MASTER_PORT).toLatin1().constData(), 1);
 
     try
     {

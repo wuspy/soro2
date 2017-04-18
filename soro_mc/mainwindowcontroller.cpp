@@ -19,6 +19,7 @@
 #include "qquickgstreamersurface.h"
 #include "libsoromc/constants.h"
 #include "libsoromc/logger.h"
+#include "libsoromc/gstreamerutil.h"
 
 #include <QQmlComponent>
 
@@ -32,6 +33,7 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
                                            const CameraSettingsModel *cameraSettings, QObject *parent) : QObject(parent)
 {
     _cameraSettings = cameraSettings;
+    _settings = settings;
 
     QQmlComponent qmlComponent(engine, QUrl("qrc:/main.qml"));
     _window = qobject_cast<QQuickWindow*>(qmlComponent.create());
@@ -47,20 +49,16 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
     if (videoCount > 10)
     {
         MainController::panic(LogTag, "UI does not support more than 10 different camera views");
-        return;
     }
     _window->setProperty("videoCount", videoCount);
 
-    QList<CameraSettingsModel::Camera> cameras = cameraSettings->getCameras();
-    for (int i = 0; i < cameras.count(); i++)
+    for (int i = 0; i < videoCount; i++)
     {
         // Set camera name
-        _window->setProperty(QString("video%1Name").arg(i).toLatin1().constData(), cameras[i].name);
+        _window->setProperty(QString("video%1Name").arg(i).toLatin1().constData(), cameraSettings->getCamera(i).name);
         // Set hardware rendering flag
         qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("video%1Surface").arg(i).toLatin1().constData()))
                 ->setEnableHardwareRendering(settings->getEnableHwRendering());
-        // Show no video pattern
-        stopVideo(cameras[i].id);
     }
 
     _window->setProperty("selectedView", "video0");
@@ -77,46 +75,14 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
     Logger::logInfo(LogTag, "ROS publisher and subscriber created");
 }
 
-void MainWindowController::clearVideo(int cameraId)
+QList<QGst::ElementPtr> MainWindowController::getVideoSinks()
 {
-    int cameraIndex = _cameraSettings->getCameraIndexById(cameraId);
-    if (!_videoPipelines[cameraIndex].isNull()) {
-        _videoPipelines[cameraIndex]->setState(QGst::StateNull);
-        _videoPipelines[cameraIndex].clear();
-        _videoBins[cameraIndex].clear();
+    QList<QGst::ElementPtr> sinks;
+    for (int i = 0; i < 10; ++i)
+    {
+        sinks.append(qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("video%1Surface").arg(i).toLatin1().constData()))->videoSink());
     }
-}
-
-void MainWindowController::stopVideo(int cameraId, QString pattern)
-{
-    clearVideo(cameraId);
-    int cameraIndex = _cameraSettings->getCameraIndexById(cameraId);
-    QGst::PipelinePtr pipeline = QGst::Pipeline::create(QString("camera%1Pipeline").arg(cameraId).toLatin1().constData());
-    QGst::BinPtr source = QGst::Bin::fromDescription(QString("videotestsrc pattern=%1 ! video/x-raw,width=640,height=480 ! videoconvert").arg(pattern));
-    QQuickGStreamerSurface *surface = qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("video%1Surface").arg(cameraIndex).toLatin1().constData()));
-
-    _videoPipelines[cameraIndex] = pipeline;
-    _videoBins[cameraIndex] = source;
-
-    pipeline->add(source, surface->videoSink());
-    source->link(surface->videoSink());
-    pipeline->setState(QGst::StatePlaying);
-}
-
-void MainWindowController::playVideo(int cameraId, VideoFormat format)
-{
-    clearVideo(cameraId);
-    int cameraIndex = _cameraSettings->getCameraIndexById(cameraId);
-    QGst::PipelinePtr pipeline = QGst::Pipeline::create(QString("camera%1Pipeline").arg(cameraId).toLatin1().constData());
-    QGst::BinPtr source = QGst::Bin::fromDescription("udpsrc port=" + QString::number(SORO_MC_FIRST_VIDEO_PORT + cameraIndex) + " ! " + format.createGstEncodingArgs());
-    QQuickGStreamerSurface *surface = qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("video%1Surface").arg(cameraIndex).toLatin1().constData()));
-
-    _videoPipelines[cameraIndex] = pipeline;
-    _videoBins[cameraIndex] = source;
-
-    pipeline->add(source, surface->videoSink());
-    source->link(surface->videoSink());
-    pipeline->setState(QGst::StatePlaying);
+    return sinks;
 }
 
 void MainWindowController::onNewNotification(ros_generated::notification msg)

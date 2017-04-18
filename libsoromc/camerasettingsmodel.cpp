@@ -30,6 +30,7 @@ void CameraSettingsModel::load() {
     QByteArray rawJson;
     QJsonDocument jsonDocument;
     QJsonArray jsonCamerasArray;
+    QJsonArray jsonGroupsArray;
     QJsonParseError jsonError;
     QFile file(FILE_PATH);
 
@@ -56,37 +57,40 @@ void CameraSettingsModel::load() {
         throw QString("Error parsing camera settings file: Item \"camera\" not found.");
     }
 
+    QMap<int, Camera> cameraMap;
+
     jsonCamerasArray = jsonDocument.object()["cameras"].toArray();
     Q_FOREACH (QJsonValue jsonCamera, jsonCamerasArray)
     {
         Camera camera;
-        camera.name = jsonCamera.toObject()["name"].toString();
-        camera.id = jsonCamera.toObject()["id"].toInt(-1);
+        int index = jsonCamera.toObject()["index"].toInt(-1);
+        camera.name = jsonCamera.toObject()["name"].toString("");
         camera.serial = jsonCamera.toObject()["matchSerial"].toString();
         camera.productId = jsonCamera.toObject()["matchProductId"].toString();
         camera.vendorId = jsonCamera.toObject()["matchVendorId"].toString();
 
-        if (camera.id == -1)
+        if (index < 0)
         {
-            throw QString("Error parsing camera settings file \"%1\": Camera entry is missing an id.").arg(FILE_PATH);
+            throw QString("Error parsing camera settings file '%1': Camera entry has an invalid index.").arg(FILE_PATH);
         }
-        _cameras.insert(camera.id, camera);
+        if (camera.name.isEmpty())
+        {
+            throw QString("Error parsing camera settings file '%1': Camera entry is missing a name.").arg(FILE_PATH);
+        }
+        if (cameraMap.contains(index))
+        {
+            throw QString("Error parsing camera settings file '%1': Two cameras have a duplicate index entry. This is not allowed.").arg(FILE_PATH);
+        }
+        cameraMap.insert(index, camera);
     }
+
+    // Transfer sorted map values to array
+    _cameras = cameraMap.values();
 }
 
-const QList<CameraSettingsModel::Camera> CameraSettingsModel::getCameras() const
+CameraSettingsModel::Camera CameraSettingsModel::getCamera(uint index) const
 {
-    return _cameras.values();
-}
-
-int CameraSettingsModel::getCameraIndexById(int id) const
-{
-    QList<CameraSettingsModel::Camera> cameras = getCameras();
-    for (int i = 0; i < cameras.count(); ++i)
-    {
-        if (cameras[i].id == id) return i;
-    }
-    return -1;
+    return _cameras.value(index);
 }
 
 int CameraSettingsModel::getCameraCount() const

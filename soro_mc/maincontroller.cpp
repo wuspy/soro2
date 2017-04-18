@@ -160,7 +160,7 @@ void MainController::initInternal()
 
 void MainController::onRosMasterFound(QHostAddress address)
 {
-    QString masterUrl = QString("http://%1:%2").arg(address.toString(), QString::number(SORO_MC_ROS_MASTER_PORT));
+    QString masterUrl = QString("http://%1:%2").arg(address.toString(), QString::number(SORO_NET_ROS_MASTER_PORT));
     setenv("ROS_MASTER_URI", masterUrl.toLatin1().constData(), 1);
 
     //
@@ -226,6 +226,12 @@ void MainController::onRosMasterFound(QHostAddress address)
     }
 
     //
+    // Create the audio controller instance
+    //
+    Logger::logInfo(LogTag, "Initializing audio controller...");
+    _audioController = new AudioController(this);
+
+    //
     // Create the QML application engine and setup QQuickGStreamerSurface
     //
     Logger::logInfo(LogTag, "Initializing QML engine...");
@@ -237,6 +243,12 @@ void MainController::onRosMasterFound(QHostAddress address)
     //
     Logger::logInfo(LogTag, "Creating main window...");
     _mainWindowController = new MainWindowController(_qmlEngine, _settingsModel, _cameraSettingsModel, this);
+
+    //
+    // Create the video controller instance
+    //
+    Logger::logInfo(LogTag, "Initializing video controller...");
+    _videoController = new VideoController(_settingsModel, _cameraSettingsModel, _mainWindowController->getVideoSinks(), this);
 
     connect(_gamepadController, &GamepadController::buttonPressed,
             _mainWindowController, &MainWindowController::onGamepadButtonPressed);

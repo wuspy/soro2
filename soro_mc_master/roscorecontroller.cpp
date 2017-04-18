@@ -25,11 +25,11 @@ namespace Soro {
 
 RosCoreController::RosCoreController(QObject *parent) : QObject(parent)
 {
-    Logger::logInfo(LogTag, QString("Starting bash host process with roscore on port %1").arg(SORO_MC_ROS_MASTER_PORT));
+    Logger::logInfo(LogTag, QString("Starting bash host process with roscore on port %1").arg(SORO_NET_ROS_MASTER_PORT));
     connect(&_roscoreProcess, &QProcess::stateChanged, this, &RosCoreController::roscoreProcessStateChanged);
 
     // Start a bash process that will setup the environment ROS needs and exec to roscore
-    _roscoreProcess.start("/bin/bash", QStringList() << "-c" << QString("source /opt/ros/kinetic/setup.bash; exec roscore -p %1").arg(SORO_MC_ROS_MASTER_PORT));
+    _roscoreProcess.start("/bin/bash", QStringList() << "-c" << QString("source /opt/ros/kinetic/setup.bash; exec roscore -p %1").arg(SORO_NET_ROS_MASTER_PORT));
 }
 
 RosCoreController::~RosCoreController()

@@ -14,6 +14,8 @@
 #include "mainwindowcontroller.h"
 #include "connectionstatuscontroller.h"
 #include "drivecontrolsystem.h"
+#include "audiocontroller.h"
+#include "videocontroller.h"
 #include "masterlocator.h"
 
 namespace Soro {
@@ -39,6 +41,8 @@ private:
     QQmlEngine *_qmlEngine = nullptr;
     GamepadController* _gamepadController = nullptr;
     SettingsModel* _settingsModel = nullptr;
+    AudioController *_audioController = nullptr;
+    VideoController *_videoController = nullptr;
     CameraSettingsModel *_cameraSettingsModel = nullptr;
     MainWindowController *_mainWindowController = nullptr;
     DriveControlSystem *_driveControlSystem = nullptr;
