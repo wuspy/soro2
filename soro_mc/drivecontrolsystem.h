@@ -2,14 +2,12 @@
 #define DRIVECONTROLSYSTEM_H
 
 #include <QObject>
-#include <gamepadcontroller.h>
-#include "libsoromc/drivemessage.h"
+#include "gamepadcontroller.h"
+#include "connectionstatuscontroller.h"
+#include "ros_generated/drive.h"
 #include "ros/ros.h"
 #include <QTimerEvent>
 
-// ***TODO***
-// ROS hangs the application if connection to master is not immediately successful
-// All functionality associated with ROS has been commented out until this can be resolved
 namespace Soro {
 
 class DriveControlSystem : public QObject
@@ -17,12 +15,18 @@ class DriveControlSystem : public QObject
     Q_OBJECT
 
 public:
-    explicit DriveControlSystem(QObject *parent = 0);
+    explicit DriveControlSystem(int sendInterval, const GamepadController *gamepad,
+                                ConnectionStatusController *connectionStatusController,
+                                QObject *parent = 0);
 
 private:
-    Soro::Messages::drive buildDriveMessage();
+    ros_generated::drive buildDriveMessage();
 
     QString _gamepadName;
+    const GamepadController *_gamepad;
+    ConnectionStatusController *_connectionStatusController;
+
+    ros::NodeHandle _nh;
     ros::Publisher _drivePublisher;
 
     int _sendTimerId;

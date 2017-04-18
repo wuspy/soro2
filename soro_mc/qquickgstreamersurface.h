@@ -11,21 +11,22 @@ namespace Soro {
 class QQuickGStreamerSurface : public QQuickPaintedItem
 {
     Q_OBJECT
-    Q_PROPERTY(QColor backgroundColor READ getBackgroundColor WRITE setBackgroundColor)
+    Q_PROPERTY(bool EnableHardwareRendering READ getEnableHardwareRendering WRITE setEnableHardwareRendering)
 
 public:
     QQuickGStreamerSurface();
-
-    void setSink(const QGst::ElementPtr & sink);
-    void clearSink();
-    void setBackgroundColor(QColor color);
-    QColor getBackgroundColor() const;
+    ~QQuickGStreamerSurface();
 
     void paint(QPainter *painter) override;
 
+    QGst::ElementPtr videoSink();
+
+    bool getEnableHardwareRendering() const;
+    void setEnableHardwareRendering(bool enableHardwareRendering);
+
 private:
     QGst::ElementPtr _sink;
-    QColor _backgroundColor;
+    bool _useHardwareRendering;
 
 private:
     void onUpdate();

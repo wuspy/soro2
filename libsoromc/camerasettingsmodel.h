@@ -13,7 +13,6 @@ public:
     /* This struct represents a single camera definition
      */
     struct Camera {
-        int id;
         QString name;
         QString serial;
         QString vendorId;
@@ -25,16 +24,11 @@ public:
      */
     void load();
 
-    /* Returns a list of the camera definitions loaded from the settings file,
-     * or an empty list if the file has not yet been loaded or if an error
-     * occurred when loading the file
-     */
-    const QList<CameraSettingsModel::Camera> getCameras() const;
-    int getCameraIndexById(int id) const;
+    Camera getCamera(uint index) const;
     int getCameraCount() const;
 
 private:
-    QMap<int, CameraSettingsModel::Camera> _cameras;
+    QList<CameraSettingsModel::Camera> _cameras;
 };
 
 } // namespace Soro

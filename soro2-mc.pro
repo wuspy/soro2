@@ -17,8 +17,9 @@ TEMPLATE = subdirs
 SUBDIRS =\
     soro_mc \
     soro_mc_master \
-    soro_mc_vid_master \
     tests \
     libsoromc
 
-soro_mc.depends = soro_mc_master soro_mc_vid_master libsoromc
+soro_mc.depends = libsoromc
+soro_mc_master.depends = libsoromc
+tests.depends = soro_mc soro_mc_master libsoromc

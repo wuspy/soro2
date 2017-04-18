@@ -6,14 +6,17 @@
 #include <QQmlEngine>
 #include <QUdpSocket>
 
-#include "libsoromc/settingsmodel.h"
+#include "settingsmodel.h"
 #include "libsoromc/camerasettingsmodel.h"
 
 #include "gamepadcontroller.h"
-#include "mastercontroller.h"
 #include "gamepadcontroller.h"
 #include "mainwindowcontroller.h"
+#include "connectionstatuscontroller.h"
 #include "drivecontrolsystem.h"
+#include "audiocontroller.h"
+#include "videocontroller.h"
+#include "masterlocator.h"
 #include "armcontrolsystem.h"
 
 namespace Soro {
@@ -23,55 +26,34 @@ class MainController : public QObject
     Q_OBJECT
 public:
     static void init(QApplication *app);
-    static void panic(QString message);
+    static void panic(QString tag, QString message);
 
-    static GamepadController* getGamepadController();
-    static SettingsModel* getSettingsModel();
-    static CameraSettingsModel* getCameraSettingsModel();
-    static QString getMissionControlId();
-    static MainWindowController* getMainWindowController();
-    static ros::NodeHandle* getNodeHandle();
-
-    static void logDebug(QString tag, QString message);
-    static void logInfo(QString tag, QString message);
-    static void logWarning(QString tag, QString message);
-    static void logError(QString tag, QString message);
-    static void logFatal(QString tag, QString message);
-
-signals:
-    void initialized();
+    static QString getId();
 
 private:
-    enum LogLevel {
-        LogLevelDebug = 0,
-        LogLevelInfo,
-        LogLevelWarning,
-        LogLevelError,
-        LogLevelFatal
-    };
 
     explicit MainController(QObject *parent=0);
     QString genId();
-    void log(LogLevel level, QString tag, QString message);
 
     static MainController *_self;
 
     QUdpSocket *_rosInitUdpSocket = nullptr;
-    ros::NodeHandle *_nodeHandle = nullptr;
     QString _mcId;
     QQmlEngine *_qmlEngine = nullptr;
     GamepadController* _gamepadController = nullptr;
-    MasterController *_masterController = nullptr;
     SettingsModel* _settingsModel = nullptr;
+    AudioController *_audioController = nullptr;
+    VideoController *_videoController = nullptr;
     CameraSettingsModel *_cameraSettingsModel = nullptr;
     MainWindowController *_mainWindowController = nullptr;
     DriveControlSystem *_driveControlSystem = nullptr;
+    MasterLocator *_masterLocator = nullptr;
+    ConnectionStatusController *_connectionStatusController = nullptr;
     ArmControlSystem * _armControlSystem = nullptr;
 
-private slots:
+private Q_SLOTS:
     void initInternal();
-    void onRosMasterFound();
-    void rosInitUdpReadyRead();
+    void onRosMasterFound(QHostAddress address);
 };
 
 } // namespace Soro

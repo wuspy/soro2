@@ -15,8 +15,6 @@
  */
 
 #include <QApplication>
-#include <QMessageBox>
-#include <ros/ros.h>
 
 #include "maincontroller.h"
 

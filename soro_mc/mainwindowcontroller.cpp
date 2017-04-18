@@ -1,17 +1,40 @@
+/*
+ * Copyright 2017 The University of Oklahoma.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "mainwindowcontroller.h"
 #include "maincontroller.h"
 #include "qquickgstreamersurface.h"
+#include "libsoromc/constants.h"
+#include "libsoromc/logger.h"
+#include "libsoromc/gstreamerutil.h"
 
 #include <QQmlComponent>
 
-#include <Qt5GStreamer/QGst/Pipeline>
-#include <Qt5GStreamer/QGst/Element>
 #include <Qt5GStreamer/QGst/ElementFactory>
+
+#define LogTag "MainWindowController"
 
 namespace Soro {
 
-MainWindowController::MainWindowController(QQmlEngine *engine, QObject *parent) : QObject(parent)
+MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsModel *settings,
+                                           const CameraSettingsModel *cameraSettings, QObject *parent) : QObject(parent)
 {
+    _cameraSettings = cameraSettings;
+    _settings = settings;
+
     QQmlComponent qmlComponent(engine, QUrl("qrc:/main.qml"));
     _window = qobject_cast<QQuickWindow*>(qmlComponent.create());
     if (!qmlComponent.errorString().isEmpty() || !_window)
@@ -19,42 +42,101 @@ MainWindowController::MainWindowController(QQmlEngine *engine, QObject *parent) 
         // There was an error creating the QML window. This is most likely due to a QML syntax error
         throw QString("Failed to create QML window:  %1").arg(qmlComponent.errorString());
     }
-
+    //
     // Setup the camera views in the UI
-    _window->setProperty("cameraCount", MainController::getCameraSettingsModel()->getCameraCount());
-    QList<CameraSettingsModel::Camera> cameras = MainController::getCameraSettingsModel()->getCameras();
-    for (int i = 0; i < cameras.count(); i++)
+    //
+    int videoCount = cameraSettings->getCameraCount();
+    if (videoCount > 10)
     {
-        QQuickGStreamerSurface *vidSurface = qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("cameraThumbnail%1GstreamerSurface").arg(i).toLatin1().constData()));
+        MainController::panic(LogTag, "UI does not support more than 10 different camera views");
+    }
+    _window->setProperty("videoCount", videoCount);
 
-        ///////////////////////////
-        //////  TESTING  //////////
-
-        QGst::PipelinePtr pipeline = QGst::Pipeline::create("pipeline1");
-        QGst::BinPtr source = QGst::Bin::fromDescription("videotestsrc pattern=snow ! videoconvert");
-        QGst::ElementPtr sink = QGst::ElementFactory::make("qt5videosink");
-        pipeline->add(source, sink);
-        source->link(sink);
-        vidSurface->setSink(sink);
-        pipeline->setState(QGst::StatePlaying);
-
-        _window->setProperty(QString("camera%1Name").arg(i).toLatin1().constData(), cameras[i].name);
+    for (int i = 0; i < videoCount; i++)
+    {
+        // Set camera name
+        _window->setProperty(QString("video%1Name").arg(i).toLatin1().constData(), cameraSettings->getCamera(i).name);
+        // Set hardware rendering flag
+        qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("video%1Surface").arg(i).toLatin1().constData()))
+                ->setEnableHardwareRendering(settings->getEnableHwRendering());
     }
 
-    QQuickGStreamerSurface *vidSurface = qvariant_cast<QQuickGStreamerSurface*>(_window->property("mainGstreamerSurface"));
-    QGst::PipelinePtr pipeline = QGst::Pipeline::create("pipeline1");
-    QGst::BinPtr source = QGst::Bin::fromDescription("videotestsrc pattern=snow ! videoconvert");
-    QGst::ElementPtr sink = QGst::ElementFactory::make("qt5videosink");
-    pipeline->add(source, sink);
-    source->link(sink);
-    vidSurface->setSink(sink);
-    pipeline->setState(QGst::StatePlaying);
+    _window->setProperty("selectedView", "video0");
 
-    _window->setProperty("selectedViewIndex", 0);
+    //
+    // Setup ROS communication
+    //
 
-    // Connect to gamepad events
-    connect(MainController::getGamepadController(), SIGNAL(buttonPressed(SDL_GameControllerButton,bool)),
-            this, SLOT(onGamepadButtonPressed(SDL_GameControllerButton,bool)));
+    Logger::logInfo(LogTag, "Creating ROS publisher and subscriber for notificaiton topic...");
+    _notifyPublisher = _nh.advertise<ros_generated::notification>("notification", 10);
+    _notifySubscriber = _nh.subscribe
+            <ros_generated::notification, Soro::MainWindowController>
+            ("notification", 10, &MainWindowController::onNewNotification, this);
+    Logger::logInfo(LogTag, "ROS publisher and subscriber created");
+}
+
+QList<QGst::ElementPtr> MainWindowController::getVideoSinks()
+{
+    QList<QGst::ElementPtr> sinks;
+    for (int i = 0; i < 10; ++i)
+    {
+        sinks.append(qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("video%1Surface").arg(i).toLatin1().constData()))->videoSink());
+    }
+    return sinks;
+}
+
+void MainWindowController::onNewNotification(ros_generated::notification msg)
+{
+    // Show this message in the UI
+    QString title = QString(msg.title.c_str());
+    QString message = QString(msg.message.c_str());
+    notify((int)msg.type, title, message);
+
+    switch (msg.type)
+    {
+    case NOTIFICATION_TYPE_ERROR:
+        Logger::logError(LogTag, QString("Received error notification: %1 - %2 ").arg(title, message));
+        break;
+    case NOTIFICATION_TYPE_WARNING:
+        Logger::logWarn(LogTag, QString("Received warning notification: %1 - %2 ").arg(title, message));
+        break;
+    case NOTIFICATION_TYPE_INFO:
+        Logger::logInfo(LogTag, QString("Received info notification: %1 - %2 ").arg(title, message));
+        break;
+    }
+}
+
+void MainWindowController::notify(int type, QString title, QString message)
+{
+    //TODO
+}
+
+void MainWindowController::notifyAll(int type, QString title, QString message)
+{
+    ros_generated::notification msg;
+    msg.type = (uint8_t)type;
+    msg.title = title.toStdString();
+    msg.message = message.toStdString();
+
+    // Publish this notification on the notification topic. We will get this message back,
+    // since we are also subscribed to it, and that's when we'll show it from the onNewNotification() function
+    _notifyPublisher.publish(msg);
+}
+
+void MainWindowController::onConnectedChanged(bool connected)
+{
+    _window->setProperty("connected", connected);
+}
+
+void MainWindowController::onLatencyUpdated(quint32 latency)
+{
+    _window->setProperty("latency", latency);
+}
+
+void MainWindowController::onBitrateUpdated(quint64 bitsUp, quint64 bitsDown)
+{
+    _window->setProperty("bitrateUp", bitsUp);
+    _window->setProperty("bitrateDown", bitsDown);
 }
 
 void MainWindowController::onGamepadButtonPressed(SDL_GameControllerButton button, bool pressed)
@@ -64,32 +146,24 @@ void MainWindowController::onGamepadButtonPressed(SDL_GameControllerButton butto
         switch (button)
         {
         case SDL_CONTROLLER_BUTTON_Y:
-            if (_window->property("sidebarState").toString() == "visible")
-            {
-                _window->setProperty("sidebarState", "hidden");
-            }
-            else
-            {
-                _window->setProperty("sidebarState", "visible");
-            }
+            //
+            // Toggle sidebar
+            //
+            QMetaObject::invokeMethod(_window, "toggleSidebar");
             break;
         case SDL_CONTROLLER_BUTTON_DPAD_UP:
-        {
-            int newIndex = _window->property("selectedViewIndex").toInt() - 1;
-            if (newIndex >= 0)
-            {
-                _window->setProperty("selectedViewIndex", newIndex);
-            }
-        }
+            //
+            // Move to view above
+            //
+            QMetaObject::invokeMethod(_window, "selectViewAbove");
             break;
         case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-        {
-            int newIndex = _window->property("selectedViewIndex").toInt() + 1;
-            if (newIndex < MainController::getCameraSettingsModel()->getCameraCount() + 1)
-            {
-                _window->setProperty("selectedViewIndex", newIndex);
-            }
-        }
+            //
+            // Move to view below
+            //
+            QMetaObject::invokeMethod(_window, "selectViewBelow");
+            break;
+        default:
             break;
         }
     }
