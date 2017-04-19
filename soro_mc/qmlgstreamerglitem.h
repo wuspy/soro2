@@ -1,0 +1,31 @@
+#ifndef QMLGSTREAMERGLITEM_H
+#define QMLGSTREAMERGLITEM_H
+
+#include <QQuickItem>
+#include <Qt5GStreamer/QGst/Element>
+
+namespace Soro {
+
+class QmlGStreamerGlItem : public QQuickItem
+{
+    Q_OBJECT
+
+public:
+    QmlGStreamerGlItem(QQuickItem *parent=0);
+    ~QmlGStreamerGlItem();
+
+    QGst::ElementPtr videoSink();
+
+protected:
+    QSGNode* updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *data) override;
+    void onUpdate();
+
+private:
+    QGst::ElementPtr _sink;
+    QRectF _targetArea;
+    bool _surfaceDirty;
+};
+
+} // namespace Soro
+
+#endif // QMLGSTREAMERGLITEM_H

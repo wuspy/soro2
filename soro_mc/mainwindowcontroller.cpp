@@ -16,7 +16,8 @@
 
 #include "mainwindowcontroller.h"
 #include "maincontroller.h"
-#include "qquickgstreamersurface.h"
+#include "qmlgstreamerglitem.h"
+#include "qmlgstreamerpainteditem.h"
 #include "libsoromc/constants.h"
 #include "libsoromc/logger.h"
 #include "libsoromc/gstreamerutil.h"
@@ -56,9 +57,6 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
     {
         // Set camera name
         _window->setProperty(QString("video%1Name").arg(i).toLatin1().constData(), cameraSettings->getCamera(i).name);
-        // Set hardware rendering flag
-        qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("video%1Surface").arg(i).toLatin1().constData()))
-                ->setEnableHardwareRendering(settings->getEnableHwRendering());
     }
 
     _window->setProperty("selectedView", "video0");
@@ -80,7 +78,16 @@ QList<QGst::ElementPtr> MainWindowController::getVideoSinks()
     QList<QGst::ElementPtr> sinks;
     for (int i = 0; i < 10; ++i)
     {
-        sinks.append(qvariant_cast<QQuickGStreamerSurface*>(_window->property(QString("video%1Surface").arg(i).toLatin1().constData()))->videoSink());
+        if (_settings->getEnableHwRendering())
+        {
+            // Item should be of the class QmlGStreamerGlItem
+            sinks.append(qvariant_cast<QmlGStreamerGlItem*>(_window->property(QString("video%1Surface").arg(i).toLatin1().constData()))->videoSink());
+        }
+        else
+        {
+            // Item should be of the class QmlGStreamerPaintedItem
+            sinks.append(qvariant_cast<QmlGStreamerPaintedItem*>(_window->property(QString("video%1Surface").arg(i).toLatin1().constData()))->videoSink());
+        }
     }
     return sinks;
 }

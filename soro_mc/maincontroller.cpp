@@ -25,7 +25,8 @@
 #include <Qt5GStreamer/QGst/Init>
 #include <Qt5GStreamer/QGlib/Error>
 
-#include "qquickgstreamersurface.h"
+#include "qmlgstreamerglitem.h"
+#include "qmlgstreamerpainteditem.h"
 #include "libsoromc/constants.h"
 #include "libsoromc/logger.h"
 
@@ -234,10 +235,21 @@ void MainController::onRosMasterFound(QHostAddress address)
     _audioController = new AudioController(this);
 
     //
-    // Create the QML application engine and setup QQuickGStreamerSurface
+    // Create the QML application engine and setup the GStreamer surface
     //
+    if (_settingsModel->getEnableHwRendering())
+    {
+        // Use the hardware opengl rendering surface, doesn't work on some hardware
+        Logger::logInfo(LogTag, "Registering QmlGStreamerItem as GStreamerSurface...");
+        qmlRegisterType<QmlGStreamerGlItem>("Soro", 1, 0, "GStreamerSurface");
+    }
+    else
+    {
+        // Use the software rendering surface, works everywhere but slower
+        Logger::logInfo(LogTag, "Registering QmlGStreamerPaintedItem as GStreamerSurface...");
+        qmlRegisterType<QmlGStreamerPaintedItem>("Soro", 1, 0, "GStreamerSurface");
+    }
     Logger::logInfo(LogTag, "Initializing QML engine...");
-    qmlRegisterType<QQuickGStreamerSurface>("Soro", 1, 0, "GStreamerSurface");
     _qmlEngine = new QQmlEngine(this);
 
     //

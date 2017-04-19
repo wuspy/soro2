@@ -28,20 +28,20 @@ HEADERS += \
     gamepadcontroller.h \
     maincontroller.h \
     mainwindowcontroller.h \
-    qquickgstreamersurface.h \
     connectionstatuscontroller.h \
     settingsmodel.h \
     masterlocator.h \
     audiocontroller.h \
     videocontroller.h \
     gstreamerpipelinewatch.h \
-    armcontrolsystem.h
+    armcontrolsystem.h \
+    qmlgstreamerpainteditem.h \
+    qmlgstreamerglitem.h
 
 SOURCES += main.cpp \
     gamepadcontroller.cpp \
     maincontroller.cpp \
     mainwindowcontroller.cpp \
-    qquickgstreamersurface.cpp \
     drivecontrolsystem.cpp \
     connectionstatuscontroller.cpp \
     settingsmodel.cpp \
@@ -49,7 +49,9 @@ SOURCES += main.cpp \
     audiocontroller.cpp \
     videocontroller.cpp \
     gstreamerpipelinewatch.cpp \
-    armcontrolsystem.cpp
+    armcontrolsystem.cpp \
+    qmlgstreamerpainteditem.cpp \
+    qmlgstreamerglitem.cpp
 
 RESOURCES += qml.qrc \
     assets.qrc

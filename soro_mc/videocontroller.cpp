@@ -122,7 +122,7 @@ void VideoController::constructPipelineOnSink(uint cameraIndex, QString sourceBi
 void VideoController::stopVideoOnSink(uint cameraIndex)
 {
     // Stop the video on the specified sink, and play a placeholder animation
-    constructPipelineOnSink(cameraIndex, GStreamerUtil::createVideoTestSrcBinString("snow", 800, 600, 24));
+    constructPipelineOnSink(cameraIndex, GStreamerUtil::createVideoTestSrcBinString("smpte75", 800, 600, 24));
     _codecs[cameraIndex] = CODEC_NULL;
     Q_EMIT stopped(cameraIndex);
 }
