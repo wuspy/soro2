@@ -1,10 +1,11 @@
 #include "audiocontroller.h"
+#include "maincontroller.h"
 #include "libsoromc/gstreamerutil.h"
 #include "libsoromc/constants.h"
 #include "libsoromc/logger.h"
-#include <Qt5GStreamer/QGst/Bus>
+#include "ros_generated/audio.h"
 
-#include "maincontroller.h"
+#include <Qt5GStreamer/QGst/Bus>
 
 #define LogTag "AudioController"
 
@@ -12,12 +13,18 @@ namespace Soro {
 
 AudioController::AudioController(QObject *parent) : QObject(parent)
 {
+    //
+    // Setup audio_ack topic subscriber
+    //
     Logger::logInfo(LogTag, "Creating ROS subscriber for audio_ack topic...");
     _audioSubscriber = _nh.subscribe
             <ros_generated::audio, Soro::AudioController>
             ("audio_ack", 1, &AudioController::onAudioResponse, this);
     if (!_audioSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for audio_ack topic");
 
+    //
+    // Setup audio topic publisher
+    //
     Logger::logInfo(LogTag, "Creating ROS publisher for audio topic...");
     _audioPublisher = _nh.advertise<ros_generated::audio>("audio", 1);
     if (!_audioPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for audio topic");

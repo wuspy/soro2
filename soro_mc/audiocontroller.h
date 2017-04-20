@@ -6,8 +6,8 @@
 #include <Qt5GStreamer/QGst/Bin>
 
 #include <ros/ros.h>
-#include "ros_generated/audio.h"
 #include "gstreamerpipelinewatch.h"
+#include "ros_generated/audio.h"
 
 namespace Soro {
 
@@ -42,8 +42,8 @@ public Q_SLOTS:
     void stop();
 
 private:
-    void clearPipeline();
     void onAudioResponse(ros_generated::audio msg);
+    void clearPipeline();
 
     QGst::PipelinePtr _pipeline;
     QGst::BinPtr _bin;

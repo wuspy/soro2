@@ -34,9 +34,6 @@ private:
     MasterConnectionStatusController *_masterConnectionStatusController = nullptr;
     Broadcaster *_broadcaster = nullptr;
     RosCoreController *_roscoreController = nullptr;
-
-private Q_SLOTS:
-    void initInternal();
 };
 
 } // namespace Soro

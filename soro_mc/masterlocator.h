@@ -16,9 +16,6 @@ public:
 Q_SIGNALS:
     void masterFound(QHostAddress address);
 
-private Q_SLOTS:
-    void udpReadyRead();
-
 private:
     QUdpSocket _socket;
 };

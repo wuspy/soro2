@@ -50,14 +50,6 @@ private:
     MasterLocator *_masterLocator = nullptr;
     ConnectionStatusController *_connectionStatusController = nullptr;
     ArmControlSystem * _armControlSystem = nullptr;
-
-private Q_SLOTS:
-    void initInternal();
-    void onRosMasterFound(QHostAddress address);
-    void onVideoError(QString message, uint cameraIndex);
-    void onVideoEos(uint cameraIndex);
-    void onAudioEos();
-    void onAudioError(QString message);
 };
 
 } // namespace Soro

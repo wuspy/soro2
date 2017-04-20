@@ -18,6 +18,8 @@ PingWorker::PingWorker(uint interval, QObject *parent): QObject(parent)
     QTimer::singleShot(_interval, this, &PingWorker::work);
 }
 
+
+// REMINDER: This code is designed to execuce in a background thread!!!
 void PingWorker::work()
 {
     qint64 start = QDateTime::currentDateTime().toMSecsSinceEpoch();
@@ -28,6 +30,10 @@ void PingWorker::work()
     if (_pingClient.call(srv) && (srv.response.ack == srv.request.ping))
     {
         Q_EMIT ack(time);
+    }
+    else
+    {
+        Logger::logWarn(LogTag, "Could not call ping service");
     }
     QTimer::singleShot(qMax<int>(_interval - time, 10), this, &PingWorker::work);
 }
