@@ -6,6 +6,8 @@
 
 namespace Soro {
 
+/* Singleton logging class for the application. All logging (Logger::log...) functions are thread-safe.
+ */
 class Logger
 {
     Q_GADGET

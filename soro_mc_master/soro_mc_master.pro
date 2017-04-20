@@ -14,6 +14,7 @@
 
 QT += network qml quick widgets
 
+# NO_KEYWORDS: signal, slot, emit, etc. will not compile. Use Q_SIGNALS, Q_SLOTS, Q_EMIT instead
 CONFIG += no_keywords c++11
 
 TARGET = soro_mc_master
@@ -34,12 +35,32 @@ SOURCES += main.cpp \
     pingworker.cpp \
     settingsmodel.cpp
 
-# Include ROS headers
-INCLUDEPATH += /opt/ros/kinetic/include/
-DEPENDPATH += /opt/ros/kinetic/include/
+HEADERS += \
+    roscorecontroller.h \
+    broadcaster.h \
+    mainwindowcontroller.h \
+    maincontroller.h \
+    masterconnectionstatuscontroller.h \
+    pingworker.h \
+    settingsmodel.h
+
+RESOURCES += \
+    qml.qrc \
+    assets.qrc
+
 
 # Link against libsoromc
 LIBS += -L../lib -lsoromc
+
+# In case you are curious, the following is a hacky way to link against ROS kinetic
+# from a qmake project.
+#
+# Of course you could just use cmake and catkin, however if you have a compelling
+# reason to stick with qmake (like we did) then here you go.
+
+# Include ROS headers
+INCLUDEPATH += /opt/ros/kinetic/include/
+DEPENDPATH += /opt/ros/kinetic/include/
 
 # Link against ROS
 LIBS += -L/opt/ros/kinetic/lib -lroslib
@@ -55,16 +76,3 @@ LIBS += -L/opt/ros/kinetic/lib -lrosconsole_bridge
 LIBS += -L/opt/ros/kinetic/lib -lrosconsole_log4cxx
 LIBS += -L/opt/ros/kinetic/lib -lrostime
 LIBS += -L/opt/ros/kinetic/lib -lrospack
-
-HEADERS += \
-    roscorecontroller.h \
-    broadcaster.h \
-    mainwindowcontroller.h \
-    maincontroller.h \
-    masterconnectionstatuscontroller.h \
-    pingworker.h \
-    settingsmodel.h
-
-RESOURCES += \
-    qml.qrc \
-    assets.qrc

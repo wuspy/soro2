@@ -11,6 +11,8 @@ namespace Soro {
  * query the ping topic and determine latency. It will emit the 'ack' signal when a new
  * latency is calculated, which can be connected to from the UI thread by specifying a
  * connection type of QueuedConnection.
+ *
+ * This was designed to be used by MasterConnectionStatusController.
  */
 class PingWorker: public QObject
 {

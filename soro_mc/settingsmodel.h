@@ -8,7 +8,7 @@
 
 namespace Soro {
 
-/* Main settings class for the application, handles loading settings
+/* Main settings class for the soro_mc application
  */
 class SettingsModel: public AbstractSettingsModel
 {

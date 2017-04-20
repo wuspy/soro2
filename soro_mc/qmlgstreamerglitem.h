@@ -6,6 +6,12 @@
 
 namespace Soro {
 
+/* QML item that can display GStreamer video.
+ *
+ * This item is painted on the scene graph by a
+ * qtquick2videosink element. Therefore, it uses OpenGL
+ * rendering and is more efficient than QmlGStreamerPaintedItem.
+ */
 class QmlGStreamerGlItem : public QQuickItem
 {
     Q_OBJECT
@@ -14,6 +20,9 @@ public:
     QmlGStreamerGlItem(QQuickItem *parent=0);
     ~QmlGStreamerGlItem();
 
+    /* Gets the video sink used by the item. This will create
+     * the sink the first time it is called.
+     */
     QGst::ElementPtr videoSink();
 
 protected:

@@ -11,6 +11,14 @@
 
 namespace Soro {
 
+/* Controls the rover's audio system.
+ *
+ * You can play or stop the rover's audio stream with the play() and stop() functions. Once
+ * the rover responds to this request, the playing() and stopped() signals will be emitted.
+ *
+ * Additionally, the error() and eos() signals may be emitted if there is an error decoding
+ * the audio stream.
+ */
 class AudioController : public QObject
 {
     Q_OBJECT
@@ -19,6 +27,8 @@ public:
     ~AudioController();
 
     bool isPlaying() const;
+    /* Gets the codec of the audio currently playing
+     */
     quint8 getCodec() const;
 
 Q_SIGNALS:

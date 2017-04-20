@@ -14,6 +14,7 @@
 
 QT += qml quick opengl quickcontrols2 network webengine
 
+# NO_KEYWORDS: signal, slot, emit, etc. will not compile. Use Q_SIGNALS, Q_SLOTS, Q_EMIT instead.
 CONFIG += no_keywords c++11
 
 TARGET = soro_mc
@@ -59,10 +60,6 @@ RESOURCES += qml.qrc \
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
 
-# Include ROS headers
-INCLUDEPATH += /opt/ros/kinetic/include/
-DEPENDPATH += /opt/ros/kinetic/include/
-
 # Link against libsoromc
 LIBS += -L../lib -lsoromc
 
@@ -71,6 +68,16 @@ LIBS += -lSDL2
 
 # Link against Qt5Gstreamer
 LIBS += -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUtils-1.0 -lQt5GStreamerQuick-1.0
+
+# In case you are curious, the following is a hacky way to link against ROS kinetic
+# from a qmake project.
+#
+# Of course you could just use cmake and catkin, however if you have a compelling
+# reason to stick with qmake (like we did) then here you go.
+
+# Include ROS headers
+INCLUDEPATH += /opt/ros/kinetic/include/
+DEPENDPATH += /opt/ros/kinetic/include/
 
 # Link against ROS
 LIBS += -L/opt/ros/kinetic/lib -lroslib
