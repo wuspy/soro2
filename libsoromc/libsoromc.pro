@@ -27,8 +27,6 @@ DESTDIR = ../lib
 
 SOURCES += \
     camerasettingsmodel.cpp \
-    videoformat.cpp \
-    audioformat.cpp \
     logger.cpp \
     gstreamerutil.cpp \
     abstractsettingsmodel.cpp
@@ -37,9 +35,6 @@ HEADERS +=\
     libsoromc_global.h \
     camerasettingsmodel.h \
     constants.h \
-    mediaformat.h \
-    videoformat.h \
-    audioformat.h \
     logger.h \
     armmessage.h \
     gstreamerutil.h \
