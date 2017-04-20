@@ -51,6 +51,7 @@ MasterConnectionStatusController::MasterConnectionStatusController
     _pingWorker = new PingWorker(_settings->getPingInterval());
     _pingWorker->moveToThread(&_workerThread);
     connect(_pingWorker, &PingWorker::ack, this, &MasterConnectionStatusController::onNewLatency, Qt::QueuedConnection);
+    _workerThread.start();
 
     Logger::logInfo(LogTag, "All ROS connections created");
 

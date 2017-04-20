@@ -34,7 +34,6 @@ PingWorker::PingWorker(uint interval, QObject *parent): QObject(parent)
     QTimer::singleShot(_interval, this, &PingWorker::work);
 }
 
-
 // REMINDER: This code is designed to execuce in a background thread!!!
 void PingWorker::work()
 {
@@ -45,6 +44,7 @@ void PingWorker::work()
     uint time = QDateTime::currentDateTime().toMSecsSinceEpoch() - start;
     if (_pingClient.call(srv) && (srv.response.ack == srv.request.ping))
     {
+        Logger::logInfo(LogTag, "New latency: " + QString::number(time));
         Q_EMIT ack(time);
     }
     else
