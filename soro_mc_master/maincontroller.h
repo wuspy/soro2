@@ -10,10 +10,13 @@
 #include "mainwindowcontroller.h"
 #include "masterconnectionstatuscontroller.h"
 #include "roscorecontroller.h"
+#include "mediabouncer.h"
 #include "broadcaster.h"
 
 namespace Soro {
 
+/* Class to forward audio/video streams to all mission control computers.
+ */
 class MainController : public QObject
 {
     Q_OBJECT
@@ -30,6 +33,7 @@ private:
 
     SettingsModel *_settings = nullptr;
     QQmlEngine *_qmlEngine = nullptr;
+    MediaBouncer *_mediaBouncer = nullptr;
     MainWindowController *_mainWindowController = nullptr;
     MasterConnectionStatusController *_masterConnectionStatusController = nullptr;
     Broadcaster *_broadcaster = nullptr;

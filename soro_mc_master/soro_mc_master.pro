@@ -33,7 +33,9 @@ SOURCES += main.cpp \
     maincontroller.cpp \
     masterconnectionstatuscontroller.cpp \
     pingworker.cpp \
-    settingsmodel.cpp
+    settingsmodel.cpp \
+    udpbouncer.cpp \
+    mediabouncer.cpp
 
 HEADERS += \
     roscorecontroller.h \
@@ -42,7 +44,9 @@ HEADERS += \
     maincontroller.h \
     masterconnectionstatuscontroller.h \
     pingworker.h \
-    settingsmodel.h
+    settingsmodel.h \
+    udpbouncer.h \
+    mediabouncer.h
 
 RESOURCES += \
     qml.qrc \

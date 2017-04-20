@@ -30,7 +30,8 @@ SOURCES += \
     camerasettingsmodel.cpp \
     logger.cpp \
     gstreamerutil.cpp \
-    abstractsettingsmodel.cpp
+    abstractsettingsmodel.cpp \
+    socketaddress.cpp
 
 HEADERS +=\
     libsoromc_global.h \
@@ -39,7 +40,8 @@ HEADERS +=\
     logger.h \
     armmessage.h \
     gstreamerutil.h \
-    abstractsettingsmodel.h
+    abstractsettingsmodel.h \
+    socketaddress.h
 
 # Link against SDL2
 LIBS += -lSDL2

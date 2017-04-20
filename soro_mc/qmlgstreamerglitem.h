@@ -21,7 +21,8 @@ public:
     ~QmlGStreamerGlItem();
 
     /* Gets the video sink used by the item. This will create
-     * the sink the first time it is called.
+     * the sink the first time it is called. You can add this sink
+     * to your pipeline to display video on this item.
      */
     QGst::ElementPtr videoSink();
 

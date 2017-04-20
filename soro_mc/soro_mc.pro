@@ -14,7 +14,7 @@
 
 QT += qml quick opengl quickcontrols2 network webengine
 
-# NO_KEYWORDS: signal, slot, emit, etc. will not compile. Use Q_SIGNALS, Q_SLOTS, Q_EMIT instead.
+# NO_KEYWORDS: signal, slot, emit, etc. will not compile. Use Q_SIGNALS, Q_SLOTS, Q_EMIT instead
 CONFIG += no_keywords c++11
 
 TARGET = soro_mc

@@ -111,6 +111,12 @@ void MainController::init(QApplication *app)
             _self->_broadcaster = new Broadcaster(_self);
 
             //
+            // Create the media bouncer
+            //
+            Logger::logInfo(LogTag, "Initializing media bouncer...");
+            _self->_mediaBouncer = new MediaBouncer(_self);
+
+            //
             // Create the QML application engine
             //
             Logger::logInfo(LogTag, "Initializing QML engine...");
@@ -128,6 +134,9 @@ void MainController::init(QApplication *app)
                     _self->_mainWindowController, &MainWindowController::onLatencyUpdated);
             connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::bitrateUpdate,
                     _self->_mainWindowController, &MainWindowController::onBitrateUpdated);
+
+            connect(_self->_mediaBouncer, &MediaBouncer::bitsRead,
+                    _self->_masterConnectionStatusController, &MasterConnectionStatusController::logBitsDown);
 
             Logger::logInfo(LogTag, "Initialization complete");
         });
