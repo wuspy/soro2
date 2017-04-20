@@ -28,46 +28,45 @@ MasterLocator::MasterLocator(QObject *parent) : QObject(parent)
     {
         MainController::panic(LogTag, QString("Cannot bind to UDP port %1 to receive master broadcast").arg(SORO_NET_MASTER_BROADCAST_PORT));
     }
-    connect(&_socket, &QUdpSocket::readyRead, this, &MasterLocator::udpReadyRead);
-}
 
-void MasterLocator::udpReadyRead()
-{
-    while (_socket.hasPendingDatagrams())
-    {
-        char data[100];
-        QHostAddress address;
-        quint16 port;
-        qint64 len = _socket.readDatagram(data, 100, &address, &port);
-
-        if (strncmp(data, "master", qMax(strlen("master"), (size_t)len)) == 0)
+    // Connect to socket ready read event
+    connect(&_socket, &QUdpSocket::readyRead, this, [this]() {
+        while (_socket.hasPendingDatagrams())
         {
-            // Found master
-            disconnect(&_socket, &QUdpSocket::readyRead, this, &MasterLocator::udpReadyRead);
-            if (address.protocol() == QAbstractSocket::IPv6Protocol)
+            char data[100];
+            QHostAddress address;
+            quint16 port;
+            qint64 len = _socket.readDatagram(data, 100, &address, &port);
+
+            if (strncmp(data, "master", qMax(strlen("master"), (size_t)len)) == 0)
             {
-                // We got an IPv6 address, which ROS won't like. Hopefully we can convert it to IPv4
-                Logger::logWarn(LogTag, "The master appears to be at an IPv6 address, trying to convert it to IPv4...");
-                bool ok;
-                QHostAddress addressv4 = QHostAddress(address.toIPv4Address(&ok));
-                if (!ok) {
-                    MainController::panic(LogTag, QString("The master appears to be at IPv6 address %1, which cannot be converted to an IPv4 address. An IPv6 address cannot be used as a ROS master.").arg(address.toString()));
+                // Found master
+                disconnect(&_socket, &QUdpSocket::readyRead, this, 0);
+                if (address.protocol() == QAbstractSocket::IPv6Protocol)
+                {
+                    // We got an IPv6 address, which ROS won't like. Hopefully we can convert it to IPv4
+                    Logger::logWarn(LogTag, "The master appears to be at an IPv6 address, trying to convert it to IPv4...");
+                    bool ok;
+                    QHostAddress addressv4 = QHostAddress(address.toIPv4Address(&ok));
+                    if (!ok) {
+                        MainController::panic(LogTag, QString("The master appears to be at IPv6 address %1, which cannot be converted to an IPv4 address. An IPv6 address cannot be used as a ROS master.").arg(address.toString()));
+                    }
+                    Logger::logInfo(LogTag, QString("Found master at %1").arg(addressv4.toString()));
+                    Q_EMIT masterFound(addressv4);
                 }
-                Logger::logInfo(LogTag, QString("Found master at %1").arg(addressv4.toString()));
-                Q_EMIT masterFound(addressv4);
+                else
+                {
+                    Logger::logInfo(LogTag, QString("Found master at %1").arg(address.toString()));
+                    Q_EMIT masterFound(address);
+                }
+                return;
             }
             else
             {
-                Logger::logInfo(LogTag, QString("Found master at %1").arg(address.toString()));
-                Q_EMIT masterFound(address);
+                Logger::logError(LogTag, "Got invalid message on mission control broadcast port");
             }
-            return;
         }
-        else
-        {
-            Logger::logError(LogTag, "Got invalid message on mission control broadcast port");
-        }
-    }
+    });
 }
 
 } // namespace Soro

@@ -17,6 +17,23 @@
 
 namespace Soro {
 
+/* Controls the rover's video system.
+ *
+ * You can play, stop, or change the streaming parameters of a camera with the play() and stop() functions().
+ * Once the rover responds to such a request, the playing() and stopped() signals will be emitted. Keep in mind
+ * that in a situation where multiple mission controls are controlling the rover, the playing() and stopped() signals
+ * may still be emitted if another mission control requests such a change, without any action from us.
+ *
+ * When this class is first created, it requires a list of QGst::ElementPtr that serve as the sinks for each of the
+ * videos we may receive. These cannot be changed without destroying and recreating the VideoController instance.
+ * Videos are assigned to sinks based on their index, so video 0 will play on sink index 0, etc.
+ *
+ * When no video is being streamed on any particular sink, a placeholder animation will be shown using a
+ * videotestsrc animation.
+ *
+ * Additionally, the signals error() and eos() may be emitted if there is an error decoding the video streamed
+ * by the rover.
+ */
 class VideoController : public QObject
 {
     Q_OBJECT

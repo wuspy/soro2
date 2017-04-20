@@ -27,6 +27,7 @@ Item {
         anchors.fill: parent
         url: "qrc:/html/map.html"
         enabled: activeView === "map"
+        z: enabled ? 1 : 0
     }
 
     /*

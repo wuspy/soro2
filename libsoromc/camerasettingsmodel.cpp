@@ -57,6 +57,7 @@ void CameraSettingsModel::load() {
         throw QString("Error parsing camera settings file: Item \"camera\" not found.");
     }
 
+    // Cameras will be inserted into this map by the 'index' value so that they will be sorted
     QMap<int, Camera> cameraMap;
 
     jsonCamerasArray = jsonDocument.object()["cameras"].toArray();

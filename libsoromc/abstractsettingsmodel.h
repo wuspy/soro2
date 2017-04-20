@@ -7,13 +7,17 @@
 
 namespace Soro {
 
-/* Main settings class for the application, handles loading settings
+/* Abstract class that can be made into a settings loader for 'key=value' formatted
+ * configuration files. It is based on QSettings, so all limitations and requirements
+ * of QSettings applies to this class as well.
  */
 class AbstractSettingsModel
 {
 public:
     ~AbstractSettingsModel();
 
+    /* Loads the settings from file. This will throw an exception of type QString if an error occurrs
+     */
     void load();
 
 protected:

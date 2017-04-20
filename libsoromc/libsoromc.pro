@@ -18,6 +18,7 @@ QT       += network widgets
 TARGET = soromc
 TEMPLATE = lib
 
+# NO_KEYWORDS: signal, slot, emit, etc. will not compile. Use Q_SIGNALS, Q_SLOTS, Q_EMIT instead
 CONFIG += no_keywords c++11
 
 DEFINES += LIBSOROMC_LIBRARY
@@ -27,8 +28,6 @@ DESTDIR = ../lib
 
 SOURCES += \
     camerasettingsmodel.cpp \
-    videoformat.cpp \
-    audioformat.cpp \
     logger.cpp \
     gstreamerutil.cpp \
     abstractsettingsmodel.cpp
@@ -37,23 +36,23 @@ HEADERS +=\
     libsoromc_global.h \
     camerasettingsmodel.h \
     constants.h \
-    mediaformat.h \
-    videoformat.h \
-    audioformat.h \
     logger.h \
     armmessage.h \
     gstreamerutil.h \
     abstractsettingsmodel.h
 
-# Include ROS headers
-INCLUDEPATH += /opt/ros/kinetic/include/
-DEPENDPATH += /opt/ros/kinetic/include/
-
 # Link against SDL2
 LIBS += -lSDL2
 
-# Link against Qt5Gstreamer
-#LIBS += -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUtils-1.0 -lQt5GStreamerQuick-1.0
+# In case you are curious, the following is a hacky way to link against ROS kinetic
+# from a qmake project.
+#
+# Of course you could just use cmake and catkin, however if you have a compelling
+# reason to stick with qmake (like we did) then here you go.
+
+# Include ROS headers
+INCLUDEPATH += /opt/ros/kinetic/include/
+DEPENDPATH += /opt/ros/kinetic/include/
 
 # Link against ROS
 LIBS += -L/opt/ros/kinetic/lib -lroslib

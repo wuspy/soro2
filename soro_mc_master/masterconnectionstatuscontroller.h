@@ -17,6 +17,27 @@
 
 namespace Soro {
 
+/* Master implementation of the connection status controller.
+ *
+ * This class tracks the following things:
+ *  - If we are connected to the rover
+ *  - The round-trip latency to the rover
+ *  - The bitrate up and down to the rover
+ *
+ * The latency is calculated by calling the ping service through ROS, using
+ * a PingWorker class. Connected status is determined by this latency; if we
+ * do not get a latency update from PingWorker in the alloted time, we will
+ * consider the rover disconnected for the time being. The latency is sent
+ * to the latency topic as soon as we get it to forward it to other mission
+ * controls.
+ *
+ * Bitrate is calculated based on two things:
+ *  - The bit logs we get from the bits_up_log and bits_down_log topics
+ *  - Bits logged using the logBitsUp() and logBitsDown() functions here
+ *
+ * The bitrate is calculated periodically from these bit logs, and is then emitted
+ * from the bitrateUpdate() signal and send to the bitrate ROS topic.
+ */
 class MasterConnectionStatusController : public QObject
 {
     Q_OBJECT
