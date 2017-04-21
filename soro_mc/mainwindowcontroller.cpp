@@ -41,7 +41,7 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
     if (!qmlComponent.errorString().isEmpty() || !_window)
     {
         // There was an error creating the QML window. This is most likely due to a QML syntax error
-        MainController::panic(LogTag, "Failed to create QML window:  %1").arg(qmlComponent.errorString());
+        MainController::panic(LogTag, QString("Failed to create QML window:  %1").arg(qmlComponent.errorString()));
     }
     //
     // Setup the camera views in the UI
