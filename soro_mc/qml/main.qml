@@ -22,6 +22,8 @@ import QtGraphicalEffects 1.0
 import QtWebEngine 1.4
 import Soro 1.0
 
+import "Theme.js" as Theme
+
 ApplicationWindow {
     visible: true
     width: 800
@@ -78,13 +80,6 @@ ApplicationWindow {
     property alias video7Surface: mainContentView.video7Surface
     property alias video8Surface: mainContentView.video8Surface
     property alias video9Surface: mainContentView.video9Surface
-
-    /*
-      Internal color properties used throughout the UI
-      */
-    property color theme_yellow: "#FBC02D"
-    property color theme_red: "#d32f2f"
-    property color theme_green: "#388E3C"
 
     /*
       Fullscreen state of the application, boolean
@@ -193,6 +188,10 @@ ApplicationWindow {
         }
     }
 
+    function notify(type, title, text) {
+        notificationHost.notify(type, title, text)
+    }
+
     MainContentView {
         id: mainContentView
         anchors.fill: parent
@@ -228,7 +227,7 @@ ApplicationWindow {
         id: miniConnectionStatusImage
         width: 64
         height: 64
-        anchors.top: parent.toptheme_yellow
+        anchors.top: parent.top
         anchors.left: parent.left
         anchors.leftMargin: 10
         anchors.topMargin: 10
@@ -242,13 +241,13 @@ ApplicationWindow {
         anchors.fill: miniPingLabel
         radius: 10
         samples: 20
-        color: "black"
+        color: Theme.shadow
     }
 
     Text {
         id: miniPingLabel
         visible: sidebar.state == "hidden"
-        color: "white"
+        color: Theme.foreground
         font.pixelSize: 48
         text: pingLabel.text
         anchors.leftMargin: 10
@@ -261,12 +260,12 @@ ApplicationWindow {
         anchors.fill: activeViewLabel
         radius: 10
         samples: 20
-        color: "black"
+        color: Theme.shadow
     }
 
     Text {
         id: activeViewLabel
-        color: "white"
+        color: Theme.foreground
         font.pixelSize: 48
         anchors.rightMargin: 10
         anchors.right: parent.right
@@ -296,8 +295,7 @@ ApplicationWindow {
             sourceRect: Qt.rect(sidebar.x, sidebar.y, sidebar.width, sidebar.height)
         }
 
-        radius: 64
-        opacity: 1
+        radius: Theme.blurRadius
     }
 
     /*
@@ -310,8 +308,7 @@ ApplicationWindow {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: 400
-        opacity: 1
-        color: "#88000000"
+        color: Theme.background
 
         states: [
             State {
@@ -380,7 +377,7 @@ ApplicationWindow {
             id: connectionStatusImageColorOverlay
             anchors.fill: connectionStatusImage
             source: connectionStatusImage
-            color: connected ? theme_green : theme_yellow
+            color: connected ? Theme.green : Theme.yellow
         }
 
         Label {
@@ -392,7 +389,7 @@ ApplicationWindow {
             anchors.left: connectionStatusImage.right
             anchors.verticalCenter: connectionStatusImage.verticalCenter
             text: connected ? "Connected" : "Connecting..."
-            color: connected ? theme_green : theme_yellow
+            color: connected ? Theme.green : Theme.yellow
         }
 
         Label {
@@ -404,7 +401,7 @@ ApplicationWindow {
             anchors.left: parent.horizontalCenter
             text: connected && latency > 0 ? latency + "ms" : "---"
             horizontalAlignment: Text.AlignHCenter
-            color: "white"
+            color: Theme.foreground
         }
 
         Label {
@@ -414,7 +411,7 @@ ApplicationWindow {
             anchors.right: parent.horizontalCenter
             horizontalAlignment: Text.AlignHCenter
             font.pixelSize: 24
-            color: "white"
+            color: Theme.foreground
             text: {
                 if (connected) {
                     var upUnits, downUnits;
@@ -475,9 +472,12 @@ ApplicationWindow {
     }
 
     NotificationHost {
+        id: notificationHost
+        notificationWidth: 500
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.left: sidebar.right
         anchors.right: parent.right
+        blurSource: mainContentView
     }
 }

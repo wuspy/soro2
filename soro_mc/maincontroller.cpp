@@ -275,12 +275,17 @@ void MainController::init(QApplication *app)
                                                   "Error playing " + _self->_cameraSettingsModel->getCamera(cameraIndex).name,
                                                   "Received end-of-stream message while streaming video");
                 });
-                connect(_self->_videoController, &VideoController::error, _self, [](VideoController::VideoError err))
+                connect(_self->_videoController, &VideoController::error, _self, [](VideoController::VideoError err)
                 {
-                    _self->_mainWindowController->notify(NOTIFICATION_TYPE_WARNING,
-                                                  "Camera count mismatch",
-                                                  "The rover thinks there should be a different number of cameras than we do. Make sure the 'cameras.json' settings file is the same on both sides.");
-                };
+                    switch (err)
+                    {
+                    case VideoController::VideoError_VideoCountMismatch:
+                        _self->_mainWindowController->notify(NOTIFICATION_TYPE_WARNING,
+                                                      "Camera count mismatch",
+                                                      "The rover thinks there should be a different number of cameras than we do. Make sure the 'cameras.json' settings file is the same on both sides.");
+                        break;
+                    }
+                });
                 connect(_self->_audioController, &AudioController::gstError, _self, [](QString message)
                 {
                     _self->_mainWindowController->notify(NOTIFICATION_TYPE_ERROR,

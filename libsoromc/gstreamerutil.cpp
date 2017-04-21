@@ -37,7 +37,7 @@ QString createRtpVideoDecodeBinString(QHostAddress address, quint16 port, uint c
 
 QString createVideoTestSrcBinString(QString pattern, uint width, uint height, uint framerate)
 {
-    return QString("videotestsrc pattern=%1 ! video/x-raw,width=%2,height=%3,framerate=%4/1 ! videoconvert")
+    return QString("videotestsrc pattern=%1 ! video/x-raw,format=GRAY8,width=%2,height=%3,framerate=%4/1 ! videoconvert")
             .arg(pattern, QString::number(width), QString::number(height), QString::number(framerate));
 }
 

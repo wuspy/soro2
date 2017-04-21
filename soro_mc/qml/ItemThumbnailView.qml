@@ -19,6 +19,8 @@ import QtQuick 2.0
 import QtGraphicalEffects 1.0
 import Soro 1.0
 
+import "Theme.js" as Theme
+
 Rectangle {
     property bool selected: false;
     id: shaderEffectSourceThumbnailView
@@ -33,7 +35,7 @@ Rectangle {
 
     width: 200
     height: width / 1.6
-    border.color: selected ? "#2196F3" : "white"
+    border.color: selected ? Theme.blue : Theme.foreground
     border.width: 4
 
     ShaderEffectSource {
@@ -47,7 +49,7 @@ Rectangle {
         anchors.fill: label
         radius: 10
         samples: 20
-        color: "black"
+        color: Theme.shadow
     }
 
     Text {
@@ -57,7 +59,7 @@ Rectangle {
         anchors.margins: 12
         font.pixelSize: 24
         font.bold: true
-        color: "white"
+        color: Theme.foreground
         text: parent.text
     }
 }

@@ -36,7 +36,7 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
     _cameraSettings = cameraSettings;
     _settings = settings;
 
-    QQmlComponent qmlComponent(engine, QUrl("qrc:/main.qml"));
+    QQmlComponent qmlComponent(engine, QUrl("qrc:/qml/main.qml"));
     _window = qobject_cast<QQuickWindow*>(qmlComponent.create());
     if (!qmlComponent.errorString().isEmpty() || !_window)
     {
@@ -125,7 +125,6 @@ void MainWindowController::notify(int type, QString title, QString message)
         typeString = "warning";
         break;
     case NOTIFICATION_TYPE_ERROR:
-    default:
         typeString = "error";
         break;
     }
