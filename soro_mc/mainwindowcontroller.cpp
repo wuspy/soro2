@@ -41,7 +41,7 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
     if (!qmlComponent.errorString().isEmpty() || !_window)
     {
         // There was an error creating the QML window. This is most likely due to a QML syntax error
-        throw QString("Failed to create QML window:  %1").arg(qmlComponent.errorString());
+        MainController::panic(LogTag, "Failed to create QML window:  %1").arg(qmlComponent.errorString());
     }
     //
     // Setup the camera views in the UI
@@ -73,9 +73,9 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
     Logger::logInfo(LogTag, "ROS publisher and subscriber created");
 }
 
-QList<QGst::ElementPtr> MainWindowController::getVideoSinks()
+QVector<QGst::ElementPtr> MainWindowController::getVideoSinks()
 {
-    QList<QGst::ElementPtr> sinks;
+    QVector<QGst::ElementPtr> sinks;
     for (int i = 0; i < 10; ++i)
     {
         if (_settings->getEnableHwRendering())
@@ -115,7 +115,22 @@ void MainWindowController::onNewNotification(ros_generated::notification msg)
 
 void MainWindowController::notify(int type, QString title, QString message)
 {
-    //TODO
+    QString typeString;
+    switch (type)
+    {
+    case NOTIFICATION_TYPE_INFO:
+        typeString = "info";
+        break;
+    case NOTIFICATION_TYPE_WARNING:
+        typeString = "warning";
+        break;
+    case NOTIFICATION_TYPE_ERROR:
+    default:
+        typeString = "error";
+        break;
+    }
+
+    QMetaObject::invokeMethod(_window, "notify", Q_ARG(QVariant, typeString), Q_ARG(QVariant, title), Q_ARG(QVariant, message));
 }
 
 void MainWindowController::notifyAll(int type, QString title, QString message)

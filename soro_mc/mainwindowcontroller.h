@@ -26,7 +26,7 @@ public:
     void notify(int type, QString title, QString message);
     void notifyAll(int type, QString title, QString message);
 
-    QList<QGst::ElementPtr> getVideoSinks();
+    QVector<QGst::ElementPtr> getVideoSinks();
 
 private:
     void onNewNotification(ros_generated::notification msg);
