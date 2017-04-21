@@ -135,7 +135,7 @@ void MainController::init(QApplication *app)
             connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::bitrateUpdate,
                     _self->_mainWindowController, &MainWindowController::onBitrateUpdated);
 
-            connect(_self->_mediaBouncer, &MediaBouncer::bitsRead,
+            connect(_self->_mediaBouncer, &MediaBouncer::bitsDown,
                     _self->_masterConnectionStatusController, &MasterConnectionStatusController::logBitsDown);
 
             Logger::logInfo(LogTag, "Initialization complete");

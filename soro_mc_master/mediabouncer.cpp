@@ -10,7 +10,7 @@ MediaBouncer::MediaBouncer(QObject *parent) : QObject(parent)
     {
         UdpBouncer *b = new UdpBouncer(QHostAddress::Any, i, QAbstractSocket::ShareAddress, this);
         _bouncers.append(b);
-        connect(b, &UdpBouncer::bitsRead, this, &MediaBouncer::bitsRead);
+        connect(b, &UdpBouncer::bitsDown, this, &MediaBouncer::bitsDown);
     }
 }
 

@@ -22,7 +22,7 @@ UdpBouncer::UdpBouncer(QHostAddress address, quint16 port, QAbstractSocket::Bind
             {
                 _socket.writeDatagram(_buffer, len, _bounceAddresses.value(i), _bouncePorts.value(i));
             }
-            Q_EMIT bitsRead(len);
+            Q_EMIT bitsDown(len);
         }
     });
 }

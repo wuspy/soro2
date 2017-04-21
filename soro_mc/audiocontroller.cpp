@@ -32,18 +32,18 @@ AudioController::AudioController(QObject *parent) : QObject(parent)
     //
     // Setup audio_ack topic subscriber
     //
-    Logger::logInfo(LogTag, "Creating ROS subscriber for audio_ack topic...");
-    _audioSubscriber = _nh.subscribe
+    Logger::logInfo(LogTag, "Creating ROS subscriber for audio_state topic...");
+    _audioStateSubscriber = _nh.subscribe
             <ros_generated::audio, Soro::AudioController>
-            ("audio_ack", 1, &AudioController::onAudioResponse, this);
-    if (!_audioSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for audio_ack topic");
+            ("audio_state", 1, &AudioController::onAudioResponse, this);
+    if (!_audioStateSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for audio_state topic");
 
     //
     // Setup audio topic publisher
     //
-    Logger::logInfo(LogTag, "Creating ROS publisher for audio topic...");
-    _audioPublisher = _nh.advertise<ros_generated::audio>("audio", 1);
-    if (!_audioPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for audio topic");
+    Logger::logInfo(LogTag, "Creating ROS publisher for audio_request topic...");
+    _audioStatePublisher = _nh.advertise<ros_generated::audio>("audio_request", 1);
+    if (!_audioStatePublisher) MainController::panic(LogTag, "Failed to create ROS publisher for audio_request topic");
 
     Logger::logInfo(LogTag, "All ROS publishers and subscribers created");
 
@@ -70,8 +70,8 @@ void AudioController::onAudioResponse(ros_generated::audio msg)
 
         // Add signal watch to subscribe to bus events, like errors
         _pipelineWatch = new GStreamerPipelineWatch(0, _pipeline, this);
-        connect(_pipelineWatch, &GStreamerPipelineWatch::eos, this, &AudioController::eos);
-        connect(_pipelineWatch, &GStreamerPipelineWatch::error, this, &AudioController::error);
+        connect(_pipelineWatch, &GStreamerPipelineWatch::eos, this, &AudioController::gstEos);
+        connect(_pipelineWatch, &GStreamerPipelineWatch::error, this, &AudioController::gstError);
 
         // Play
         _pipeline->setState(QGst::StatePlaying);
@@ -107,8 +107,8 @@ void AudioController::clearPipeline()
     }
     if (_pipelineWatch)
     {
-        disconnect(_pipelineWatch, &GStreamerPipelineWatch::eos, this, &AudioController::eos);
-        disconnect(_pipelineWatch, &GStreamerPipelineWatch::error, this, &AudioController::error);
+        disconnect(_pipelineWatch, &GStreamerPipelineWatch::eos, this, &AudioController::gstEos);
+        disconnect(_pipelineWatch, &GStreamerPipelineWatch::error, this, &AudioController::gstError);
         delete _pipelineWatch;
         _pipelineWatch = nullptr;
     }
@@ -122,7 +122,7 @@ void AudioController::play(quint8 codec)
     msg.on = true;
 
     Logger::logInfo(LogTag, QString("Sending audio ON requet to rover with codec %1").arg(GStreamerUtil::getCodecName(codec)));
-    _audioPublisher.publish(msg);
+    _audioStatePublisher.publish(msg);
 }
 
 void AudioController::stop()
@@ -133,7 +133,7 @@ void AudioController::stop()
     msg.on = false;
 
     Logger::logInfo(LogTag, "Sending audio OFF requet to rover");
-    _audioPublisher.publish(msg);
+    _audioStatePublisher.publish(msg);
 }
 
 } // namespace Soro

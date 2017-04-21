@@ -27,11 +27,15 @@
 
 namespace Soro {
 
-VideoController::VideoController(const SettingsModel *settings, const CameraSettingsModel *cameraSettings, QList<QGst::ElementPtr> sinks, QObject *parent) : QObject(parent)
+VideoController::VideoController(const SettingsModel *settings, const CameraSettingsModel *cameraSettings, QVector<QGst::ElementPtr> sinks, QObject *parent) : QObject(parent)
 {
     _settings = settings;
     _cameraSettings = cameraSettings;
     _sinks = sinks;
+
+    ros_generated::video videoOffState;
+    videoOffState.on = false;
+    videoOffState.encoding = CODEC_NULL;
 
     // Fill video state lists with default values
     for (int i = 0; i < cameraSettings->getCameraCount(); ++i)
@@ -40,19 +44,20 @@ VideoController::VideoController(const SettingsModel *settings, const CameraSett
         _bins.append(QGst::BinPtr());
         _codecs.append(CODEC_NULL);
         _pipelineWatches.append(nullptr);
+        _videoStates.append(videoOffState);
 
         stopVideoOnSink(i);
     }
 
-    Logger::logInfo(LogTag, "Creating ROS subscriber for video_ack topic...");
-    _videoSubscriber = _nh.subscribe
-            <ros_generated::video, Soro::VideoController>
-            ("video_ack", 1, &VideoController::onVideoResponse, this);
-    if (!_videoSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for video_ack topic");
+    Logger::logInfo(LogTag, "Creating ROS subscriber for video_state topic...");
+    _videoStateSubscriber = _nh.subscribe
+            <ros_generated::video_state, Soro::VideoController>
+            ("video_state", 1, &VideoController::onVideoResponse, this);
+    if (!_videoStateSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for video_state topic");
 
-    Logger::logInfo(LogTag, "Creating ROS publisher for video topic...");
-    _videoPublisher = _nh.advertise<ros_generated::video>("video", 1);
-    if (!_videoPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for video topic");
+    Logger::logInfo(LogTag, "Creating ROS publisher for video_request topic...");
+    _videoRequestPublisher = _nh.advertise<ros_generated::video>("video_request", 1);
+    if (!_videoRequestPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for video_request topic");
 
     Logger::logInfo(LogTag, "All ROS publishers and subscribers created");
 }
@@ -65,17 +70,43 @@ VideoController::~VideoController()
     }
 }
 
-void VideoController::onVideoResponse(ros_generated::video msg)
+void VideoController::onVideoResponse(ros_generated::video_state msg)
 {
-    if (msg.on)
+    // Make sure the rover has the same number of cameras as us
+    if ((int)msg.videoStates.size() != (int)_videoStates.size())
     {
-        // Video is streaming
-        playVideoOnSink(msg.cameraId, msg.encoding);
+        Logger::logError(LogTag, QString("The rover sent us the state of %1 cameras, but we were expecting %2")
+                        .arg(msg.videoStates.size(), _videoStates.size()));
+        Q_EMIT error(VideoError_VideoCountMismatch);
     }
-    else
+
+    // Loop over all video states to see if they've changed
+    for (int i = 0; i < qMin((int)msg.videoStates.size(), _videoStates.size()); ++i)
     {
-        // Video is NOT streaming
-        stopVideoOnSink(msg.cameraId);
+        ros_generated::video newState = msg.videoStates[i];
+        ros_generated::video oldState = _videoStates.value(i);
+
+        if ((newState.on != oldState.on) ||
+                (newState.encoding != oldState.encoding) ||
+                (newState.width != oldState.width) ||
+                (newState.height != oldState.height) ||
+                (newState.fps != oldState.fps) ||
+                (newState.bitrate != oldState.bitrate) ||
+                (newState.quality != oldState.quality))
+        {
+            // Video state has changed
+            _videoStates[i] = newState;
+            if (newState.on)
+            {
+                // Video is streaming
+                playVideoOnSink(newState.cameraId, newState.encoding);
+            }
+            else
+            {
+                // Video is NOT streaming
+                stopVideoOnSink(newState.cameraId);
+            }
+        }
     }
 }
 
@@ -95,7 +126,7 @@ void VideoController::play(uint cameraIndex, quint8 codec, uint width, uint heig
     Logger::logInfo(LogTag, QString("Sending video ON request to the rover for camera %1: [Codec %2, %3x%4, %5fps, %6bps, %7q]").arg(
                         QString::number(cameraIndex), QString::number(codec), QString::number(width), QString::number(height),
                         QString::number(framerate), QString::number(bitrate), QString::number(quality)));
-    _videoPublisher.publish(msg);
+    _videoRequestPublisher.publish(msg);
 }
 
 void VideoController::constructPipelineOnSink(uint cameraIndex, QString sourceBinString)
@@ -109,19 +140,19 @@ void VideoController::constructPipelineOnSink(uint cameraIndex, QString sourceBi
     if (_sinks[cameraIndex].isNull())
     {
         Logger::logError(LogTag, QString("Supplied sink for video %1 is NULL").arg(cameraIndex));
-        Q_EMIT error("Supplied sink is null", cameraIndex);
+        Q_EMIT gstError("Supplied sink is null", cameraIndex);
         return;
     }
     if (_pipelines[cameraIndex].isNull())
     {
         Logger::logError(LogTag, QString("Failed to create pipeline video%1Pipeline").arg(cameraIndex));
-        Q_EMIT error("Failed to create pipeline", cameraIndex);
+        Q_EMIT gstError("Failed to create pipeline", cameraIndex);
         return;
     }
     if (_bins[cameraIndex].isNull())
     {
         Logger::logError(LogTag, QString("Failed to create binary '%1' for video%2Pipeline").arg(sourceBinString, QString::number(cameraIndex)));
-        Q_EMIT error(QString("Failed to create binary '%1'").arg(sourceBinString), cameraIndex);
+        Q_EMIT gstError(QString("Failed to create binary '%1'").arg(sourceBinString), cameraIndex);
         return;
     }
 
@@ -129,8 +160,8 @@ void VideoController::constructPipelineOnSink(uint cameraIndex, QString sourceBi
     _bins[cameraIndex]->link(_sinks[cameraIndex]);
 
     _pipelineWatches[cameraIndex] = new GStreamerPipelineWatch(cameraIndex, _pipelines[cameraIndex], this);
-    connect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::eos, this, &VideoController::eos);
-    connect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::error, this, &VideoController::error);
+    connect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::eos, this, &VideoController::gstEos);
+    connect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::error, this, &VideoController::gstError);
 
     _pipelines[cameraIndex]->setState(QGst::StatePlaying);
 }
@@ -164,7 +195,7 @@ void VideoController::stop(uint cameraIndex)
     msg.encoding = CODEC_NULL;
 
     Logger::logInfo(LogTag, QString("Sending video OFF request to the rover for camera %1").arg(cameraIndex));
-    _videoPublisher.publish(msg);
+    _videoRequestPublisher.publish(msg);
 }
 
 void VideoController::clearPipeline(uint cameraIndex)
@@ -177,8 +208,8 @@ void VideoController::clearPipeline(uint cameraIndex)
     }
     if (_pipelineWatches.value(cameraIndex) != nullptr)
     {
-        disconnect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::eos, this, &VideoController::eos);
-        disconnect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::error, this, &VideoController::error);
+        disconnect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::eos, this, &VideoController::gstEos);
+        disconnect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::error, this, &VideoController::gstError);
         delete _pipelineWatches[cameraIndex];
         _pipelineWatches[cameraIndex] = nullptr;
     }

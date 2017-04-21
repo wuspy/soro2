@@ -16,7 +16,7 @@ namespace Soro {
  * You can play or stop the rover's audio stream with the play() and stop() functions. Once
  * the rover responds to this request, the playing() and stopped() signals will be emitted.
  *
- * Additionally, the error() and eos() signals may be emitted if there is an error decoding
+ * Additionally, the gstError() and gstEsos() signals may be emitted if there is an error decoding
  * the audio stream.
  */
 class AudioController : public QObject
@@ -41,11 +41,11 @@ Q_SIGNALS:
     /* Emitted when an audio decoding error is encountered. This does not mean the
      * rover is no longer streaming audio, only that we could not play it
      */
-    void error(QString message);
+    void gstError(QString message);
     /* Emitted when an EOS message is encountered while playing the stream. This should
      * really never happen, and can be considered a decoding error.
      */
-    void eos();
+    void gstEos();
 
 public Q_SLOTS:
     void play(quint8 codec);
@@ -60,8 +60,8 @@ private:
     GStreamerPipelineWatch *_pipelineWatch;
 
     ros::NodeHandle _nh;
-    ros::Subscriber _audioSubscriber;
-    ros::Publisher _audioPublisher;
+    ros::Subscriber _audioStateSubscriber;
+    ros::Publisher _audioStatePublisher;
 
     quint8 _codec;
 };

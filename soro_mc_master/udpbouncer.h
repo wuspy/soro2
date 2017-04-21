@@ -19,7 +19,9 @@ public:
     quint16 getBindPort() const;
 
 Q_SIGNALS:
-    void bitsRead(int bits);
+    /* Emitted when data is received from the socket
+     */
+    void bitsDown(int bits);
 
 public Q_SLOTS:
     /* Add an address to forward traffic to

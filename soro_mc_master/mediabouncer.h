@@ -7,6 +7,8 @@
 
 namespace Soro {
 
+/* Forwards audio and video to all mission controls
+ */
 class MediaBouncer : public QObject
 {
     Q_OBJECT
@@ -15,7 +17,7 @@ public:
     ~MediaBouncer();
 
 Q_SIGNALS:
-    void bitsRead(int bits);
+    void bitsDown(int bits);
 
 public Q_SLOTS:
     void addBounceAddress(QHostAddress address);
