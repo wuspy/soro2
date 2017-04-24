@@ -37,7 +37,8 @@ HEADERS += \
     gstreamerpipelinewatch.h \
     armcontrolsystem.h \
     qmlgstreamerpainteditem.h \
-    qmlgstreamerglitem.h
+    qmlgstreamerglitem.h \
+    bindssettingsmodel.h
 
 SOURCES += main.cpp \
     gamepadcontroller.cpp \
@@ -52,7 +53,8 @@ SOURCES += main.cpp \
     gstreamerpipelinewatch.cpp \
     armcontrolsystem.cpp \
     qmlgstreamerpainteditem.cpp \
-    qmlgstreamerglitem.cpp
+    qmlgstreamerglitem.cpp \
+    bindssettingsmodel.cpp
 
 RESOURCES += qml.qrc \
     assets.qrc

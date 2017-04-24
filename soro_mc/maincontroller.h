@@ -8,6 +8,7 @@
 
 #include "settingsmodel.h"
 #include "libsoromc/camerasettingsmodel.h"
+#include "libsoromc/mediaprofilesettingsmodel.h"
 
 #include "gamepadcontroller.h"
 #include "gamepadcontroller.h"
@@ -18,6 +19,7 @@
 #include "videocontroller.h"
 #include "masterlocator.h"
 #include "armcontrolsystem.h"
+#include "bindssettingsmodel.h"
 
 namespace Soro {
 
@@ -45,6 +47,8 @@ private:
     AudioController *_audioController = nullptr;
     VideoController *_videoController = nullptr;
     CameraSettingsModel *_cameraSettingsModel = nullptr;
+    BindsSettingsModel *_bindsSettingsModel = nullptr;
+    MediaProfileSettingsModel *_mediaProfileSettingsModel = nullptr;
     MainWindowController *_mainWindowController = nullptr;
     DriveControlSystem *_driveControlSystem = nullptr;
     MasterLocator *_masterLocator = nullptr;

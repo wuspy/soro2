@@ -13,10 +13,12 @@ namespace Soro {
  */
 class CameraSettingsModel
 {
+    Q_GADGET
 public:
     /* This struct represents a single camera definition
      */
-    struct Camera {
+    struct Camera
+    {
         QString name;
         QString serial;
         QString vendorId;

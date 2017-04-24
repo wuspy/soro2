@@ -32,7 +32,7 @@ QString createRtpAudioDecodeBinString(QHostAddress address, quint16 port, uint c
 
 QString createRtpVideoDecodeBinString(QHostAddress address, quint16 port, uint codec, bool vaapi)
 {
-    return createRtpDepayBinString(address, port, codec) + " ! " + getVideoCodecDecodeElement(codec, vaapi);
+    return createRtpDepayBinString(address, port, codec) + " ! " + getVideoCodecDecodeElement(codec, vaapi) + " ! video/x-raw,format=RGB ! videoconvert";
 }
 
 QString createVideoTestSrcBinString(QString pattern, uint width, uint height, uint framerate)

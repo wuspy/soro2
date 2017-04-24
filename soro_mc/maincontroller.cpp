@@ -100,6 +100,36 @@ void MainController::init(QApplication *app)
             }
 
             //
+            // Create media settings model to load audio/video profile configuration
+            //
+            Logger::logInfo(LogTag, "Loading media profile settings...");
+            try
+            {
+                _self->_mediaProfileSettingsModel = new MediaProfileSettingsModel;
+                _self->_mediaProfileSettingsModel->load();
+            }
+            catch (QString err)
+            {
+                panic(LogTag, QString("Error loading media profile settings: %1").arg(err));
+                return;
+            }
+
+            //
+            // Create media settings model to load keyboard & gamepad bindings
+            //
+            Logger::logInfo(LogTag, "Loading keyboard and gamepad binding profile settings...");
+            try
+            {
+                _self->_bindsSettingsModel = new BindsSettingsModel;
+                _self->_bindsSettingsModel->load();
+            }
+            catch (QString err)
+            {
+                panic(LogTag, QString("Error loading keyboard and gamepad binding profile settings: %1").arg(err));
+                return;
+            }
+
+            //
             // Initialize Qt5GStreamer, must be called before anything else is done with it
             //
             Logger::logInfo(LogTag, "Initializing QtGstreamer...");

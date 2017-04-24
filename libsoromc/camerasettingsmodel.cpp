@@ -30,7 +30,6 @@ void CameraSettingsModel::load() {
     QByteArray rawJson;
     QJsonDocument jsonDocument;
     QJsonArray jsonCamerasArray;
-    QJsonArray jsonGroupsArray;
     QJsonParseError jsonError;
     QFile file(FILE_PATH);
 
@@ -54,21 +53,21 @@ void CameraSettingsModel::load() {
 
     if (!jsonDocument.object().contains("cameras"))
     {
-        throw QString("Error parsing camera settings file: Item \"camera\" not found.");
+        throw QString("Error parsing video profiles settings file \"%1\": Item \"cameras\" not found.").arg(FILE_PATH);
     }
 
     // Cameras will be inserted into this map by the 'index' value so that they will be sorted
     QMap<int, Camera> cameraMap;
 
     jsonCamerasArray = jsonDocument.object()["cameras"].toArray();
-    Q_FOREACH (QJsonValue jsonCamera, jsonCamerasArray)
+    Q_FOREACH (QJsonValue jsonObject, jsonCamerasArray)
     {
         Camera camera;
-        int index = jsonCamera.toObject()["index"].toInt(-1);
-        camera.name = jsonCamera.toObject()["name"].toString("");
-        camera.serial = jsonCamera.toObject()["matchSerial"].toString();
-        camera.productId = jsonCamera.toObject()["matchProductId"].toString();
-        camera.vendorId = jsonCamera.toObject()["matchVendorId"].toString();
+        int index = jsonObject.toObject()["index"].toInt(-1);
+        camera.name = jsonObject.toObject()["name"].toString("");
+        camera.serial = jsonObject.toObject()["matchSerial"].toString();
+        camera.productId = jsonObject.toObject()["matchProductId"].toString();
+        camera.vendorId = jsonObject.toObject()["matchVendorId"].toString();
 
         if (index < 0)
         {

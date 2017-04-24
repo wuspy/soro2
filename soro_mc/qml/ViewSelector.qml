@@ -65,7 +65,6 @@ Item {
         }
     }
 
-
     Flickable {
         id: flickable
         clip: true

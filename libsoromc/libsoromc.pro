@@ -31,7 +31,8 @@ SOURCES += \
     logger.cpp \
     gstreamerutil.cpp \
     abstractsettingsmodel.cpp \
-    socketaddress.cpp
+    socketaddress.cpp \
+    mediaprofilesettingsmodel.cpp
 
 HEADERS +=\
     libsoromc_global.h \
@@ -41,7 +42,8 @@ HEADERS +=\
     armmessage.h \
     gstreamerutil.h \
     abstractsettingsmodel.h \
-    socketaddress.h
+    socketaddress.h \
+    mediaprofilesettingsmodel.h
 
 # Link against SDL2
 LIBS += -lSDL2
