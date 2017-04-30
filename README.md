@@ -1,4 +1,4 @@
-# soro2-mc
+# soro2
 
 This is the repository for all of the Qt-based software for the 2016-2017 Sooner Rover Team. It includes:
  * All Mission Control components
