@@ -1,6 +1,10 @@
 # soro2-mc
 
-This is the repository for the mission control software for the 2016-1017 Sooner Rover Team.
+This is the repository for all of the Qt-based software for the 2016-2017 Sooner Rover Team. It includes:
+ * All Mission Control components
+ * The Rover video server
+ 
+Additional software, written in other languages, is also needed to complete this software suite. Links to these projects will be added here shortly.
 
 ## Dependencies
 
