@@ -7,12 +7,16 @@
 #define SORO_MC_MASTER_PROCESS_PATH QCoreApplication::applicationDirPath() + "/soro_mc_master"
 #define SORO_ROVER_STREAM_PROCESS_PATH QCoreApplication::applicationDirPath() + "/soro_streamer"
 
-#define SORO_NET_ROS_MASTER_PORT        5555
-#define SORO_NET_MASTER_BROADCAST_PORT  5556
-#define SORO_NET_MASTER_ARM_PORT        5558
-#define SORO_NET_AUDIO_PORT             5559
-#define SORO_NET_FIRST_VIDEO_PORT       5560
-#define SORO_NET_LAST_VIDEO_PORT        5599
+#define SORO_DBUS_SERVICE_NAME "edu.ou.soonerrover"
+#define SORO_DBUS_VIDEO_PARENT_OBJECT_NAME "/videoParent"
+#define SORO_DBUS_VIDEO_CHILD_OBJECT_NAME(pid) "/videoChild_" + pid
+#define SORO_DBUS_AUDIO_PARENT_OBJECT_NAME "/audioParent"
+#define SORO_DBUS_AUIDO_CHILD_OBJECT_NAME(pid) "/audioChild_" + pid
+
+#define SORO_NET_MC_BROADCAST_PORT              5557
+#define SORO_NET_MASTER_ARM_PORT                5558
+#define SORO_NET_AUDIO_PORT                     5559
+#define SORO_NET_FIRST_VIDEO_PORT               5560
 
 #define NOTIFICATION_TYPE_ERROR     0
 #define NOTIFICATION_TYPE_WARNING   1

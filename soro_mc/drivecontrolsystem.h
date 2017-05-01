@@ -19,6 +19,12 @@ public:
                                 ConnectionStatusController *connectionStatusController,
                                 QObject *parent = 0);
 
+    void setSkidSteerFactor(float factor);
+    float getSkidSteerFactor() const;
+
+    void setLimit(float limit);
+    float getLimit() const;
+
 private:
     ros_generated::drive buildDriveMessage();
 
@@ -30,6 +36,8 @@ private:
     ros::Publisher _drivePublisher;
 
     int _sendTimerId;
+    float _skidSteerFactor;
+    float _limit;
 
 protected:
     void timerEvent(QTimerEvent* e);

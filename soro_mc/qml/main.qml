@@ -399,7 +399,7 @@ ApplicationWindow {
             anchors.right: parent.right
             anchors.rightMargin: 10
             anchors.left: parent.horizontalCenter
-            text: connected && latency > 0 ? latency + "ms" : "---"
+            text: connected && latency >= 0 ? latency + "ms" : "---"
             horizontalAlignment: Text.AlignHCenter
             color: Theme.foreground
         }
@@ -415,31 +415,31 @@ ApplicationWindow {
             text: {
                 if (connected) {
                     var upUnits, downUnits;
-                    if (bpsUp > 1000000) {
+                    if (bitrateUp > 1000000) {
                         upUnits = "Mb/s"
-                        bpsUp = Math.round(bpsUp / 10000) / 100
+                        bitrateUp = Math.round(bitrateUp / 10000) / 100
                     }
-                    else if (bpsUp > 1000) {
+                    else if (bitrateUp > 1000) {
                         upUnits = "Kb/s"
-                        bpsUp = Math.round(bpsUp / 10) / 100
+                        bitrateUp = Math.round(bitrateUp / 10) / 100
                     }
                     else {
                         upUnits = "b/s"
                     }
-                    if (bpsDown > 1000000) {
+                    if (bitrateDown > 1000000) {
                         downUnits = "Mb/s"
-                        bpsDown = Math.round(bpsDown / 10000) / 100
+                        bitrateDown = Math.round(bitrateDown / 10000) / 100
                     }
-                    else if (bpsDown > 1000) {
+                    else if (bitrateDown > 1000) {
                         downUnits = "Kb/s"
-                        bpsDown = Math.round(bpsDown / 10) / 100
+                        bitrateDown = Math.round(bitrateDown / 10) / 100
                     }
                     else {
                         downUnits = "b/s"
                     }
-                    "▲ <b>" + bpsUp + "</b> " + upUnits +
+                    "▲ <b>" + bitrateUp + "</b> " + upUnits +
                     "<br>" +
-                    "▼ <b>" + bpsDown + "</b> " + downUnits
+                    "▼ <b>" + bitrateDown + "</b> " + downUnits
                 }
                 else {
                     "---<br>---"

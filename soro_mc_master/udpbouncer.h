@@ -31,6 +31,9 @@ public Q_SLOTS:
      */
     void removeBounceAddress(QHostAddress address, quint16 port);
 
+    //void start();
+
+
 private:
     char _buffer[65536];
     QUdpSocket _socket;

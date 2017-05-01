@@ -16,58 +16,39 @@
 
 #include "abstractsettingsmodel.h"
 #include "constants.h"
+#include "logger.h"
 
 #include <QCoreApplication>
 #include <QFile>
 
+#define LogTag "AbstractSettingsModel"
+
 namespace Soro {
-
-AbstractSettingsModel::~AbstractSettingsModel()
-{
-    if (_settings) delete _settings;
-}
-
-void AbstractSettingsModel::fatalLoadError(QString message)
-{
-    delete _settings;
-    _settings = nullptr;
-    throw message;
-}
 
 void AbstractSettingsModel::load()
 {
-    _settings = new QSettings(getFilePath(), QSettings::IniFormat);
-    // Check that the settings file exists
-    if (!QFile(getFilePath()).exists())
-    {
-        fatalLoadError(QString("The settings file %1 does not exist.").arg(getFilePath()));
-    }
-    _settings->sync();
-
-    // Check for any errors loading the settings file
-    switch (_settings->status())
-    {
-    case QSettings::AccessError:
-        fatalLoadError(QString("The settings file %1 could not be accessed. This could mean it's in use by another program.").arg(getFilePath()));
-        break;
-    case QSettings::FormatError:
-        fatalLoadError(QString("The settings file %1 is malformed.").arg(getFilePath()));
-        break;
-    default: break;
-    }
-
     QHash<QString, int> keys = getKeys();
-    Q_FOREACH (QString key, keys.keys())
+    for (QString key : keys.keys())
     {
-        if (!_settings->contains(key))
+        QVariant value;
+        if (getenv(key.toLatin1().constData()) == nullptr)
         {
-            fatalLoadError(QString("Entry for '%1' was not found in the settings file.").arg(key));
+            // Key is not defined, use default value
+            value = getDefaultValues().value(key);
+            Logger::logWarn(LogTag, QString("'%1' was not defined in the environment, using default value '%2'").arg(key, value.toString()));
         }
-        if (!_settings->value(key).canConvert(keys.value(key)))
+        else
         {
-            fatalLoadError(QString("Entry for %1 is of the wrong type. It should be '%2', but it appears to be '%3'.")
-                    .arg(key, QVariant::typeToName(keys.value(key)), _settings->value(key).typeName()));
+            value = QVariant(getenv(key.toLatin1().constData()));
+            Logger::logWarn(LogTag, QString("Using environment value '%2' for setting '%1'").arg(key, value.toString()));
         }
+
+        if (!value.canConvert(keys.value(key)))
+        {
+            throw QString("Entry for %1 is of the wrong type. It should be '%2', but it appears to be '%3'.")
+                    .arg(key, QVariant::typeToName(keys.value(key)), _values.value(key).typeName());
+        }
+        _values.insert(key, value);
     }
 }
 

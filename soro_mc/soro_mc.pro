@@ -31,7 +31,6 @@ HEADERS += \
     mainwindowcontroller.h \
     connectionstatuscontroller.h \
     settingsmodel.h \
-    masterlocator.h \
     audiocontroller.h \
     videocontroller.h \
     gstreamerpipelinewatch.h \
@@ -47,7 +46,6 @@ SOURCES += main.cpp \
     drivecontrolsystem.cpp \
     connectionstatuscontroller.cpp \
     settingsmodel.cpp \
-    masterlocator.cpp \
     audiocontroller.cpp \
     videocontroller.cpp \
     gstreamerpipelinewatch.cpp \

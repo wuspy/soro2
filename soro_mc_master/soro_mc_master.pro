@@ -27,31 +27,28 @@ TEMPLATE = app
 INCLUDEPATH += $$PWD/..
 
 SOURCES += main.cpp \
-    roscorecontroller.cpp \
-    broadcaster.cpp \
     mainwindowcontroller.cpp \
     maincontroller.cpp \
     masterconnectionstatuscontroller.cpp \
     pingworker.cpp \
     settingsmodel.cpp \
     udpbouncer.cpp \
-    mediabouncer.cpp
+    mastervideocontroller.cpp \
+    missioncontrolnetwork.cpp
 
 HEADERS += \
-    roscorecontroller.h \
-    broadcaster.h \
     mainwindowcontroller.h \
     maincontroller.h \
     masterconnectionstatuscontroller.h \
     pingworker.h \
     settingsmodel.h \
     udpbouncer.h \
-    mediabouncer.h
+    mastervideocontroller.h \
+    missioncontrolnetwork.h
 
 RESOURCES += \
     qml.qrc \
     assets.qrc
-
 
 # Link against soro_core
 LIBS += -L../lib -lsoro_core

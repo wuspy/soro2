@@ -15,28 +15,27 @@
  */
 
 #include "broadcaster.h"
-#include "maincontroller.h"
-#include "soro_core/constants.h"
+#include "constants.h"
 
 #define LogTag "Broadcaster"
 
 namespace Soro {
 
-Broadcaster::Broadcaster(QObject *parent) : QObject(parent)
+Broadcaster::Broadcaster(quint16 port, QString message, int interval, QObject *parent) : QObject(parent)
 {
-    _socket = new QUdpSocket(this);
-    if (!_socket->bind(SORO_NET_MASTER_BROADCAST_PORT, QUdpSocket::ShareAddress))
+    _message = message.toLatin1().constData();
+    if (!_socket.bind(port, QUdpSocket::ShareAddress))
     {
-        MainController::panic(LogTag, QString("Could not bind to UDP port %1. Ensure no other master processes are running.").arg(SORO_NET_MASTER_BROADCAST_PORT));
+        throw QString("Could not bind to UDP port %1. Ensure no other master processes are running.").arg(port);
     }
-    _broadcastTimerId = startTimer(500);
+    _broadcastTimerId = startTimer(interval);
 }
 
 void Broadcaster::timerEvent(QTimerEvent *e)
 {
     if (e->timerId() == _broadcastTimerId)
     {
-        _socket->writeDatagram(QByteArray("master"), QHostAddress::Broadcast, SORO_NET_MASTER_BROADCAST_PORT);
+        _socket.writeDatagram(_message, strlen(_message), QHostAddress::Broadcast, _port);
     }
 }
 

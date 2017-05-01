@@ -5,10 +5,12 @@
 #include <QApplication>
 #include <QQmlEngine>
 #include <QUdpSocket>
+#include <QTimerEvent>
 
 #include "settingsmodel.h"
 #include "soro_core/camerasettingsmodel.h"
 #include "soro_core/mediaprofilesettingsmodel.h"
+#include "soro_core/broadcaster.h"
 
 #include "gamepadcontroller.h"
 #include "gamepadcontroller.h"
@@ -17,7 +19,6 @@
 #include "drivecontrolsystem.h"
 #include "audiocontroller.h"
 #include "videocontroller.h"
-#include "masterlocator.h"
 #include "armcontrolsystem.h"
 #include "bindssettingsmodel.h"
 
@@ -32,12 +33,17 @@ public:
 
     static QString getId();
 
+protected:
+    void timerEvent(QTimerEvent *e);
+
 private:
 
     explicit MainController(QObject *parent=0);
     QString genId();
 
     static MainController *_self;
+
+    int _rosSpinTimerId;
 
     QUdpSocket *_rosInitUdpSocket = nullptr;
     QString _mcId;
@@ -51,9 +57,9 @@ private:
     MediaProfileSettingsModel *_mediaProfileSettingsModel = nullptr;
     MainWindowController *_mainWindowController = nullptr;
     DriveControlSystem *_driveControlSystem = nullptr;
-    MasterLocator *_masterLocator = nullptr;
     ConnectionStatusController *_connectionStatusController = nullptr;
     ArmControlSystem * _armControlSystem = nullptr;
+    Broadcaster *_mcBroadcaster = nullptr;
 };
 
 } // namespace Soro

@@ -31,6 +31,7 @@ DriveControlSystem::DriveControlSystem(int sendInterval, const GamepadController
 {
     _gamepad = gamepad;
     _connectionStatusController = connectionStatusController;
+    setSkidSteerFactor(0.2);
 
     _sendTimerId = startTimer(qMax<int>(sendInterval, 10));
     Logger::logInfo(LogTag, "Creating publisher...");
@@ -38,17 +39,42 @@ DriveControlSystem::DriveControlSystem(int sendInterval, const GamepadController
     Logger::logInfo(LogTag, "Publisher created");
 }
 
+void DriveControlSystem::setSkidSteerFactor(float factor)
+{
+    if (factor > 1.0) _skidSteerFactor = 1.0;
+    else if (factor < 0.0) _skidSteerFactor = 0.0;
+    else _skidSteerFactor = factor;
+}
+
+float DriveControlSystem::getSkidSteerFactor() const
+{
+    return _skidSteerFactor;
+}
+
+void DriveControlSystem::setLimit(float limit)
+{
+    if (limit > 1.0) _limit = 1.0;
+    else if (limit < 0.0) _limit = 0.0;
+    else _limit = limit;
+}
+
+float DriveControlSystem::getLimit() const
+{
+    return _limit;
+}
+
 ros_generated::drive DriveControlSystem::buildDriveMessage()
 {
-    // TODO support different input modes
-    qint8 leftY = _gamepad->getAxisValue(SDL_CONTROLLER_AXIS_LEFTY) * -0.5 * (INT8_MAX - 1);
-    qint8 rightY = _gamepad->getAxisValue(SDL_CONTROLLER_AXIS_RIGHTY) * -0.5 * (INT8_MAX - 1);
+    qint8 leftY = _gamepad->getAxisValue(SDL_CONTROLLER_AXIS_LEFTY) * -1 * (INT8_MAX - 1) * _limit;
+    qint8 rightY = _gamepad->getAxisValue(SDL_CONTROLLER_AXIS_RIGHTY) * -1 * (INT8_MAX - 1) * _limit;
+    float midScale = _skidSteerFactor * ((float)qAbs(leftY - rightY) / 128.0);
+
     ros_generated::drive driveMessage;
     driveMessage.wheelBL = leftY;
-    driveMessage.wheelML = leftY;
+    driveMessage.wheelML = leftY - (qint8)(midScale * leftY);
     driveMessage.wheelFL = leftY;
     driveMessage.wheelBR = rightY;
-    driveMessage.wheelMR = rightY;
+    driveMessage.wheelMR = rightY - (qint8)(midScale * rightY);
     driveMessage.wheelFR = rightY;
 
     return driveMessage;

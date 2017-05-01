@@ -2,15 +2,11 @@
 #define MAINCONTROLLER_H
 
 #include <QObject>
-#include <QQmlEngine>
-#include <QApplication>
-#include <QUdpSocket>
+#include <QCoreApplication>
 #include <QTimerEvent>
 
+#include "videoserver.h"
 #include "settingsmodel.h"
-#include "mainwindowcontroller.h"
-#include "masterconnectionstatuscontroller.h"
-#include "mastervideocontroller.h"
 
 namespace Soro {
 
@@ -20,7 +16,7 @@ class MainController : public QObject
 {
     Q_OBJECT
 public:
-    static void init(QApplication *app);
+    static void init(QCoreApplication *app);
     static void panic(QString tag, QString message);
 
     static QString getId();
@@ -32,14 +28,11 @@ private:
     explicit MainController(QObject *parent=0);
     static MainController *_self;
 
+    QString _id;
     int _rosSpinTimerId;
 
-    SettingsModel *_settings = nullptr;
-    CameraSettingsModel *_cameraSettings = nullptr;
-    QQmlEngine *_qmlEngine = nullptr;
-    MasterVideoController *_masterVideoController = nullptr;
-    MainWindowController *_mainWindowController = nullptr;
-    MasterConnectionStatusController *_masterConnectionStatusController = nullptr;
+    VideoServer *_videoServer = nullptr;
+    SettingsModel *_settingsModel = nullptr;
 };
 
 } // namespace Soro

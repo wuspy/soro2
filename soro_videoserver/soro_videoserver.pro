@@ -12,56 +12,48 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
+QT += core dbus network
+QT -= gui
 
-QT       += network widgets dbus
+CONFIG += c++11 no_keywords
+CONFIG += console
+CONFIG -= app_bundle
 
-TARGET = soro_core
-TEMPLATE = lib
+TARGET = soro_videoserver
 
-# NO_KEYWORDS: signal, slot, emit, etc. will not compile. Use Q_SIGNALS, Q_SLOTS, Q_EMIT instead
-CONFIG += no_keywords c++11
+BUILD_DIR = ../build/soro_videoserver
+DESTDIR = ../bin
 
-DEFINES += SORO_CORE_LIBRARY
+TEMPLATE = app
 
-BUILD_DIR = ../build/soro_core
-DESTDIR = ../lib
+SOURCES += main.cpp \
+    videoserver.cpp \
+    maincontroller.cpp \
+    settingsmodel.cpp
 
+# The following define makes your compiler emit warnings if you use
+# any feature of Qt which as been marked deprecated (the exact warnings
+# depend on your compiler). Please consult the documentation of the
+# deprecated API in order to know how to port your code away from it.
+DEFINES += QT_DEPRECATED_WARNINGS
+
+HEADERS += \
+    videoserver.h \
+    maincontroller.h \
+    settingsmodel.h
+    
+# Include headers from other subprojects
 INCLUDEPATH += $$PWD/..
-
-SOURCES += \
-    broadcaster.cpp \
-    camerasettingsmodel.cpp \
-    logger.cpp \
-    gstreamerutil.cpp \
-    abstractsettingsmodel.cpp \
-    socketaddress.cpp \
-    mediaprofilesettingsmodel.cpp \
-    broadcastreceiver.cpp
-
-HEADERS +=\
-    broadcaster.h \
-    soro_core_global.h \
-    camerasettingsmodel.h \
-    constants.h \
-    logger.h \
-    gstreamerutil.h \
-    abstractsettingsmodel.h \
-    socketaddress.h \
-    mediaprofilesettingsmodel.h \
-    broadcastreceiver.h
-
-# Link against SDL2
-LIBS += -lSDL2
-
-# In case you are curious, the following is a hacky way to link against ROS kinetic
-# from a qmake project.
-#
-# Of course you could just use cmake and catkin, however if you have a compelling
-# reason to stick with qmake (like we did) then here you go.
 
 # Include ROS headers
 INCLUDEPATH += /opt/ros/kinetic/include/
 DEPENDPATH += /opt/ros/kinetic/include/
+
+# Link against soro_core
+LIBS += -L../lib -lsoro_core
+
+#Link Qt5GStreamer
+LIBS += -lQt5GStreamer-1.0 -lQt5GLib-2.0
 
 # Link against ROS
 LIBS += -L/opt/ros/kinetic/lib -lroslib

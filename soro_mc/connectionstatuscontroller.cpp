@@ -27,13 +27,13 @@ ConnectionStatusController::ConnectionStatusController(QObject *parent) : QObjec
     Logger::logInfo(LogTag, "Creating ROS subscriber for latency topic...");
     _latencySubscriber = _nh.subscribe
             <std_msgs::UInt32, Soro::ConnectionStatusController>
-            ("latency", 1, &ConnectionStatusController::onNewLatencyMessage, this);
+            ("latency", 10, &ConnectionStatusController::onNewLatencyMessage, this);
     if (!_latencySubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for latency topic");
 
     Logger::logInfo(LogTag, "Creating ROS subscriber for bitrate topic...");
     _bitrateSubscriber = _nh.subscribe
             <ros_generated::bitrate, Soro::ConnectionStatusController>
-            ("bitrate", 1, &ConnectionStatusController::onNewBitrateMessage, this);
+            ("bitrate", 10, &ConnectionStatusController::onNewBitrateMessage, this);
     if (!_bitrateSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for bitrate topic");
 
     Logger::logInfo(LogTag, "Creating ROS publisher for bits_up_log topic...");
@@ -63,11 +63,13 @@ int ConnectionStatusController::getDisconnectTimeThreshold() const
 
 void ConnectionStatusController::onNewBitrateMessage(ros_generated::bitrate msg)
 {
+    Logger::logInfo(LogTag, "New bitrate: " + QString::number(msg.bitrateUp) + ", " + QString::number(msg.bitrateDown));
     Q_EMIT bitrateUpdate((quint64)msg.bitrateUp, (quint64)msg.bitrateDown);
 }
 
 void ConnectionStatusController::onNewLatencyMessage(std_msgs::UInt32 msg)
 {
+    Logger::logInfo(LogTag, "New latency: " + QString::number(msg.data));
     if (_disconnectWatchdogTimerId != -1) {
         killTimer(_disconnectWatchdogTimerId);
     }

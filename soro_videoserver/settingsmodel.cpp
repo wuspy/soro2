@@ -22,8 +22,7 @@
 #include <QFile>
 #include <QJsonDocument>
 
-#define KEY_PING_INTERVAL "SORO_PING_INTERVAL"
-#define KEY_BITRATE_INTERVAL "SORO_BITRATE_INTERVAL"
+#define KEY_COMPUTER_INDEX "SORO_COMPUTER_INDEX"
 
 #define LogTag "MasterSettingsModel"
 
@@ -32,27 +31,20 @@ namespace Soro {
 QHash<QString, int> SettingsModel::getKeys() const
 {
     QHash<QString, int> keys;
-    keys.insert(KEY_PING_INTERVAL, QMetaType::UInt);
-    keys.insert(KEY_BITRATE_INTERVAL, QMetaType::UInt);
+    keys.insert(KEY_COMPUTER_INDEX, QMetaType::UInt);
     return keys;
 }
 
 QHash<QString, QVariant> SettingsModel::getDefaultValues() const
 {
     QHash<QString, QVariant> defaults;
-    defaults.insert(KEY_PING_INTERVAL, QVariant(500));
-    defaults.insert(KEY_BITRATE_INTERVAL, QVariant(1000));
+    defaults.insert(KEY_COMPUTER_INDEX, QVariant(0));
     return defaults;
 }
 
-uint SettingsModel::getPingInterval() const
+uint SettingsModel::getComputerIndex() const
 {
-    return _values.value(KEY_PING_INTERVAL).toUInt();
-}
-
-uint SettingsModel::getBitrateInterval() const
-{
-    return _values.value(KEY_BITRATE_INTERVAL).toUInt();
+    return _values.value(KEY_COMPUTER_INDEX).toUInt();
 }
 
 } // namespace Soro

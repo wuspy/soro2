@@ -24,10 +24,12 @@ public:
     bool getEnableHwRendering() const;
     bool getEnableHwDecoding() const;
     uint getDriveSendInterval() const;
+    float getDriveSkidSteerFactor() const;
+    float getDrivePowerLimit() const;
 
 protected:
-    QString getFilePath() const;
-    QHash<QString, int> getKeys() const;
+    QHash<QString, int> getKeys() const override;
+    QHash<QString, QVariant> getDefaultValues() const override;
 };
 
 } // namespace Soro

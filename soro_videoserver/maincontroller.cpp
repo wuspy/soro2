@@ -17,12 +17,11 @@
 #include "maincontroller.h"
 
 #include <QTimer>
-#include <QMessageBox>
+
+#include <ros/ros.h>
 
 #include "soro_core/constants.h"
 #include "soro_core/logger.h"
-
-#include <ros/ros.h>
 
 #define LogTag "MainController"
 
@@ -35,14 +34,13 @@ MainController::MainController(QObject *parent) : QObject(parent) { }
 void MainController::panic(QString tag, QString message)
 {
     Logger::logError(LogTag, QString("panic(): %1: %2").arg(tag, message));
-    QMessageBox::critical(0, "Mission Control", "<b>Fatal error in " + tag + "</b><br><br>" + message);
     Logger::logInfo(LogTag, "Committing suicide...");
     delete _self;
     Logger::logInfo(LogTag, "Exiting with code 1");
     exit(1);
 }
 
-void MainController::init(QApplication *app)
+void MainController::init(QCoreApplication *app)
 {
     if (_self)
     {
@@ -57,32 +55,20 @@ void MainController::init(QApplication *app)
         QTimer::singleShot(0, _self, []()
         {
             //
-            // Load master settings
+            // Create the settings model and load the main settings file
             //
+            Logger::logInfo(LogTag, "Loading settings...");
             try
             {
-                _self->_settings = new SettingsModel;
-                _self->_settings->load();
+                _self->_settingsModel = new SettingsModel;
+                _self->_settingsModel->load();
             }
             catch (QString err)
             {
                 panic(LogTag, QString("Error loading settings: %1").arg(err));
             }
 
-            //
-            // Create camera settings model to load camera configuration
-            //
-            Logger::logInfo(LogTag, "Loading camera settings...");
-            try
-            {
-                _self->_cameraSettings = new CameraSettingsModel;
-                _self->_cameraSettings->load();
-            }
-            catch (QString err)
-            {
-                panic(LogTag, QString("Error loading camera settings: %1").arg(err));
-                return;
-            }
+            _self->_id = "video_server_" + QString::number(_self->_settingsModel->getComputerIndex());
 
             // Make sure ROS_MASTER_URI is set
             if (getenv("ROS_MASTER_URI") == nullptr)
@@ -113,41 +99,8 @@ void MainController::init(QApplication *app)
                 return;
             }
 
-            //
-            // Create master connection status controller
-            //
-            Logger::logInfo(LogTag, "Initializing master connection status controller...");
-            _self->_masterConnectionStatusController = new MasterConnectionStatusController(_self->_settings, _self);
-
-            //
-            // Create the master video controller
-            //
-            Logger::logInfo(LogTag, "Initializing media bouncer...");
-            QString roverAddressStr = QString(getenv("ROS_MASTER_URI"));
-            QHostAddress roverAddress = QHostAddress(roverAddressStr.mid(0, roverAddressStr.indexOf(":")));
-            _self->_masterVideoController = new MasterVideoController(_self->_cameraSettings, roverAddress, _self);
-
-            //
-            // Create the QML application engine
-            //
-            Logger::logInfo(LogTag, "Initializing QML engine...");
-            _self->_qmlEngine = new QQmlEngine(_self);
-
-            //
-            // Create the main UI
-            //
-            Logger::logInfo(LogTag, "Creating main window...");
-            _self->_mainWindowController = new MainWindowController(_self->_qmlEngine, _self);
-
-            connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::connectedChanged,
-                    _self->_mainWindowController, &MainWindowController::onConnectedChanged);
-            connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::latencyUpdate,
-                    _self->_mainWindowController, &MainWindowController::onLatencyUpdated);
-            connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::bitrateUpdate,
-                    _self->_mainWindowController, &MainWindowController::onBitrateUpdated);
-
-            connect(_self->_masterVideoController, &MasterVideoController::bitsDown,
-                    _self->_masterConnectionStatusController, &MasterConnectionStatusController::logBitsDown);
+            // Create video server
+            _self->_videoServer = new VideoServer(_self->_settingsModel->getComputerIndex(), _self);
 
             // Start ROS spinner loop
             _self->_rosSpinTimerId = _self->startTimer(1);
@@ -171,7 +124,7 @@ void MainController::timerEvent(QTimerEvent *e)
 
 QString MainController::getId()
 {
-    return "mc_master";
+    return _self->_id;
 }
 
 } // namespace Soro

@@ -43,7 +43,7 @@ MainController::MainController(QObject *parent) : QObject(parent) { }
 void MainController::panic(QString tag, QString message)
 {
     Logger::logError(LogTag, QString("panic(): %1: %2").arg(tag, message));
-    QMessageBox::critical(0, "Mission Control", tag + ": " + message);
+    QMessageBox::critical(0, "Mission Control", "<b>Fatal error in " + tag + "</b><br><br>" + message);
     Logger::logInfo(LogTag, "Committing suicide...");
     delete _self;
     Logger::logInfo(LogTag, "Exiting with code 1");
@@ -178,159 +178,184 @@ void MainController::init(QApplication *app)
             }
             gamepadMap.close();
 
-            //
-            // Create master locator to find the ROS master address
-            //
-            Logger::logInfo(LogTag, "Initializing master locator...");
-            _self->_masterLocator = new MasterLocator(_self);
-            Logger::logInfo(LogTag, "Waiting for broadcast from master before continuing...");
-
-            // Finish setting up once we know the master address
-            connect(_self->_masterLocator, &MasterLocator::masterFound, _self, [](QHostAddress address)
+            // Make sure ROS_MASTER_URI is set
+            if (getenv("ROS_MASTER_URI") == nullptr)
             {
-                QString masterUrl = QString("http://%1:%2").arg(address.toString(), QString::number(SORO_NET_ROS_MASTER_PORT));
-                setenv("ROS_MASTER_URI", masterUrl.toLatin1().constData(), 1);
+                panic(LogTag, "ROS_MASTER_URI is not set in the environment");
+            }
+            Logger::logInfo(LogTag, "ROS_MASTER_URI is at " + QString(getenv("ROS_MASTER_URI")));
 
-                //
-                // Finish setting up ROS now that ROS_MASTER_URI is set
-                //
-                int argc = QCoreApplication::arguments().size();
-                char *argv[argc];
+            //
+            // Initialize ROS
+            //
+            int argc = QCoreApplication::arguments().size();
+            char *argv[argc];
 
-                for (int i = 0; i < argc; i++) {
-                    argv[i] = QCoreApplication::arguments()[i].toLocal8Bit().data();
-                }
+            for (int i = 0; i < argc; i++) {
+                argv[i] = QCoreApplication::arguments()[i].toLocal8Bit().data();
+            }
 
-                try
-                {
-                    Logger::logInfo(LogTag, QString("Calling ros::init() with master URI \'%1\'").arg(getenv("ROS_MASTER_URI")));
-                    ros::init(argc, argv, MainController::getId().toStdString());
-                    Logger::logInfo(LogTag, "ROS initialized");
-                }
-                catch(ros::InvalidNameException e)
-                {
-                    panic(LogTag, QString("Invalid name exception initializing ROS: %1").arg(e.what()));
-                    return;
-                }
+            try
+            {
+                Logger::logInfo(LogTag, QString("Calling ros::init() with master URI \'%1\'").arg(getenv("ROS_MASTER_URI")));
+                ros::init(argc, argv, MainController::getId().toStdString());
+                Logger::logInfo(LogTag, "ROS initialized");
+            }
+            catch(ros::InvalidNameException e)
+            {
+                panic(LogTag, QString("Invalid name exception initializing ROS: %1").arg(e.what()));
+                return;
+            }
 
-                //
-                // Delete master locator now that we are done with it
-                //
-                disconnect(_self->_masterLocator, &MasterLocator::masterFound, _self, 0);
+            //
+            // Create connection status controller
+            //
+            Logger::logInfo(LogTag, "Initializing connection status controller...");
+            _self->_connectionStatusController = new ConnectionStatusController(_self);
 
-                //
-                // Create connection status controller
-                //
-                Logger::logInfo(LogTag, "Initializing connection status controller...");
-                _self->_connectionStatusController = new ConnectionStatusController(_self);
+            //
+            // Create the GamepadController instance
+            //
+            Logger::logInfo(LogTag, "Initializing Gamepad Controller...");
+            _self->_gamepadController = new GamepadController(_self);
 
+            switch (_self->_settingsModel->getConfiguration()) {
+            case SettingsModel::DriverConfiguration:
                 //
-                // Create the GamepadController instance
+                // Create drive control system
                 //
-                Logger::logInfo(LogTag, "Initializing Gamepad Controller...");
-                _self->_gamepadController = new GamepadController(_self);
+                Logger::logInfo(LogTag, "Initializing drive control system...");
+                _self->_driveControlSystem = new DriveControlSystem(_self->_settingsModel->getDriveSendInterval(),
+                                                             _self->_gamepadController,
+                                                             _self->_connectionStatusController,
+                                                             _self);
+                _self->_driveControlSystem->setLimit(_self->_settingsModel->getDrivePowerLimit());
+                _self->_driveControlSystem->setSkidSteerFactor(_self->_settingsModel->getDriveSkidSteerFactor());
+                break;
+            case SettingsModel::ArmOperatorConfiguration:
+                //
+                // Create arm control system
+                //
+                Logger::logInfo(LogTag, "Initializing arm control system...");
+                _self->_armControlSystem = new ArmControlSystem(_self);
+                break;
+            case SettingsModel::CameraOperatorConfiguration:
+                //TODO
+                break;
+            case SettingsModel::ObserverConfiguration:
+                break;
+            }
 
-                switch (_self->_settingsModel->getConfiguration()) {
-                case SettingsModel::DriverConfiguration:
-                    //
-                    // Create drive control system
-                    //
-                    Logger::logInfo(LogTag, "Initializing drive control system...");
-                    _self->_driveControlSystem = new DriveControlSystem(_self->_settingsModel->getDriveSendInterval(),
-                                                                 _self->_gamepadController,
-                                                                 _self->_connectionStatusController,
-                                                                 _self);
-                    break;
-                case SettingsModel::ArmOperatorConfiguration:
-                    //
-                    // Create arm control system
-                    //
-                    Logger::logInfo(LogTag, "Initializing arm control system...");
-                    _self->_armControlSystem = new ArmControlSystem(_self);
-                    break;
-                case SettingsModel::CameraOperatorConfiguration:
-                    //TODO
-                    break;
-                case SettingsModel::ObserverConfiguration:
-                    break;
-                }
+            //
+            // Create the audio controller instance
+            //
+            Logger::logInfo(LogTag, "Initializing audio controller...");
+            _self->_audioController = new AudioController(_self);
 
-                //
-                // Create the audio controller instance
-                //
-                Logger::logInfo(LogTag, "Initializing audio controller...");
-                _self->_audioController = new AudioController(_self);
-
-                //
-                // Create the QML application engine and setup the GStreamer surface
-                //
-                if (_self->_settingsModel->getEnableHwRendering())
-                {
-                    // Use the hardware opengl rendering surface, doesn't work on some hardware
-                    Logger::logInfo(LogTag, "Registering QmlGStreamerItem as GStreamerSurface...");
-                    qmlRegisterType<QmlGStreamerGlItem>("Soro", 1, 0, "GStreamerSurface");
-                }
-                else
-                {
-                    // Use the software rendering surface, works everywhere but slower
-                    Logger::logInfo(LogTag, "Registering QmlGStreamerPaintedItem as GStreamerSurface...");
-                    qmlRegisterType<QmlGStreamerPaintedItem>("Soro", 1, 0, "GStreamerSurface");
-                }
-                Logger::logInfo(LogTag, "Initializing QML engine...");
-                _self->_qmlEngine = new QQmlEngine(_self);
-
-                //
-                // Create the main UI
-                //
-                Logger::logInfo(LogTag, "Creating main window...");
-                _self->_mainWindowController = new MainWindowController(_self->_qmlEngine, _self->_settingsModel, _self->_cameraSettingsModel, _self);
-
-                //
-                // Create the video controller instance
-                //
-                Logger::logInfo(LogTag, "Initializing video controller...");
-                _self->_videoController = new VideoController(_self->_settingsModel, _self->_cameraSettingsModel, _self->_mainWindowController->getVideoSinks(), _self);
+            //
+            // Create the mission control broadcaster
+            //
+            Logger::logInfo(LogTag, "Initializing mission control broadcaster...");
+            try
+            {
+                _self->_mcBroadcaster = new Broadcaster(SORO_NET_MC_BROADCAST_PORT, getId(), 1000, _self);
+            }
+            catch (QString message)
+            {
+                panic(LogTag, "Error initializing mission control broadcast: " + message);
+            }
 
 
-                // Forward audio/video errors to the UI
-                connect(_self->_videoController, &VideoController::gstError, _self, [](QString message, uint cameraIndex)
-                {
-                    _self->_self->_mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
-                                                  "Error playing " + _self->_cameraSettingsModel->getCamera(cameraIndex).name,
-                                                  "There was an error while decoding the video stream: " + message);
-                });
-                connect(_self->_videoController, &VideoController::gstEos, _self, [](uint cameraIndex)
-                {
-                    _self->_mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
-                                                  "Error playing " + _self->_cameraSettingsModel->getCamera(cameraIndex).name,
-                                                  "Received end-of-stream message while streaming video");
-                });
-                connect(_self->_audioController, &AudioController::gstError, _self, [](QString message)
-                {
-                    _self->_mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
-                                                  "Error playing audio",
-                                                  "There was an error while decoding the audio stream: " + message);
-                });
-                connect(_self->_audioController, &AudioController::gstEos, _self, []()
-                {
-                    _self->_mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
-                                                  "Error playing audio",
-                                                  "Received end-of-stream message while streaming audio");
-                });
+            //
+            // Create the QML application engine and setup the GStreamer surface
+            //
+            if (_self->_settingsModel->getEnableHwRendering())
+            {
+                // Use the hardware opengl rendering surface, doesn't work on some hardware
+                Logger::logInfo(LogTag, "Registering QmlGStreamerItem as GStreamerSurface...");
+                qmlRegisterType<QmlGStreamerGlItem>("Soro", 1, 0, "GStreamerSurface");
+            }
+            else
+            {
+                // Use the software rendering surface, works everywhere but slower
+                Logger::logInfo(LogTag, "Registering QmlGStreamerPaintedItem as GStreamerSurface...");
+                qmlRegisterType<QmlGStreamerPaintedItem>("Soro", 1, 0, "GStreamerSurface");
+            }
+            Logger::logInfo(LogTag, "Initializing QML engine...");
+            _self->_qmlEngine = new QQmlEngine(_self);
 
-                // Connect gamepad, bitrate, and status events to the UI
-                connect(_self->_gamepadController, &GamepadController::buttonPressed,
-                        _self->_mainWindowController, &MainWindowController::onGamepadButtonPressed);
-                connect(_self->_connectionStatusController, &ConnectionStatusController::bitrateUpdate,
-                        _self->_mainWindowController, &MainWindowController::onBitrateUpdated);
-                connect(_self->_connectionStatusController, &ConnectionStatusController::latencyUpdate,
-                        _self->_mainWindowController, &MainWindowController::onLatencyUpdated);
-                connect(_self->_connectionStatusController, &ConnectionStatusController::connectedChanged,
-                        _self->_mainWindowController, &MainWindowController::onConnectedChanged);
+            //
+            // Create the main UI
+            //
+            Logger::logInfo(LogTag, "Creating main window...");
+            _self->_mainWindowController = new MainWindowController(_self->_qmlEngine, _self->_settingsModel, _self->_cameraSettingsModel, _self);
 
-                Logger::logInfo(LogTag, "Initialization complete");
+            //
+            // Create the video controller instance
+            //
+            Logger::logInfo(LogTag, "Initializing video controller...");
+            _self->_videoController = new VideoController(_self->_settingsModel, _self->_cameraSettingsModel, _self->_mainWindowController->getVideoSinks(), _self);
+
+
+            // Forward audio/video errors to the UI
+            connect(_self->_videoController, &VideoController::gstError, _self, [](QString message, uint cameraIndex)
+            {
+                _self->_self->_mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
+                                              "Error playing " + _self->_cameraSettingsModel->getCamera(cameraIndex).name,
+                                              "There was an error while decoding the video stream: " + message);
             });
+            connect(_self->_videoController, &VideoController::gstEos, _self, [](uint cameraIndex)
+            {
+                _self->_mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
+                                              "Error playing " + _self->_cameraSettingsModel->getCamera(cameraIndex).name,
+                                              "Received end-of-stream message while streaming video");
+            });
+            connect(_self->_audioController, &AudioController::gstError, _self, [](QString message)
+            {
+                _self->_mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
+                                              "Error playing audio",
+                                              "There was an error while decoding the audio stream: " + message);
+            });
+            connect(_self->_audioController, &AudioController::gstEos, _self, []()
+            {
+                _self->_mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
+                                              "Error playing audio",
+                                              "Received end-of-stream message while streaming audio");
+            });
+
+            // Connect gamepad, bitrate, and status events to the UI
+            connect(_self->_gamepadController, &GamepadController::buttonPressed,
+                    _self->_mainWindowController, &MainWindowController::onGamepadButtonPressed);
+            connect(_self->_connectionStatusController, &ConnectionStatusController::bitrateUpdate,
+                    _self->_mainWindowController, &MainWindowController::onBitrateUpdated);
+            connect(_self->_connectionStatusController, &ConnectionStatusController::latencyUpdate,
+                    _self->_mainWindowController, &MainWindowController::onLatencyUpdated);
+            connect(_self->_connectionStatusController, &ConnectionStatusController::connectedChanged,
+                    _self->_mainWindowController, &MainWindowController::onConnectedChanged);
+
+
+            // Temporary implementation for a 'turbo' button
+            connect(_self->_gamepadController, &GamepadController::buttonPressed, _self, [](SDL_GameControllerButton btn, bool isPressed)
+            {
+               if (btn == SDL_CONTROLLER_BUTTON_LEFTSHOULDER)
+               {
+                   _self->_driveControlSystem->setLimit(isPressed ? 1.0 : 0.6);
+               }
+            });
+
+            // Start ROS spinner loop
+            _self->_rosSpinTimerId = _self->startTimer(1);
+
+            Logger::logInfo(LogTag, "Initialization complete");
         });
+    }
+}
+
+void MainController::timerEvent(QTimerEvent *e)
+{
+    if (e->timerId() == _rosSpinTimerId)
+    {
+        ros::spinOnce();
     }
 }
 

@@ -8,13 +8,12 @@
 
 namespace Soro {
 
-/* Main settings loader class for the master application
+/* Main settings loader class for the video server application
  */
 class SettingsModel: public AbstractSettingsModel
 {
 public:
-    uint getPingInterval() const;
-    uint getBitrateInterval() const;
+    uint getComputerIndex() const;
 
 protected:
     QHash<QString, int> getKeys() const override;

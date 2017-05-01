@@ -25,7 +25,8 @@ ApplicationWindow {
     width: 400
     minimumWidth: width
     maximumWidth: width
-    height: commActivityLabel.y + commActivityLabel.height
+    //height: commActivityLabel.y + commActivityLabel.height
+    height: pingLabel.y + pingLabel.height
     minimumHeight: height
     maximumHeight: height
     title: "Mission Control Master"
@@ -33,7 +34,7 @@ ApplicationWindow {
     /*
       Connection status properties
       */
-    property bool connected: false
+    property bool connected: falsea
     property int latency: 0
     property int bitrateDown: 0
     property int bitrateUp: 0
@@ -44,7 +45,6 @@ ApplicationWindow {
     property color theme_yellow: "#FBC02D"
     property color theme_red: "#d32f2f"
     property color theme_green: "#388E3C"
-
 
     Image {
         id: connectionStatusImage
@@ -85,7 +85,7 @@ ApplicationWindow {
         anchors.right: parent.right
         anchors.rightMargin: 10
         anchors.left: parent.horizontalCenter
-        text: connected && latency > 0 ? latency + "ms" : "---"
+        text: connected && latency >= 0 ? latency + "ms" : "---"
         horizontalAlignment: Text.AlignHCenter
         color: "black"
     }
@@ -134,7 +134,7 @@ ApplicationWindow {
         }
     }
 
-    Label {
+    /*Label {
         id: connectedMcsHeaderLabel
         color: "black"
         anchors.top: pingLabel.bottom
@@ -181,5 +181,5 @@ ApplicationWindow {
         anchors.left: commActivityHeaderLabel.left
         text: "<ul><li>Main Camera</li></ul>"
         font.pointSize: 12
-    }
+    }*/
 }

@@ -168,7 +168,18 @@ void VideoController::constructPipelineOnSink(uint cameraIndex, QString sourceBi
 void VideoController::stopVideoOnSink(uint cameraIndex)
 {
     // Stop the video on the specified sink, and play a placeholder animation
-    constructPipelineOnSink(cameraIndex, GStreamerUtil::createVideoTestSrcString("smpte", true, 800, 600, 10));
+    //constructPipelineOnSink(cameraIndex, GStreamerUtil::createVideoTestSrcString("smpte", true, 800, 600, 10));
+    //Q_EMIT stopped(cameraIndex);
+
+    // TEMPORARY TESTING CODE TODO
+    constructPipelineOnSink(cameraIndex, GStreamerUtil::createRtpVideoDecodeString(
+                                QHostAddress::Any,
+                                SORO_NET_FIRST_VIDEO_PORT + cameraIndex,
+                                GStreamerUtil::VIDEO_CODEC_VP8, false));
+    Logger::logInfo(LogTag, GStreamerUtil::createRtpVideoDecodeString(
+                        QHostAddress::Any,
+                        SORO_NET_FIRST_VIDEO_PORT + cameraIndex,
+                        GStreamerUtil::VIDEO_CODEC_VP8, false));
     Q_EMIT stopped(cameraIndex);
 }
 

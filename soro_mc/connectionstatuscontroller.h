@@ -49,14 +49,14 @@ public Q_SLOTS:
     void logBitsUp(quint32 bits);
     void logBitsDown(quint32 bits);
 
-protected:
-    void timerEvent(QTimerEvent *e);
-
-private:
     void onNewLatencyMessage(std_msgs::UInt32 msg);
     void onNewBitrateMessage(ros_generated::bitrate msg);
     void setConnected(bool connected);
 
+protected:
+    void timerEvent(QTimerEvent *e);
+
+private:
     ros::NodeHandle _nh;
     ros::Subscriber _latencySubscriber;
     ros::Subscriber _bitrateSubscriber;
