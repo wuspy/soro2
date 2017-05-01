@@ -53,8 +53,8 @@ RESOURCES += \
     assets.qrc
 
 
-# Link against libsoromc
-LIBS += -L../lib -lsoromc
+# Link against soro_core
+LIBS += -L../lib -lsoro_core
 
 # In case you are curious, the following is a hacky way to link against ROS kinetic
 # from a qmake project.

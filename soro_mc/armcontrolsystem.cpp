@@ -16,8 +16,8 @@
 
 #include "armcontrolsystem.h"
 #include "maincontroller.h"
-#include "libsoromc/logger.h"
-#include "libsoromc/constants.h"
+#include "soro_core/logger.h"
+#include "soro_core/constants.h"
 
 #define LogTag "ArmControlSystem"
 

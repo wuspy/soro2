@@ -4,7 +4,7 @@
 #include <QSettings>
 #include <QString>
 
-#include "libsoromc/abstractsettingsmodel.h"
+#include "soro_core/abstractsettingsmodel.h"
 
 namespace Soro {
 

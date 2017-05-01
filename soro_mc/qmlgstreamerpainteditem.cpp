@@ -15,7 +15,7 @@
  */
 
 #include "qmlgstreamerpainteditem.h"
-#include "libsoromc/logger.h"
+#include "soro_core/logger.h"
 #include <QPainter>
 #include <Qt5GStreamer/QGlib/Connect>
 #include <Qt5GStreamer/QGlib/Signal>

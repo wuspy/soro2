@@ -16,7 +16,7 @@
 
 #include "drivecontrolsystem.h"
 #include "maincontroller.h"
-#include "libsoromc/logger.h"
+#include "soro_core/logger.h"
 #include <SDL2/SDL.h>
 #include <climits>
 

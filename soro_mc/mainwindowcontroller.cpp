@@ -18,9 +18,9 @@
 #include "maincontroller.h"
 #include "qmlgstreamerglitem.h"
 #include "qmlgstreamerpainteditem.h"
-#include "libsoromc/constants.h"
-#include "libsoromc/logger.h"
-#include "libsoromc/gstreamerutil.h"
+#include "soro_core/constants.h"
+#include "soro_core/logger.h"
+#include "soro_core/gstreamerutil.h"
 
 #include <QQmlComponent>
 

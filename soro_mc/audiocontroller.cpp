@@ -16,9 +16,9 @@
 
 #include "audiocontroller.h"
 #include "maincontroller.h"
-#include "libsoromc/gstreamerutil.h"
-#include "libsoromc/constants.h"
-#include "libsoromc/logger.h"
+#include "soro_core/gstreamerutil.h"
+#include "soro_core/constants.h"
+#include "soro_core/logger.h"
 #include "ros_generated/audio.h"
 
 #include <Qt5GStreamer/QGst/Bus>
@@ -47,7 +47,7 @@ AudioController::AudioController(QObject *parent) : QObject(parent)
 
     Logger::logInfo(LogTag, "All ROS publishers and subscribers created");
 
-    _codec = CODEC_NULL;
+    _codec = GStreamerUtil::CODEC_NULL;
     _pipelineWatch = nullptr;
 }
 
@@ -65,7 +65,7 @@ void AudioController::onAudioResponse(ros_generated::audio msg)
     {
         // Audio is streaming, create gstreamer pipeline
         _pipeline = QGst::Pipeline::create("audioPipeline");
-        _bin = QGst::Bin::fromDescription(GStreamerUtil::createRtpAudioPlayBinString(QHostAddress::Any, SORO_NET_AUDIO_PORT, msg.encoding));
+        _bin = QGst::Bin::fromDescription(GStreamerUtil::createRtpAudioPlayString(QHostAddress::Any, SORO_NET_AUDIO_PORT, msg.encoding));
         _pipeline->add(_bin);
 
         // Add signal watch to subscribe to bus events, like errors
@@ -81,14 +81,14 @@ void AudioController::onAudioResponse(ros_generated::audio msg)
     else
     {
         // Audio is not streaming
-        _codec = CODEC_NULL;
+        _codec = GStreamerUtil::CODEC_NULL;
         Q_EMIT stopped();
     }
 }
 
 bool AudioController::isPlaying() const
 {
-    return _codec != CODEC_NULL;
+    return _codec != GStreamerUtil::CODEC_NULL;
 }
 
 quint8 AudioController::getCodec() const
@@ -129,7 +129,7 @@ void AudioController::stop()
 {
     // Send a request to the rover to STOP the audio stream
     ros_generated::audio msg;
-    msg.encoding = CODEC_NULL;
+    msg.encoding = GStreamerUtil::CODEC_NULL;
     msg.on = false;
 
     Logger::logInfo(LogTag, "Sending audio OFF requet to rover");

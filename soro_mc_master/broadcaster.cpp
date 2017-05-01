@@ -16,7 +16,7 @@
 
 #include "broadcaster.h"
 #include "maincontroller.h"
-#include "libsoromc/constants.h"
+#include "soro_core/constants.h"
 
 #define LogTag "Broadcaster"
 

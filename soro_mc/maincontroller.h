@@ -7,8 +7,8 @@
 #include <QUdpSocket>
 
 #include "settingsmodel.h"
-#include "libsoromc/camerasettingsmodel.h"
-#include "libsoromc/mediaprofilesettingsmodel.h"
+#include "soro_core/camerasettingsmodel.h"
+#include "soro_core/mediaprofilesettingsmodel.h"
 
 #include "gamepadcontroller.h"
 #include "gamepadcontroller.h"

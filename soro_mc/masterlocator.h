@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QUdpSocket>
-#include "libsoromc/constants.h"
+#include "soro_core/constants.h"
 
 namespace Soro {
 

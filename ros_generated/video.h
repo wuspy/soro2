@@ -24,8 +24,13 @@ struct video_
   typedef video_<ContainerAllocator> Type;
 
   video_()
-    : cameraId(0)
-    , on(false)
+    : camera_matchSerial()
+    , camera_matchProductId()
+    , camera_matchVendorId()
+    , camera_computerIndex(0)
+    , camera_offset(0)
+    , camera_index(0)
+    , camera_name()
     , encoding(0)
     , width(0)
     , height(0)
@@ -34,8 +39,13 @@ struct video_
     , quality(0)  {
     }
   video_(const ContainerAllocator& _alloc)
-    : cameraId(0)
-    , on(false)
+    : camera_matchSerial(_alloc)
+    , camera_matchProductId(_alloc)
+    , camera_matchVendorId(_alloc)
+    , camera_computerIndex(0)
+    , camera_offset(0)
+    , camera_index(0)
+    , camera_name(_alloc)
     , encoding(0)
     , width(0)
     , height(0)
@@ -47,11 +57,26 @@ struct video_
 
 
 
-   typedef uint8_t _cameraId_type;
-  _cameraId_type cameraId;
+   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _camera_matchSerial_type;
+  _camera_matchSerial_type camera_matchSerial;
 
-   typedef uint8_t _on_type;
-  _on_type on;
+   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _camera_matchProductId_type;
+  _camera_matchProductId_type camera_matchProductId;
+
+   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _camera_matchVendorId_type;
+  _camera_matchVendorId_type camera_matchVendorId;
+
+   typedef uint16_t _camera_computerIndex_type;
+  _camera_computerIndex_type camera_computerIndex;
+
+   typedef uint16_t _camera_offset_type;
+  _camera_offset_type camera_offset;
+
+   typedef uint16_t _camera_index_type;
+  _camera_index_type camera_index;
+
+   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _camera_name_type;
+  _camera_name_type camera_name;
 
    typedef uint8_t _encoding_type;
   _encoding_type encoding;
@@ -104,13 +129,23 @@ namespace message_traits
 
 
 
-// BOOLTRAITS {'IsMessage': True, 'IsFixedSize': True, 'HasHeader': False}
-// {'ros_generated': ['/home/jj/Projects/catkin_workspace/src/ros_generated/msg'], 'std_msgs': ['/opt/ros/kinetic/share/std_msgs/cmake/../msg']}
+// BOOLTRAITS {'IsFixedSize': False, 'IsMessage': True, 'HasHeader': False}
+// {'ros_generated': ['/home/soro/catkin_workspace/src/ros_generated/msg'], 'std_msgs': ['/opt/ros/kinetic/share/std_msgs/cmake/../msg']}
 
-// !!!!!!!!!!! ['__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_parsed_fields', 'constants', 'fields', 'full_name', 'has_header', 'header_present', 'names', 'package', 'parsed_fields', 'short_name', 'text', 'types']
+// !!!!!!!!!!! ['__class__', '__delattr__', '__dict__', '__doc__', '__eq__', '__format__', '__getattribute__', '__hash__', '__init__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_parsed_fields', 'constants', 'fields', 'full_name', 'has_header', 'header_present', 'names', 'package', 'parsed_fields', 'short_name', 'text', 'types']
 
 
 
+
+template <class ContainerAllocator>
+struct IsFixedSize< ::ros_generated::video_<ContainerAllocator> >
+  : FalseType
+  { };
+
+template <class ContainerAllocator>
+struct IsFixedSize< ::ros_generated::video_<ContainerAllocator> const>
+  : FalseType
+  { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::ros_generated::video_<ContainerAllocator> >
@@ -119,16 +154,6 @@ struct IsMessage< ::ros_generated::video_<ContainerAllocator> >
 
 template <class ContainerAllocator>
 struct IsMessage< ::ros_generated::video_<ContainerAllocator> const>
-  : TrueType
-  { };
-
-template <class ContainerAllocator>
-struct IsFixedSize< ::ros_generated::video_<ContainerAllocator> >
-  : TrueType
-  { };
-
-template <class ContainerAllocator>
-struct IsFixedSize< ::ros_generated::video_<ContainerAllocator> const>
   : TrueType
   { };
 
@@ -148,12 +173,12 @@ struct MD5Sum< ::ros_generated::video_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "47dd319158f05e19bfd56b17a7531da7";
+    return "b78f60dfc0d7b43a70cc0f52f1709891";
   }
 
   static const char* value(const ::ros_generated::video_<ContainerAllocator>&) { return value(); }
-  static const uint64_t static_value1 = 0x47dd319158f05e19ULL;
-  static const uint64_t static_value2 = 0xbfd56b17a7531da7ULL;
+  static const uint64_t static_value1 = 0xb78f60dfc0d7b43aULL;
+  static const uint64_t static_value2 = 0x70cc0f52f1709891ULL;
 };
 
 template<class ContainerAllocator>
@@ -172,14 +197,19 @@ struct Definition< ::ros_generated::video_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "uint8 cameraId\n\
-bool on\n\
+    return "string camera_matchSerial\n\
+string camera_matchProductId\n\
+string camera_matchVendorId\n\
+uint16 camera_computerIndex\n\
+uint16 camera_offset\n\
+uint16 camera_index\n\
+string camera_name\n\
 uint8 encoding\n\
 uint16 width\n\
 uint16 height\n\
 uint8 fps\n\
 uint32 bitrate\n\
-uint8 quality \n\
+uint8 quality\n\
 ";
   }
 
@@ -198,8 +228,13 @@ namespace serialization
   {
     template<typename Stream, typename T> inline static void allInOne(Stream& stream, T m)
     {
-      stream.next(m.cameraId);
-      stream.next(m.on);
+      stream.next(m.camera_matchSerial);
+      stream.next(m.camera_matchProductId);
+      stream.next(m.camera_matchVendorId);
+      stream.next(m.camera_computerIndex);
+      stream.next(m.camera_offset);
+      stream.next(m.camera_index);
+      stream.next(m.camera_name);
       stream.next(m.encoding);
       stream.next(m.width);
       stream.next(m.height);
@@ -208,7 +243,7 @@ namespace serialization
       stream.next(m.quality);
     }
 
-    ROS_DECLARE_ALLINONE_SERIALIZER;
+    ROS_DECLARE_ALLINONE_SERIALIZER
   }; // struct video_
 
 } // namespace serialization
@@ -224,10 +259,20 @@ struct Printer< ::ros_generated::video_<ContainerAllocator> >
 {
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::ros_generated::video_<ContainerAllocator>& v)
   {
-    s << indent << "cameraId: ";
-    Printer<uint8_t>::stream(s, indent + "  ", v.cameraId);
-    s << indent << "on: ";
-    Printer<uint8_t>::stream(s, indent + "  ", v.on);
+    s << indent << "camera_matchSerial: ";
+    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.camera_matchSerial);
+    s << indent << "camera_matchProductId: ";
+    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.camera_matchProductId);
+    s << indent << "camera_matchVendorId: ";
+    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.camera_matchVendorId);
+    s << indent << "camera_computerIndex: ";
+    Printer<uint16_t>::stream(s, indent + "  ", v.camera_computerIndex);
+    s << indent << "camera_offset: ";
+    Printer<uint16_t>::stream(s, indent + "  ", v.camera_offset);
+    s << indent << "camera_index: ";
+    Printer<uint16_t>::stream(s, indent + "  ", v.camera_index);
+    s << indent << "camera_name: ";
+    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.camera_name);
     s << indent << "encoding: ";
     Printer<uint8_t>::stream(s, indent + "  ", v.encoding);
     s << indent << "width: ";

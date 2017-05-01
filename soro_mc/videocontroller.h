@@ -3,7 +3,7 @@
 
 #include <QObject>
 
-#include "libsoromc/camerasettingsmodel.h"
+#include "soro_core/camerasettingsmodel.h"
 #include "settingsmodel.h"
 #include "gstreamerpipelinewatch.h"
 
@@ -13,6 +13,8 @@
 
 #include "ros_generated/video.h"
 #include "ros_generated/video_state.h"
+
+#include "soro_core/gstreamerutil.h"
 
 #include <ros/ros.h>
 
@@ -43,14 +45,10 @@ public:
     ~VideoController();
 
     bool isPlaying(uint cameraIndex) const;
-    quint8 getCodec(uint cameraIndex) const;
+    GStreamerUtil::VideoProfile getVideoProfile(uint cameraIndex) const;
 
-    void play(uint cameraIndex, quint8 codec, uint width, uint height, uint framerate, uint bitrate, uint quality);
+    void play(uint cameraIndex, GStreamerUtil::VideoProfile profile);
     void stop(uint cameraIndex);
-
-    enum VideoError {
-        VideoError_VideoCountMismatch,
-    };
 
 Q_SIGNALS:
     void playing(uint cameraIndex, quint8 codec);
@@ -63,9 +61,6 @@ Q_SIGNALS:
      * rover is no longer streaming this camera, only that we could not play it
      */
     void gstError(QString message, uint cameraIndex);
-    /* Emitted when a non-gstreamer related error occurrs
-     */
-    void error(VideoError err);
 
 private:
     void onVideoResponse(ros_generated::video_state msg);
@@ -80,9 +75,8 @@ private:
     QVector<QGst::PipelinePtr> _pipelines;
     QVector<QGst::BinPtr> _bins;
     QVector<QGst::ElementPtr> _sinks;
-    QVector<uint> _codecs;
     QVector<GStreamerPipelineWatch*> _pipelineWatches;
-    QVector<ros_generated::video> _videoStates;
+    QVector<GStreamerUtil::VideoProfile> _videoStates;
 
     ros::NodeHandle _nh;
     ros::Publisher _videoRequestPublisher;

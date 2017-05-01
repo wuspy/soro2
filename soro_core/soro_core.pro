@@ -12,27 +12,52 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-QT       += testlib
 
-TARGET = tst_tests
-CONFIG   += console
-CONFIG   -= app_bundle
+QT       += network widgets
 
-TEMPLATE = app
+TARGET = soro_core
+TEMPLATE = lib
 
+# NO_KEYWORDS: signal, slot, emit, etc. will not compile. Use Q_SIGNALS, Q_SLOTS, Q_EMIT instead
+CONFIG += no_keywords c++11
 
-SOURCES += tst_tests.cpp
-DEFINES += SRCDIR=\\\"$$PWD/\\\"
+DEFINES += SORO_CORE_LIBRARY
 
-# Include ROS headers
-INCLUDEPATH += /opt/ros/kinetic/include/
-DEPENDPATH += /opt/ros/kinetic/include/
+BUILD_DIR = ../build/soro_core
+DESTDIR = ../lib
+
+INCLUDEPATH += $$PWD/..
+
+SOURCES += \
+    camerasettingsmodel.cpp \
+    logger.cpp \
+    gstreamerutil.cpp \
+    abstractsettingsmodel.cpp \
+    socketaddress.cpp \
+    mediaprofilesettingsmodel.cpp
+
+HEADERS +=\
+    libsoromc_global.h \
+    camerasettingsmodel.h \
+    constants.h \
+    logger.h \
+    gstreamerutil.h \
+    abstractsettingsmodel.h \
+    socketaddress.h \
+    mediaprofilesettingsmodel.h
 
 # Link against SDL2
 LIBS += -lSDL2
 
-# Link against Qt5Gstreamer
-LIBS += -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUtils-1.0 -lQt5GStreamerQuick-1.0
+# In case you are curious, the following is a hacky way to link against ROS kinetic
+# from a qmake project.
+#
+# Of course you could just use cmake and catkin, however if you have a compelling
+# reason to stick with qmake (like we did) then here you go.
+
+# Include ROS headers
+INCLUDEPATH += /opt/ros/kinetic/include/
+DEPENDPATH += /opt/ros/kinetic/include/
 
 # Link against ROS
 LIBS += -L/opt/ros/kinetic/lib -lroslib

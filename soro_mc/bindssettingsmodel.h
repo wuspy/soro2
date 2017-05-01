@@ -41,12 +41,12 @@ public:
     struct VideoOnActionArgs : public ActionArgs
     {
         uint camera;
-        int profile;
+        quint8 profile;
     };
 
     struct AudioOnActionArgs : public ActionArgs
     {
-        int profile;
+        quint8 profile;
     };
 
     /* Represents all the information about a key/button action, including

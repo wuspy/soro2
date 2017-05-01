@@ -15,7 +15,7 @@
  */
 
 #include "pingworker.h"
-#include "libsoromc/logger.h"
+#include "soro_core/logger.h"
 #include "maincontroller.h"
 
 #include <QDateTime>

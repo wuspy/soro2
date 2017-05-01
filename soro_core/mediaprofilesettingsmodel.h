@@ -5,12 +5,14 @@
 #include <QMap>
 #include <QList>
 
+#include "soro_core_global.h"
+
 namespace Soro {
 
 /* Settings loader for the audio/video profile definition file. This file is a JSON formatted array
  * specifying information about the different audio/video encoding profiles that will be available.
  */
-class MediaProfileSettingsModel
+class SORO_CORE_SHARED_EXPORT MediaProfileSettingsModel
 {
     Q_GADGET
 public:

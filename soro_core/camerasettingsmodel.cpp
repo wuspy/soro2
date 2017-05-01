@@ -22,11 +22,12 @@
 #include <QJsonValue>
 #include <QFile>
 
-#define FILE_PATH SORO_SETTINGS_DIR + "/cameras.json"
+#define FILE_PATH SORO_MC_SETTINGS_DIR + "/cameras.json"
 
 namespace Soro {
 
-void CameraSettingsModel::load() {
+void CameraSettingsModel::load()
+{
     QByteArray rawJson;
     QJsonDocument jsonDocument;
     QJsonArray jsonCamerasArray;
@@ -64,6 +65,8 @@ void CameraSettingsModel::load() {
     {
         Camera camera;
         int index = jsonObject.toObject()["index"].toInt(-1);
+        camera.computerIndex = jsonObject.toObject()["computerIndex"].toInt(0); // Computer index defaults to zero
+        camera.offset = jsonObject.toObject()["offset"].toInt(0); // Offset defaults to zero
         camera.name = jsonObject.toObject()["name"].toString("");
         camera.serial = jsonObject.toObject()["matchSerial"].toString();
         camera.productId = jsonObject.toObject()["matchProductId"].toString();

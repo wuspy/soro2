@@ -16,7 +16,7 @@
 
 #include "gamepadcontroller.h"
 #include "maincontroller.h"
-#include "libsoromc/logger.h"
+#include "soro_core/logger.h"
 #include <climits>
 
 #define LOG_TAG "GamepadController"

@@ -19,8 +19,8 @@
 #include <QTimer>
 #include <QMessageBox>
 
-#include "libsoromc/constants.h"
-#include "libsoromc/logger.h"
+#include "soro_core/constants.h"
+#include "soro_core/logger.h"
 
 #include <ros/ros.h>
 

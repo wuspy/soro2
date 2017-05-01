@@ -16,7 +16,7 @@
 
 #include "masterconnectionstatuscontroller.h"
 #include "maincontroller.h"
-#include "libsoromc/logger.h"
+#include "soro_core/logger.h"
 #include <QtConcurrent/QtConcurrent>
 
 #define LogTag "MasterConnectionStatusController"

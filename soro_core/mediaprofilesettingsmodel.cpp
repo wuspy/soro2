@@ -16,13 +16,14 @@
 
 #include "mediaprofilesettingsmodel.h"
 #include "constants.h"
+#include "gstreamerutil.h"
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QFile>
 
-#define FILE_PATH SORO_SETTINGS_DIR + "/media_profiles.json"
+#define FILE_PATH SORO_MC_SETTINGS_DIR + "/media_profiles.json"
 
 namespace Soro {
 
@@ -84,31 +85,31 @@ void MediaProfileSettingsModel::load() {
 
         if (encoding == "mjpeg")
         {
-            profile.codec = VIDEO_CODEC_MJPEG;
+            profile.codec = GStreamerUtil::VIDEO_CODEC_MJPEG;
         }
         else if (encoding == "mp4")
         {
-            profile.codec = VIDEO_CODEC_MPEG4;
+            profile.codec = GStreamerUtil::VIDEO_CODEC_MPEG4;
         }
         else if (encoding == "mp2")
         {
-            profile.codec = VIDEO_CODEC_MPEG2;
+            profile.codec = GStreamerUtil::VIDEO_CODEC_MPEG2;
         }
         else if (encoding == "vp8")
         {
-            profile.codec = VIDEO_CODEC_VP8;
+            profile.codec = GStreamerUtil::VIDEO_CODEC_VP8;
         }
         else if (encoding == "vp9")
         {
-            profile.codec = VIDEO_CODEC_VP9;
+            profile.codec = GStreamerUtil::VIDEO_CODEC_VP9;
         }
         else if (encoding == "h264")
         {
-            profile.codec = VIDEO_CODEC_H264;
+            profile.codec = GStreamerUtil::VIDEO_CODEC_H264;
         }
         else if (encoding == "h265")
         {
-            profile.codec = VIDEO_CODEC_H265;
+            profile.codec = GStreamerUtil::VIDEO_CODEC_H265;
         }
         else
         {
@@ -143,15 +144,7 @@ void MediaProfileSettingsModel::load() {
 
         if (encoding == "ac3")
         {
-            profile.codec = AUDIO_CODEC_AC3;
-        }
-        else if (encoding == "mp3")
-        {
-            profile.codec = AUDIO_CODEC_MP3;
-        }
-        else if (encoding == "vorbis")
-        {
-            profile.codec = AUDIO_CODEC_VORBIS;
+            profile.codec = GStreamerUtil::AUDIO_CODEC_AC3;
         }
         else
         {

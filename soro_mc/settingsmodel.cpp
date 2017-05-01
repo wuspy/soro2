@@ -15,7 +15,7 @@
  */
 
 #include "settingsmodel.h"
-#include "libsoromc/constants.h"
+#include "soro_core/constants.h"
 
 #include <QCoreApplication>
 #include <QFile>
@@ -30,7 +30,7 @@ namespace Soro {
 
 QString SettingsModel::getFilePath() const
 {
-    return SORO_SETTINGS_DIR + "/mc.conf";
+    return SORO_MC_SETTINGS_DIR + "/mc.conf";
 }
 
 QHash<QString, int> SettingsModel::getKeys() const

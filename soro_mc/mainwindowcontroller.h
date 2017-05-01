@@ -10,7 +10,7 @@
 #include <ros/ros.h>
 
 #include "settingsmodel.h"
-#include "libsoromc/camerasettingsmodel.h"
+#include "soro_core/camerasettingsmodel.h"
 #include "ros_generated/notification.h"
 
 namespace Soro {

@@ -1,5 +1,5 @@
 #include "mediabouncer.h"
-#include "libsoromc/constants.h"
+#include "soro_core/constants.h"
 
 namespace Soro {
 

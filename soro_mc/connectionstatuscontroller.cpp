@@ -16,7 +16,7 @@
 
 #include "connectionstatuscontroller.h"
 #include "maincontroller.h"
-#include "libsoromc/logger.h"
+#include "soro_core/logger.h"
 
 #define LogTag "ConnectionStatusController"
 

@@ -5,13 +5,15 @@
 #include <QMap>
 #include <QList>
 
+#include "soro_core_global.h"
+
 namespace Soro {
 
 /* Settings loader for the camera definition file. This file is a JSON formatted array
  * specifying information about the types of cameras the rover and mission control
  * should be expecting.
  */
-class CameraSettingsModel
+class SORO_CORE_SHARED_EXPORT CameraSettingsModel
 {
     Q_GADGET
 public:
@@ -20,6 +22,8 @@ public:
     struct Camera
     {
         QString name;
+        int computerIndex;
+        int offset;
         QString serial;
         QString vendorId;
         QString productId;

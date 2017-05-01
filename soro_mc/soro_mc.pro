@@ -62,8 +62,8 @@ RESOURCES += qml.qrc \
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
 
-# Link against libsoromc
-LIBS += -L../lib -lsoromc
+# Link against soro_core
+LIBS += -L../lib -lsoro_core
 
 # Link against SDL2
 LIBS += -lSDL2

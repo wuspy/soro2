@@ -16,8 +16,8 @@
 
 #include "roscorecontroller.h"
 #include "maincontroller.h"
-#include "libsoromc/constants.h"
-#include "libsoromc/logger.h"
+#include "soro_core/constants.h"
+#include "soro_core/logger.h"
 
 #define LogTag "RosCoreController"
 

@@ -15,7 +15,7 @@
  */
 
 #include "bindssettingsmodel.h"
-#include "libsoromc/constants.h"
+#include "soro_core/constants.h"
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -23,7 +23,7 @@
 #include <QFile>
 #include <QDebug>
 
-#define FILE_PATH SORO_SETTINGS_DIR + "/binds.json"
+#define FILE_PATH SORO_MC_SETTINGS_DIR + "/binds.json"
 
 #define KEY_KEY "key"
 #define KEY_BUTTON "button"
@@ -90,10 +90,11 @@ void BindsSettingsModel::load() {
         Action action;
         action.type = Action_Audio_On;
         action.args = new AudioOnActionArgs();
-        reinterpret_cast<AudioOnActionArgs*>(action.args)->profile = value.toObject().value(KEY_AV_PROFILE).toInt(-1);
-        if (reinterpret_cast<AudioOnActionArgs*>(action.args)->profile == -1) {
+        int profile = value.toObject().value(KEY_AV_PROFILE).toInt(-1);
+        if (profile == -1) {
             throw QString("Error parsing binds settings file \"%1\": Audio on action has an invalid profile index.").arg(FILE_PATH);
         }
+        reinterpret_cast<AudioOnActionArgs*>(action.args)->profile = profile;
 
         parseAction(value, action);
     }
@@ -103,10 +104,11 @@ void BindsSettingsModel::load() {
         Action action;
         action.type = Action_Video_Off;
         action.args = new VideoOffActionArgs();
-        reinterpret_cast<VideoOffActionArgs*>(action.args)->camera = value.toObject().value(KEY_VIDEO_CAMERA).toInt(-1);
-        if (reinterpret_cast<VideoOffActionArgs*>(action.args)->camera == -1) {
+        int camera = value.toObject().value(KEY_VIDEO_CAMERA).toInt(-1);
+        if (camera == -1) {
             throw QString("Error parsing binds settings file \"%1\": Video Off action has an invalid camera index.").arg(FILE_PATH);
         }
+        reinterpret_cast<VideoOnActionArgs*>(action.args)->camera = camera;
 
         parseAction(value, action);
     }
@@ -116,15 +118,17 @@ void BindsSettingsModel::load() {
         Action action;
         action.type = Action_Video_On;
         action.args = new VideoOnActionArgs();
-        reinterpret_cast<VideoOnActionArgs*>(action.args)->camera = value.toObject().value(KEY_VIDEO_CAMERA).toInt(-1);
-        if (reinterpret_cast<VideoOnActionArgs*>(action.args)->camera == -1) {
+        int camera = value.toObject().value(KEY_VIDEO_CAMERA).toInt(-1);
+        if (camera == -1) {
             throw QString("Error parsing binds settings file \"%1\": Video On action has an invalid camera index.").arg(FILE_PATH);
         }
+        reinterpret_cast<VideoOnActionArgs*>(action.args)->camera = camera;
 
-        reinterpret_cast<VideoOnActionArgs*>(action.args)->profile = value.toObject().value(KEY_AV_PROFILE).toInt(-1);
-        if (reinterpret_cast<VideoOnActionArgs*>(action.args)->profile == -1) {
+        int profile = value.toObject().value(KEY_AV_PROFILE).toInt(-1);
+        if (profile == -1) {
             throw QString("Error parsing binds settings file \"%1\": Video On action has an invalid profile index.").arg(FILE_PATH);
         }
+        reinterpret_cast<VideoOnActionArgs*>(action.args)->profile = profile;
 
         parseAction(value, action);
     }
