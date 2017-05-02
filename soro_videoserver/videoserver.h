@@ -9,6 +9,7 @@
 #include <ros/ros.h>
 
 #include "soro_core/gstreamerutil.h"
+#include "soro_core/rosnodelist.h"
 
 #include "ros_generated/video.h"
 #include "ros_generated/video_state.h"
@@ -20,17 +21,14 @@ class VideoServer : public QObject
 {
     Q_OBJECT
 public:
-    explicit VideoServer(int computerIndex, QObject *parent = 0);
+    explicit VideoServer(int computerIndex, const RosNodeList *rosNodeList, QObject *parent = 0);
     ~VideoServer();
     void setShouldUseVaapiForCodec(quint8 codec, bool vaapi);
 
 public Q_SLOTS:
-    void onChildError(qint64 childPid, QString message);
-    void onChildReady(qint64 childPid);
-    void onChildStreaming(qint64 childPid);
-
-protected:
-    void timerEvent(QTimerEvent *e);
+    Q_SCRIPTABLE void onChildError(qint64 childPid, QString message);
+    Q_SCRIPTABLE void onChildReady(qint64 childPid);
+    Q_SCRIPTABLE void onChildStreaming(qint64 childPid);
 
 private:
     struct Assignment
@@ -40,6 +38,7 @@ private:
         QHostAddress address;
         quint16 port;
         GStreamerUtil::VideoProfile profile;
+        ros_generated::video originalMessage;
         bool vaapi;
     };
 
@@ -52,10 +51,10 @@ private:
     void onVideoRequestMessage(ros_generated::video msg);
 
     QString findUsbCamera(QString serial, QString productId, QString vendorId, int offset);
-    QHostAddress getPeerAddress();
 
     int _computerIndex;
-    QVector<ros_generated::video> _videoStates;
+    const RosNodeList *_rosNodeList;
+    ros_generated::video_state _lastVideoStateMsg;
     ros::NodeHandle _nh;
     ros::Publisher _videoStatePublisher;
     ros::Publisher _notificationPublisher;

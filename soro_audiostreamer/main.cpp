@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (!QDBusConnection::sessionBus().registerService(SORO_DBUS_SERVICE_NAME)) {
+    if (!QDBusConnection::sessionBus().registerService(SORO_DBUS_AUDIO_CHILD_SERVICE_NAME(QString::number(getpid())))) {
         Logger::logError(LOG_TAG, "Cannot register D-Bus service: " + QDBusConnection::sessionBus().lastError().message());
         return 1;
     }

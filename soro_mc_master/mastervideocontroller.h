@@ -6,7 +6,7 @@
 #include <QTimerEvent>
 
 #include "soro_core/camerasettingsmodel.h"
-#include "soro_core/broadcastreceiver.h"
+#include "soro_core/rosnodelist.h"
 
 namespace Soro {
 
@@ -14,23 +14,20 @@ class MasterVideoController : public QObject
 {
     Q_OBJECT
 public:
-    explicit MasterVideoController(const CameraSettingsModel *cameraSettings, QHostAddress serverAddress, QObject *parent = 0);
+    explicit MasterVideoController(const CameraSettingsModel *cameraSettings, const RosNodeList *rosNodeList, QObject *parent = 0);
 
 Q_SIGNALS:
     void bitsDown(quint32 bits);
 
-protected:
-    void timerEvent(QTimerEvent *e);
+private Q_SLOTS:
+    void onRosNodeListUpdated();
 
 private:
     void onSocketReadyRead(QUdpSocket *socket, quint16 bouncePort);
-    void addPunchHost(QHostAddress address);
-    void removePunchHost(QHostAddress address);
 
     char _buffer[65536];
-
-    int _punchTimerId;
-    QHostAddress _serverAddress;
+    int _announceTimerId;
+    const RosNodeList *_rosNodeList;
     const CameraSettingsModel *_cameraSettings;
     QVector<QUdpSocket*> _videoSockets;
     QUdpSocket *_audioSocket;

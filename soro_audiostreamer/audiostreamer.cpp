@@ -39,9 +39,9 @@ AudioStreamer::AudioStreamer(QObject *parent) : QObject(parent)
     }
 
     // Register this class as a D-Bus RPC service so other processes can call our public slots
-    QDBusConnection::sessionBus().registerObject(SORO_DBUS_AUIDO_CHILD_OBJECT_NAME(QString::number(getpid())), this, QDBusConnection::ExportAllSlots);
+    QDBusConnection::sessionBus().registerObject("/", this, QDBusConnection::ExportAllSlots);
 
-    _parentInterface = new QDBusInterface(SORO_DBUS_SERVICE_NAME, SORO_DBUS_AUDIO_PARENT_OBJECT_NAME, "", QDBusConnection::sessionBus());
+    _parentInterface = new QDBusInterface(SORO_DBUS_AUDIO_PARENT_SERVICE_NAME, "/", "", QDBusConnection::sessionBus());
     if (!_parentInterface->isValid())
     {
         // Could not create interface for parent process

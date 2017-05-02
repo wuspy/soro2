@@ -18,7 +18,6 @@ public:
     explicit GStreamerPipelineWatch(int id, QGst::PipelinePtr pipeline, QObject *parent = 0);
 
 Q_SIGNALS:
-    void eos(int id);
     void error(QString message, int id);
 
 private Q_SLOTS:

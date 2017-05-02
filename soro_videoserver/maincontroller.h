@@ -5,6 +5,8 @@
 #include <QCoreApplication>
 #include <QTimerEvent>
 
+#include "soro_core/rosnodelist.h"
+
 #include "videoserver.h"
 #include "settingsmodel.h"
 
@@ -33,6 +35,7 @@ private:
 
     VideoServer *_videoServer = nullptr;
     SettingsModel *_settingsModel = nullptr;
+    RosNodeList *_rosNodeList = nullptr;
 };
 
 } // namespace Soro

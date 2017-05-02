@@ -23,8 +23,11 @@
 
 namespace Soro {
 
-MainWindowController::MainWindowController(QQmlEngine *engine, QObject *parent) : QObject(parent)
+MainWindowController::MainWindowController(QQmlEngine *engine, const RosNodeList *rosNodeList, QObject *parent) : QObject(parent)
 {
+    _rosNodeList = rosNodeList;
+    connect(_rosNodeList, &RosNodeList::nodesUpdated, this, &MainWindowController::onRosNodeListUpdated);
+
     QQmlComponent qmlComponent(engine, QUrl("qrc:/main.qml"));
     _window = qobject_cast<QQuickWindow*>(qmlComponent.create());
     if (!qmlComponent.errorString().isEmpty() || !_window)
@@ -32,6 +35,17 @@ MainWindowController::MainWindowController(QQmlEngine *engine, QObject *parent) 
         // There was an error creating the QML window. This is most likely due to a QML syntax error
         MainController::panic(LogTag, QString("Failed to create QML window:  %1").arg(qmlComponent.errorString()));
     }
+}
+
+void MainWindowController::onRosNodeListUpdated()
+{
+    QString nodes = "<ul>";
+    for (RosNodeList::Node node : _rosNodeList->getNodes())
+    {
+        nodes += QString("<li><b>%1</b> at %2</li>").arg(node.name, node.address.toString());
+    }
+    nodes += "</ul>";
+    _window->setProperty("connectedNodeInfo", nodes);
 }
 
 void MainWindowController::onConnectedChanged(bool connected)

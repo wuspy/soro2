@@ -44,12 +44,12 @@ int main(int argc, char *argv[])
 
     if (!QDBusConnection::sessionBus().isConnected()) {
         Logger::logError(LogTag, "Cannot connect to D-Bus session bus");
-        return 1;
+        return 10;
     }
 
-    if (!QDBusConnection::sessionBus().registerService(SORO_DBUS_SERVICE_NAME)) {
+    if (!QDBusConnection::sessionBus().registerService(SORO_DBUS_VIDEO_CHILD_SERVICE_NAME(QString::number(getpid())))) {
         Logger::logError(LogTag, "Cannot register D-Bus service: " + QDBusConnection::sessionBus().lastError().message());
-        return 1;
+        return 11;
     }
 
     VideoStreamer s;

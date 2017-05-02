@@ -99,7 +99,7 @@ void VideoController::onVideoResponse(ros_generated::video_state msg)
             if (newState.codec != GStreamerUtil::CODEC_NULL)
             {
                 // Video is streaming
-                playVideoOnSink(cameraIndex, newState.codec);
+                playVideoOnSink(cameraIndex, newState);
             }
             else
             {
@@ -159,7 +159,6 @@ void VideoController::constructPipelineOnSink(uint cameraIndex, QString sourceBi
     _bins[cameraIndex]->link(_sinks[cameraIndex]);
 
     _pipelineWatches[cameraIndex] = new GStreamerPipelineWatch(cameraIndex, _pipelines[cameraIndex], this);
-    connect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::eos, this, &VideoController::gstEos);
     connect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::error, this, &VideoController::gstError);
 
     _pipelines[cameraIndex]->setState(QGst::StatePlaying);
@@ -174,24 +173,24 @@ void VideoController::stopVideoOnSink(uint cameraIndex)
     // TEMPORARY TESTING CODE TODO
     constructPipelineOnSink(cameraIndex, GStreamerUtil::createRtpVideoDecodeString(
                                 QHostAddress::Any,
-                                SORO_NET_FIRST_VIDEO_PORT + cameraIndex,
-                                GStreamerUtil::VIDEO_CODEC_VP8, false));
+                                SORO_NET_MC_FIRST_VIDEO_PORT + cameraIndex,
+                                GStreamerUtil::VIDEO_CODEC_H264, false));
     Logger::logInfo(LogTag, GStreamerUtil::createRtpVideoDecodeString(
                         QHostAddress::Any,
-                        SORO_NET_FIRST_VIDEO_PORT + cameraIndex,
-                        GStreamerUtil::VIDEO_CODEC_VP8, false));
+                        SORO_NET_MC_FIRST_VIDEO_PORT + cameraIndex,
+                        GStreamerUtil::VIDEO_CODEC_H264, false));
     Q_EMIT stopped(cameraIndex);
 }
 
-void VideoController::playVideoOnSink(uint cameraIndex, quint8 codec)
+void VideoController::playVideoOnSink(uint cameraIndex, GStreamerUtil::VideoProfile profile)
 {
     // Play the video on the specified sink
     constructPipelineOnSink(cameraIndex, GStreamerUtil::createRtpVideoDecodeString(
                                 QHostAddress::Any,
-                                SORO_NET_FIRST_VIDEO_PORT + cameraIndex,
-                                codec,
+                                SORO_NET_MC_FIRST_VIDEO_PORT + cameraIndex,
+                                profile.codec,
                                 _settings->getEnableHwDecoding()));
-    Q_EMIT playing(cameraIndex, codec);
+    Q_EMIT playing(cameraIndex, profile);
 }
 
 void VideoController::stop(uint cameraIndex)
@@ -218,7 +217,6 @@ void VideoController::clearPipeline(uint cameraIndex)
     }
     if (_pipelineWatches.value(cameraIndex) != nullptr)
     {
-        disconnect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::eos, this, &VideoController::gstEos);
         disconnect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::error, this, &VideoController::gstError);
         delete _pipelineWatches[cameraIndex];
         _pipelineWatches[cameraIndex] = nullptr;

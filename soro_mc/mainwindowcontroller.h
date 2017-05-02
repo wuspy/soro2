@@ -28,6 +28,15 @@ public:
 
     QVector<QGst::ElementPtr> getVideoSinks();
 
+Q_SIGNALS:
+    void keyPressed(int key);
+
+public Q_SLOTS:
+    void onGamepadButtonPressed(SDL_GameControllerButton button, bool pressed);
+    void onConnectedChanged(bool connected);
+    void onLatencyUpdated(quint32 latency);
+    void onBitrateUpdated(quint64 bitsUp, quint64 bitsDown);
+
 private:
     void onNewNotification(ros_generated::notification msg);
 
@@ -39,12 +48,6 @@ private:
     ros::NodeHandle _nh;
     ros::Publisher _notifyPublisher;
     ros::Subscriber _notifySubscriber;
-
-public Q_SLOTS:
-    void onGamepadButtonPressed(SDL_GameControllerButton button, bool pressed);
-    void onConnectedChanged(bool connected);
-    void onLatencyUpdated(quint32 latency);
-    void onBitrateUpdated(quint64 bitsUp, quint64 bitsDown);
 };
 
 } // namespace Soro

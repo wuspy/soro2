@@ -68,19 +68,20 @@ void MediaProfileSettingsModel::load() {
     //
 
     // Profiles will be inserted into this map by the 'index' value so that they will be sorted
-    QMap<int, VideoProfile> videoProfileMap;
+    QMap<int, GStreamerUtil::VideoProfile> videoProfileMap;
+    QMap<int, QString> videoProfileNameMap;
 
     jsonVideoProfilesArray = jsonDocument.object()["video_profiles"].toArray();
     Q_FOREACH (QJsonValue jsonObject, jsonVideoProfilesArray)
     {
-        VideoProfile profile;
+        GStreamerUtil::VideoProfile profile;
         int index = jsonObject.toObject()["index"].toInt(-1);
-        profile.name = jsonObject.toObject()["name"].toString("");
+        QString profileName = jsonObject.toObject()["name"].toString("");
         profile.width = jsonObject.toObject()["width"].toInt(0);
         profile.height = jsonObject.toObject()["height"].toInt(0);
         profile.bitrate = jsonObject.toObject()["bitrate"].toInt(0);
         profile.framerate = jsonObject.toObject()["framerate"].toInt(0);
-        profile.quality = jsonObject.toObject()["quality"].toInt(0);
+        profile.mjpeg_quality = jsonObject.toObject()["quality"].toInt(0);
         QString encoding = jsonObject.toObject()["encoding"].toString().toLower();
 
         if (encoding == "mjpeg")
@@ -113,7 +114,7 @@ void MediaProfileSettingsModel::load() {
         }
         else
         {
-            throw QString("Error parsing media profile settings file \"%1\": Unknown value for \"encoding\" on video profile.").arg(FILE_PATH);
+            throw QString("Erro Ar parsing media profile settings file \"%1\": Unknown value for \"encoding\" on video profile.").arg(FILE_PATH);
         }
 
         if (index < 0)
@@ -121,24 +122,27 @@ void MediaProfileSettingsModel::load() {
             throw QString("Error parsing media profile settings file '%1': Video profile entry has an invalid index.").arg(FILE_PATH);
         }
         videoProfileMap.insert(index, profile);
+        videoProfileNameMap.insert(index, profileName);
     }
 
     // Transfer sorted map values to array
     _videoProfiles = videoProfileMap.values();
+    _videoProfileNames = videoProfileNameMap.values();
 
     //
     // Parse audio profiles
     //
 
     // Profiles will be inserted into this map by the 'index' value so that they will be sorted
-    QMap<int, AudioProfile> audioProfileMap;
+    QMap<int, GStreamerUtil::AudioProfile> audioProfileMap;
+    QMap<int, QString> audioProfileNameMap;
 
     jsonVideoProfilesArray = jsonDocument.object()["audio_profiles"].toArray();
     Q_FOREACH (QJsonValue jsonObject, jsonVideoProfilesArray)
     {
-        AudioProfile profile;
+        GStreamerUtil::AudioProfile profile;
         int index = jsonObject.toObject()["index"].toInt(-1);
-        profile.name = jsonObject.toObject()["name"].toString("");
+        QString profileName = jsonObject.toObject()["name"].toString("");
         profile.bitrate = jsonObject.toObject()["bitrate"].toInt(0);
         QString encoding = jsonObject.toObject()["encoding"].toString().toLower();
 
@@ -156,13 +160,15 @@ void MediaProfileSettingsModel::load() {
             throw QString("Error parsing media profile settings file '%1': Audio profile entry has an invalid index.").arg(FILE_PATH);
         }
         audioProfileMap.insert(index, profile);
+        audioProfileNameMap.insert(index, profileName);
     }
 
     // Transfer sorted map values to array
     _audioProfiles = audioProfileMap.values();
+    _audioProfileNames = audioProfileNameMap.values();
 }
 
-MediaProfileSettingsModel::VideoProfile MediaProfileSettingsModel::getVideoProfile(uint index) const
+GStreamerUtil::VideoProfile MediaProfileSettingsModel::getVideoProfile(uint index) const
 {
     return _videoProfiles.value(index);
 }
@@ -172,7 +178,7 @@ int MediaProfileSettingsModel::getVideoProfileCount() const
     return _videoProfiles.count();
 }
 
-MediaProfileSettingsModel::AudioProfile MediaProfileSettingsModel::getAudioProfile(uint index) const
+GStreamerUtil::AudioProfile MediaProfileSettingsModel::getAudioProfile(uint index) const
 {
     return _audioProfiles.value(index);
 }
@@ -180,6 +186,16 @@ MediaProfileSettingsModel::AudioProfile MediaProfileSettingsModel::getAudioProfi
 int MediaProfileSettingsModel::getAudioProfileCount() const
 {
     return _audioProfiles.count();
+}
+
+QString MediaProfileSettingsModel::getVideoProfileName(uint index) const
+{
+    return _videoProfileNames.value(index);
+}
+
+QString MediaProfileSettingsModel::getAudioProfileName(uint index) const
+{
+    return _audioProfileNames.value(index);
 }
 
 } // namespace Soro

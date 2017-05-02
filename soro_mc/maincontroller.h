@@ -10,7 +10,6 @@
 #include "settingsmodel.h"
 #include "soro_core/camerasettingsmodel.h"
 #include "soro_core/mediaprofilesettingsmodel.h"
-#include "soro_core/broadcaster.h"
 
 #include "gamepadcontroller.h"
 #include "gamepadcontroller.h"
@@ -59,7 +58,6 @@ private:
     DriveControlSystem *_driveControlSystem = nullptr;
     ConnectionStatusController *_connectionStatusController = nullptr;
     ArmControlSystem * _armControlSystem = nullptr;
-    Broadcaster *_mcBroadcaster = nullptr;
 };
 
 } // namespace Soro

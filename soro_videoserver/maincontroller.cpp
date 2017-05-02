@@ -55,6 +55,19 @@ void MainController::init(QCoreApplication *app)
         QTimer::singleShot(0, _self, []()
         {
             //
+            // Connect to D-Bus
+            //
+            if (!QDBusConnection::sessionBus().isConnected()) {
+                Logger::logError(LogTag, "Cannot connect to D-Bus session bus");
+                return 1;
+            }
+
+            if (!QDBusConnection::sessionBus().registerService(SORO_DBUS_VIDEO_PARENT_SERVICE_NAME)) {
+                Logger::logError(LogTag, "Cannot register D-Bus service: " + QDBusConnection::sessionBus().lastError().message());
+                return 1;
+            }
+
+            //
             // Create the settings model and load the main settings file
             //
             Logger::logInfo(LogTag, "Loading settings...");
@@ -96,11 +109,19 @@ void MainController::init(QCoreApplication *app)
             catch(ros::InvalidNameException e)
             {
                 panic(LogTag, QString("Invalid name exception initializing ROS: %1").arg(e.what()));
-                return;
             }
 
+            //
+            // Initialize ros node list
+            //
+            Logger::logInfo(LogTag, "Initializing ros node list...");
+            _self->_rosNodeList = new RosNodeList(1000, _self);
+
+            //
             // Create video server
-            _self->_videoServer = new VideoServer(_self->_settingsModel->getComputerIndex(), _self);
+            //
+            Logger::logInfo(LogTag, "Initializing video server...");
+            _self->_videoServer = new VideoServer(_self->_settingsModel->getComputerIndex(), _self->_rosNodeList, _self);
 
             // Start ROS spinner loop
             _self->_rosSpinTimerId = _self->startTimer(1);

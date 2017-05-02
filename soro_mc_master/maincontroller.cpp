@@ -114,6 +114,12 @@ void MainController::init(QApplication *app)
             }
 
             //
+            // Create ros node list
+            //
+            Logger::logInfo(LogTag, "Initializing ros node list...");
+            _self->_rosNodeList = new RosNodeList(1000, _self);
+
+            //
             // Create master connection status controller
             //
             Logger::logInfo(LogTag, "Initializing master connection status controller...");
@@ -123,9 +129,7 @@ void MainController::init(QApplication *app)
             // Create the master video controller
             //
             Logger::logInfo(LogTag, "Initializing media bouncer...");
-            QString roverAddressStr = QString(getenv("ROS_MASTER_URI"));
-            QHostAddress roverAddress = QHostAddress(roverAddressStr.mid(0, roverAddressStr.indexOf(":")));
-            _self->_masterVideoController = new MasterVideoController(_self->_cameraSettings, roverAddress, _self);
+            _self->_masterVideoController = new MasterVideoController(_self->_cameraSettings, _self->_rosNodeList, _self);
 
             //
             // Create the QML application engine
@@ -137,7 +141,7 @@ void MainController::init(QApplication *app)
             // Create the main UI
             //
             Logger::logInfo(LogTag, "Creating main window...");
-            _self->_mainWindowController = new MainWindowController(_self->_qmlEngine, _self);
+            _self->_mainWindowController = new MainWindowController(_self->_qmlEngine, _self->_rosNodeList, _self);
 
             connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::connectedChanged,
                     _self->_mainWindowController, &MainWindowController::onConnectedChanged);

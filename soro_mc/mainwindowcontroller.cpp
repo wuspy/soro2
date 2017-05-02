@@ -61,6 +61,8 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
 
     _window->setProperty("selectedView", "video0");
 
+    connect(_window, SIGNAL(keyPressed(int)), this, SIGNAL(keyPressed(int)));
+
     //
     // Setup ROS communication
     //

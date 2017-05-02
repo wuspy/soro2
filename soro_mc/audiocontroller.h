@@ -42,10 +42,6 @@ Q_SIGNALS:
      * rover is no longer streaming audio, only that we could not play it
      */
     void gstError(QString message);
-    /* Emitted when an EOS message is encountered while playing the stream. This should
-     * really never happen, and can be considered a decoding error.
-     */
-    void gstEos();
 
 public Q_SLOTS:
     void play(quint8 codec);

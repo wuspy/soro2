@@ -65,12 +65,11 @@ void AudioController::onAudioResponse(ros_generated::audio msg)
     {
         // Audio is streaming, create gstreamer pipeline
         _pipeline = QGst::Pipeline::create("audioPipeline");
-        _bin = QGst::Bin::fromDescription(GStreamerUtil::createRtpAudioPlayString(QHostAddress::Any, SORO_NET_AUDIO_PORT, msg.encoding));
+        _bin = QGst::Bin::fromDescription(GStreamerUtil::createRtpAudioPlayString(QHostAddress::Any, SORO_NET_MC_AUDIO_PORT, msg.encoding));
         _pipeline->add(_bin);
 
         // Add signal watch to subscribe to bus events, like errors
         _pipelineWatch = new GStreamerPipelineWatch(0, _pipeline, this);
-        connect(_pipelineWatch, &GStreamerPipelineWatch::eos, this, &AudioController::gstEos);
         connect(_pipelineWatch, &GStreamerPipelineWatch::error, this, &AudioController::gstError);
 
         // Play
@@ -107,7 +106,6 @@ void AudioController::clearPipeline()
     }
     if (_pipelineWatch)
     {
-        disconnect(_pipelineWatch, &GStreamerPipelineWatch::eos, this, &AudioController::gstEos);
         disconnect(_pipelineWatch, &GStreamerPipelineWatch::error, this, &AudioController::gstError);
         delete _pipelineWatch;
         _pipelineWatch = nullptr;

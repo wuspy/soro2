@@ -253,20 +253,6 @@ void MainController::init(QApplication *app)
             _self->_audioController = new AudioController(_self);
 
             //
-            // Create the mission control broadcaster
-            //
-            Logger::logInfo(LogTag, "Initializing mission control broadcaster...");
-            try
-            {
-                _self->_mcBroadcaster = new Broadcaster(SORO_NET_MC_BROADCAST_PORT, getId(), 1000, _self);
-            }
-            catch (QString message)
-            {
-                panic(LogTag, "Error initializing mission control broadcast: " + message);
-            }
-
-
-            //
             // Create the QML application engine and setup the GStreamer surface
             //
             if (_self->_settingsModel->getEnableHwRendering())
@@ -304,23 +290,11 @@ void MainController::init(QApplication *app)
                                               "Error playing " + _self->_cameraSettingsModel->getCamera(cameraIndex).name,
                                               "There was an error while decoding the video stream: " + message);
             });
-            connect(_self->_videoController, &VideoController::gstEos, _self, [](uint cameraIndex)
-            {
-                _self->_mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
-                                              "Error playing " + _self->_cameraSettingsModel->getCamera(cameraIndex).name,
-                                              "Received end-of-stream message while streaming video");
-            });
             connect(_self->_audioController, &AudioController::gstError, _self, [](QString message)
             {
                 _self->_mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
                                               "Error playing audio",
                                               "There was an error while decoding the audio stream: " + message);
-            });
-            connect(_self->_audioController, &AudioController::gstEos, _self, []()
-            {
-                _self->_mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
-                                              "Error playing audio",
-                                              "Received end-of-stream message while streaming audio");
             });
 
             // Connect gamepad, bitrate, and status events to the UI
@@ -332,6 +306,34 @@ void MainController::init(QApplication *app)
                     _self->_mainWindowController, &MainWindowController::onLatencyUpdated);
             connect(_self->_connectionStatusController, &ConnectionStatusController::connectedChanged,
                     _self->_mainWindowController, &MainWindowController::onConnectedChanged);
+
+            connect(_self->_mainWindowController, &MainWindowController::keyPressed, _self, [](int key)
+            {
+                if (key == Qt::Key_1)
+                {
+                    _self->_videoController->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                }
+                else if (key == Qt::Key_Q)
+                {
+                    _self->_videoController->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                }
+                else if (key == Qt::Key_A)
+                {
+                    _self->_videoController->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                }
+                else if (key == Qt::Key_2)
+                {
+                    _self->_videoController->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                }
+                else if (key == Qt::Key_W)
+                {
+                    _self->_videoController->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                }
+                else if (key == Qt::Key_S)
+                {
+                    _self->_videoController->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                }
+            });
 
 
             // Temporary implementation for a 'turbo' button

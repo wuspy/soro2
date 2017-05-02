@@ -22,9 +22,8 @@ public:
     ~VideoStreamer();
 
 public Q_SLOTS:
-    void stop();
-    void streamStereoVideo(QString leftDevice, QString rightDevice, QString address, quint16 port, QString profile, bool vaapi);
-    void streamVideo(QString device, QString address, quint16 port, QString profile, bool vaapi);
+    Q_SCRIPTABLE void stop();
+    Q_SCRIPTABLE void stream(const QString &device, const QString &address, quint16 port, const QString &profile, bool vaapi);
 
 private:
     QGst::PipelinePtr createPipeline();

@@ -81,6 +81,10 @@ ApplicationWindow {
     property alias video8Surface: mainContentView.video8Surface
     property alias video9Surface: mainContentView.video9Surface
 
+    /* Emitted when a key is pressed in the UI
+      */
+    signal keyPressed(int key)
+
     /*
       Fullscreen state of the application, boolean
       */
@@ -185,6 +189,14 @@ ApplicationWindow {
         case "map":
             selectedView = videoCount > 0 ? "video" + (videoCount - 1) : "map"
             break
+        }
+    }
+
+    Item {
+        id: keyItem
+        focus: true
+        Keys.onPressed: {
+            keyPressed(event.key)
         }
     }
 

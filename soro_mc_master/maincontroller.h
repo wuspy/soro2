@@ -7,6 +7,8 @@
 #include <QUdpSocket>
 #include <QTimerEvent>
 
+#include "soro_core/rosnodelist.h"
+
 #include "settingsmodel.h"
 #include "mainwindowcontroller.h"
 #include "masterconnectionstatuscontroller.h"
@@ -40,6 +42,7 @@ private:
     MasterVideoController *_masterVideoController = nullptr;
     MainWindowController *_mainWindowController = nullptr;
     MasterConnectionStatusController *_masterConnectionStatusController = nullptr;
+    RosNodeList *_rosNodeList = nullptr;
 };
 
 } // namespace Soro

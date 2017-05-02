@@ -22,22 +22,20 @@ import QtGraphicalEffects 1.0
 
 ApplicationWindow {
     visible: true
-    width: 400
-    minimumWidth: width
-    maximumWidth: width
-    //height: commActivityLabel.y + commActivityLabel.height
-    height: pingLabel.y + pingLabel.height
-    minimumHeight: height
-    maximumHeight: height
+    minimumWidth: 400
+    maximumWidth: 400
+    minimumHeight: connectedNodesLabel.y + connectedNodesLabel.height
+    maximumHeight: connectedNodesLabel.y + connectedNodesLabel.height
     title: "Mission Control Master"
 
     /*
       Connection status properties
       */
-    property bool connected: falsea
+    property bool connected: false
     property int latency: 0
     property int bitrateDown: 0
     property int bitrateUp: 0
+    property string connectedNodeInfo
 
     /*
       Internal color properties used throughout the UI
@@ -102,31 +100,31 @@ ApplicationWindow {
         text: {
             if (connected) {
                 var upUnits, downUnits;
-                if (bpsUp > 1000000) {
+                if (bitrateUp > 1000000) {
                     upUnits = "Mb/s"
-                    bpsUp = Math.round(bpsUp / 10000) / 100
+                    bitrateUp = Math.round(bitrateUp / 10000) / 100
                 }
-                else if (bpsUp > 1000) {
+                else if (bitrateUp > 1000) {
                     upUnits = "Kb/s"
-                    bpsUp = Math.round(bpsUp / 10) / 100
+                    bitrateUp = Math.round(bitrateUp / 10) / 100
                 }
                 else {
                     upUnits = "b/s"
                 }
-                if (bpsDown > 1000000) {
+                if (bitrateDown > 1000000) {
                     downUnits = "Mb/s"
-                    bpsDown = Math.round(bpsDown / 10000) / 100
+                    bitrateDown = Math.round(bitrateDown / 10000) / 100
                 }
-                else if (bpsDown > 1000) {
+                else if (bitrateDown > 1000) {
                     downUnits = "Kb/s"
-                    bpsDown = Math.round(bpsDown / 10) / 100
+                    bitrateDown = Math.round(bitrateDown / 10) / 100
                 }
                 else {
                     downUnits = "b/s"
                 }
-                "▲ <b>" + bpsUp + "</b> " + upUnits +
+                "▲ <b>" + bitrateUp + "</b> " + upUnits +
                         "<br>" +
-                        "▼ <b>" + bpsDown + "</b> " + downUnits
+                        "▼ <b>" + bitrateDown + "</b> " + downUnits
             }
             else {
                 "---<br>---"
@@ -134,52 +132,20 @@ ApplicationWindow {
         }
     }
 
-    /*Label {
-        id: connectedMcsHeaderLabel
+    Label {
+        id: connectedNodesLabelHeader
         color: "black"
         anchors.top: pingLabel.bottom
         anchors.left: connectionStatusImage.left
         anchors.topMargin: 20
         font.pixelSize: 20
-        text: "3 Mission Control(s) connected"
+        text: "Connected Nodes"
     }
 
     Label {
-        id: connectedMcsLabel
-        anchors.top: connectedMcsHeaderLabel.bottom
-        anchors.left: connectedMcsHeaderLabel.left
+        id: connectedNodesLabel
+        anchors.top: connectedNodesLabelHeader.bottom
+        anchors.left: connectedNodesLabelHeader.left
+        text: connectedNodeInfo
     }
-
-    Label {
-        id: mediaStreamsHeaderLabel
-        color: "black"
-        anchors.top: connectedMcsLabel.bottom
-        anchors.left: connectionStatusImage.left
-        font.pixelSize: 20
-        text: "3 Media stream(s) active"
-    }
-
-    Label {
-        id: mediaStreamsLabel
-        anchors.top: mediaStreamsHeaderLabel.bottom
-        anchors.left: mediaStreamsHeaderLabel.left
-        text: "<ul><li>Main Camera</li></ul>"
-        font.pointSize: 12
-    }
-
-    Label {
-        id: commActivityHeaderLabel
-        color: "black"
-        anchors.top: mediaStreamsLabel.bottom
-        anchors.left: connectionStatusImage.left
-        font.pixelSize: 20
-        text: "Communication Activity"
-    }
-    Label {
-        id: commActivityLabel
-        anchors.top: commActivityHeaderLabel.bottom
-        anchors.left: commActivityHeaderLabel.left
-        text: "<ul><li>Main Camera</li></ul>"
-        font.pointSize: 12
-    }*/
 }

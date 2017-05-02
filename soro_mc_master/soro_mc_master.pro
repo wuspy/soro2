@@ -33,8 +33,7 @@ SOURCES += main.cpp \
     pingworker.cpp \
     settingsmodel.cpp \
     udpbouncer.cpp \
-    mastervideocontroller.cpp \
-    missioncontrolnetwork.cpp
+    mastervideocontroller.cpp
 
 HEADERS += \
     mainwindowcontroller.h \
@@ -43,8 +42,7 @@ HEADERS += \
     pingworker.h \
     settingsmodel.h \
     udpbouncer.h \
-    mastervideocontroller.h \
-    missioncontrolnetwork.h
+    mastervideocontroller.h
 
 RESOURCES += \
     qml.qrc \

@@ -6,6 +6,7 @@
 #include <QList>
 
 #include "soro_core_global.h"
+#include "gstreamerutil.h"
 
 namespace Soro {
 
@@ -16,26 +17,6 @@ class SORO_CORE_SHARED_EXPORT MediaProfileSettingsModel
 {
     Q_GADGET
 public:
-    /* This struct represents a single video profile definition
-     */
-    struct VideoProfile {
-        QString name;
-        quint8 codec;
-        uint width;
-        uint height;
-        uint bitrate;
-        uint framerate;
-        uint quality;
-    };
-
-    /* This struct represents a single audio profile definition
-     */
-    struct AudioProfile
-    {
-        QString name;
-        quint8 codec;
-        uint bitrate;
-    };
 
     /* Loads the media profile definitions from the settings file. This will
      * throw an exception of type QString if an error occurrs
@@ -44,11 +25,15 @@ public:
 
     /* Gets the video profile at the specified index
      */
-    VideoProfile getVideoProfile(uint index) const;
+    GStreamerUtil::VideoProfile getVideoProfile(uint index) const;
+
+    QString getVideoProfileName(uint index) const;
 
     /* Gets the audio profile at the specified index
      */
-    AudioProfile getAudioProfile(uint index) const;
+    GStreamerUtil::AudioProfile getAudioProfile(uint index) const;
+
+    QString getAudioProfileName(uint index) const;
 
     /* Gets the number of video profiles
      */
@@ -59,8 +44,10 @@ public:
     int getAudioProfileCount() const;
 
 private:
-    QList<MediaProfileSettingsModel::VideoProfile> _videoProfiles;
-    QList<MediaProfileSettingsModel::AudioProfile> _audioProfiles;
+    QList<GStreamerUtil::VideoProfile> _videoProfiles;
+    QList<QString> _videoProfileNames;
+    QList<GStreamerUtil::AudioProfile> _audioProfiles;
+    QList<QString> _audioProfileNames;
 };
 
 } // namespace Soro

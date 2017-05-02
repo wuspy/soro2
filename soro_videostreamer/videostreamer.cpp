@@ -21,6 +21,7 @@
 
 #include <Qt5GStreamer/QGlib/Connect>
 #include <Qt5GStreamer/QGst/Bus>
+#include <QTimer>
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -35,20 +36,28 @@ VideoStreamer::VideoStreamer(QObject *parent) : QObject(parent)
     {
         // Not connected to d-bus
         Logger::logError(LogTag, "Not connected to D-Bus system bus");
-        exit(1);
+        exit(12);
     }
 
-    // Register this class as a D-Bus RPC service so other processes can call our public slots
-    QDBusConnection::sessionBus().registerObject(SORO_DBUS_VIDEO_CHILD_OBJECT_NAME(QString::number(getpid())), this, QDBusConnection::ExportAllSlots);
-
-    _parentInterface = new QDBusInterface(SORO_DBUS_SERVICE_NAME, SORO_DBUS_VIDEO_PARENT_OBJECT_NAME, "", QDBusConnection::sessionBus());
+    _parentInterface = new QDBusInterface(SORO_DBUS_VIDEO_PARENT_SERVICE_NAME, "/", "", QDBusConnection::sessionBus());
     if (!_parentInterface->isValid())
     {
         // Could not create interface for parent process
         Logger::logError(LogTag, "D-Bus parent interface at /mediaParent is not valid");
-        exit(2);
+        exit(13);
     }
-    _parentInterface->call(QDBus::NoBlock, "onChildReady", getpid());
+
+    // Register this class as a D-Bus RPC service so other processes can call our public slots
+    if (!QDBusConnection::sessionBus().registerObject("/", this, QDBusConnection::ExportAllSlots))
+    {
+        Logger::logError(LogTag, "Cannot register as D-Bus RPC object: " + QDBusConnection::sessionBus().lastError().message());
+        exit(14);
+    }
+
+    QTimer::singleShot(100, this, [this]()
+    {
+        _parentInterface->call(QDBus::NoBlock, "onChildReady", (qint64)getpid());
+    });
 }
 
 VideoStreamer::~VideoStreamer()
@@ -79,7 +88,7 @@ void VideoStreamer::stopPrivate(bool sendReady)
     }
 }
 
-void VideoStreamer::streamVideo(QString device, QString address, quint16 port, QString profile, bool vaapi)
+void VideoStreamer::stream(const QString &device, const QString &address, quint16 port, const QString &profile, bool vaapi)
 {
     stopPrivate(false);
 
@@ -92,23 +101,7 @@ void VideoStreamer::streamVideo(QString device, QString address, quint16 port, Q
     _pipeline->add(encoder);
     _pipeline->setState(QGst::StatePlaying);
 
-    _parentInterface->call(QDBus::NoBlock, "onChildStreaming", getpid(), address, port, profile, false);
-}
-
-void VideoStreamer::streamStereoVideo(QString leftDevice, QString rightDevice, QString address, quint16 port, QString profile, bool vaapi)
-{
-    stopPrivate(false);
-
-    _pipeline = createPipeline();
-
-    // create gstreamer command
-    QString binStr = GStreamerUtil::createRtpStereoV4L2EncodeString(leftDevice, rightDevice, QHostAddress(address), port, GStreamerUtil::VideoProfile(profile), vaapi);
-    QGst::BinPtr encoder = QGst::Bin::fromDescription(binStr);
-
-    _pipeline->add(encoder);
-    _pipeline->setState(QGst::StatePlaying);
-
-    _parentInterface->call(QDBus::NoBlock, "onChildStreaming", getpid(), address, port, profile, true);
+    _parentInterface->call(QDBus::NoBlock, "onChildStreaming", (qint64)getpid());
 }
 
 QGst::PipelinePtr VideoStreamer::createPipeline()

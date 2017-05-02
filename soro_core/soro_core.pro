@@ -29,17 +29,15 @@ DESTDIR = ../lib
 INCLUDEPATH += $$PWD/..
 
 SOURCES += \
-    broadcaster.cpp \
     camerasettingsmodel.cpp \
     logger.cpp \
     gstreamerutil.cpp \
     abstractsettingsmodel.cpp \
     socketaddress.cpp \
     mediaprofilesettingsmodel.cpp \
-    broadcastreceiver.cpp
+    rosnodelist.cpp
 
 HEADERS +=\
-    broadcaster.h \
     soro_core_global.h \
     camerasettingsmodel.h \
     constants.h \
@@ -48,7 +46,7 @@ HEADERS +=\
     abstractsettingsmodel.h \
     socketaddress.h \
     mediaprofilesettingsmodel.h \
-    broadcastreceiver.h
+    rosnodelist.h
 
 # Link against SDL2
 LIBS += -lSDL2

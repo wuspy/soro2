@@ -51,12 +51,9 @@ public:
     void stop(uint cameraIndex);
 
 Q_SIGNALS:
-    void playing(uint cameraIndex, quint8 codec);
+    void playing(uint cameraIndex, GStreamerUtil::VideoProfile profile);
     void stopped(uint cameraIndex);
-    /* Emitted when an EOS message is encountered while playing the stream. This should
-     * really never happen, and can be considered a decoding error.
-     */
-    void gstEos(uint cameraIndex);
+
     /* Emitted when an audio decoding error is encountered. This does not mean the
      * rover is no longer streaming this camera, only that we could not play it
      */
@@ -65,7 +62,7 @@ Q_SIGNALS:
 private:
     void onVideoResponse(ros_generated::video_state msg);
     void clearPipeline(uint cameraIndex);
-    void playVideoOnSink(uint cameraIndex, quint8 codec);
+    void playVideoOnSink(uint cameraIndex, GStreamerUtil::VideoProfile profile);
     void constructPipelineOnSink(uint cameraIndex, QString sourceBinString);
     void stopVideoOnSink(uint cameraIndex);
 

@@ -35,7 +35,8 @@ void GStreamerPipelineWatch::onBusMessage(const QGst::MessagePtr &message)
 {
     switch (message->type()) {
     case QGst::MessageEos:
-        Q_EMIT eos(_id);
+        Logger::logError(LogTag, "onBusMessage(): Received EOS message from gstreamer");
+        Q_EMIT error("Received unexpected EOS message", _id);
         break;
     case QGst::MessageError: {
         QString msg = message.staticCast<QGst::ErrorMessage>()->debugMessage();
