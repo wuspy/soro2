@@ -9,7 +9,7 @@
 #include <std_msgs/UInt32.h>
 #include <ros_generated/ping.h>
 
-#include "ros_generated/bitrate.h"
+#include "ros_generated/data_rate.h"
 #include "pingworker.h"
 #include "settingsmodel.h"
 
@@ -50,11 +50,11 @@ public:
 Q_SIGNALS:
     void latencyUpdate(quint32 latency);
     void connectedChanged(bool connected);
-    void bitrateUpdate(quint64 bitrateUp, quint64 bitrateDown);
+    void dataRateUpdate(quint64 rateUp, quint64 rateDown);
 
 public Q_SLOTS:
-    void logBitsUp(quint32 bits);
-    void logBitsDown(quint32 bits);
+    void logDataUp(quint32 bytes);
+    void logDataDown(quint32 bytes);
 
 private Q_SLOTS:
     void onNewLatency(quint32 latency);
@@ -63,24 +63,24 @@ protected:
     void timerEvent(QTimerEvent *e);
 
 private:
-    void onNewBitsDownMessage(std_msgs::UInt32 msg);
-    void onNewBitsUpMessage(std_msgs::UInt32 msg);
+    void onNewDataDownMessage(std_msgs::UInt32 msg);
+    void onNewDataUpMessage(std_msgs::UInt32 msg);
     void setConnected(bool connected);
 
     ros::NodeHandle _nh;
     ros::ServiceClient _pingClient;
     ros::Publisher _latencyPublisher;
-    ros::Publisher _bitratePublisher;
-    ros::Subscriber _bitsUpSubscriber;
-    ros::Subscriber _bitsDownSubscriber;
+    ros::Publisher _dataRatePublisher;
+    ros::Subscriber _dataUpSubscriber;
+    ros::Subscriber _dataDownSubscriber;
 
     int _disconnectWatchdogTimerId;
-    int _bitrateCalcTimerId;
+    int _dataRateCalcTimerId;
     bool _connected;
 
     const SettingsModel *_settings;
-    quint64 _bitsDown;
-    quint64 _bitsUp;
+    quint64 _bytesDown;
+    quint64 _bytesUp;
     QThread _workerThread;
     PingWorker *_pingWorker = nullptr;
 };

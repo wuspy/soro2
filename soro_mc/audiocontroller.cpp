@@ -47,7 +47,6 @@ AudioController::AudioController(QObject *parent) : QObject(parent)
 
     Logger::logInfo(LogTag, "All ROS publishers and subscribers created");
 
-    _codec = GStreamerUtil::CODEC_NULL;
     _pipelineWatch = nullptr;
 }
 
@@ -60,12 +59,13 @@ void AudioController::onAudioResponse(ros_generated::audio msg)
 {
     // Rover is notifying us of a change in its audio stream
     clearPipeline();
+    _profile = GStreamerUtil::AudioProfile(msg);
 
-    if (msg.on)
+    if (_profile.codec != GStreamerUtil::CODEC_NULL)
     {
         // Audio is streaming, create gstreamer pipeline
         _pipeline = QGst::Pipeline::create("audioPipeline");
-        _bin = QGst::Bin::fromDescription(GStreamerUtil::createRtpAudioPlayString(QHostAddress::Any, SORO_NET_MC_AUDIO_PORT, msg.encoding));
+        _bin = QGst::Bin::fromDescription(GStreamerUtil::createRtpAudioPlayString(QHostAddress::Any, SORO_NET_MC_AUDIO_PORT, _profile.codec));
         _pipeline->add(_bin);
 
         // Add signal watch to subscribe to bus events, like errors
@@ -74,25 +74,23 @@ void AudioController::onAudioResponse(ros_generated::audio msg)
 
         // Play
         _pipeline->setState(QGst::StatePlaying);
-        _codec = msg.encoding;
-        Q_EMIT playing(_codec);
+        Q_EMIT playing(_profile);
     }
     else
     {
         // Audio is not streaming
-        _codec = GStreamerUtil::CODEC_NULL;
         Q_EMIT stopped();
     }
 }
 
 bool AudioController::isPlaying() const
 {
-    return _codec != GStreamerUtil::CODEC_NULL;
+    return _profile.codec != GStreamerUtil::CODEC_NULL;
 }
 
-quint8 AudioController::getCodec() const
+GStreamerUtil::AudioProfile AudioController::getProfile() const
 {
-    return _codec;
+    return _profile;
 }
 
 void AudioController::clearPipeline()
@@ -112,26 +110,22 @@ void AudioController::clearPipeline()
     }
 }
 
-void AudioController::play(quint8 codec)
+void AudioController::play(GStreamerUtil::AudioProfile profile)
 {
     // Send a request to the rover to start/change the audio stream
-    ros_generated::audio msg;
-    msg.encoding = codec;
-    msg.on = true;
 
-    Logger::logInfo(LogTag, QString("Sending audio ON requet to rover with codec %1").arg(GStreamerUtil::getCodecName(codec)));
-    _audioStatePublisher.publish(msg);
+    Logger::logInfo(LogTag, QString("Sending audio ON requet to rover with codec %1").arg(GStreamerUtil::getCodecName(profile.codec)));
+    _profile = profile;
+    _audioStatePublisher.publish(_profile.toRosMessage());
 }
 
 void AudioController::stop()
 {
     // Send a request to the rover to STOP the audio stream
-    ros_generated::audio msg;
-    msg.encoding = GStreamerUtil::CODEC_NULL;
-    msg.on = false;
 
     Logger::logInfo(LogTag, "Sending audio OFF requet to rover");
-    _audioStatePublisher.publish(msg);
+    _profile = GStreamerUtil::AudioProfile();
+    _audioStatePublisher.publish(_profile.toRosMessage());
 }
 
 } // namespace Soro

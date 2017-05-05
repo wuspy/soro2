@@ -50,6 +50,11 @@ Item
         notificationListModel.append({"item_type": type, "item_title": title, "item_text": text})
     }
 
+    function dismiss()
+    {
+        notificationListModel.clear()
+    }
+
     ListView
     {
         id: list
@@ -197,7 +202,7 @@ Item
         anchors.top: list.bottom
         anchors.topMargin: 20
         anchors.right: list.right
-        button: "lb"
+        button: "a"
         text: "Dismiss all"
         visible: list.count > 0
     }

@@ -49,6 +49,7 @@ public:
 
     void play(uint cameraIndex, GStreamerUtil::VideoProfile profile);
     void stop(uint cameraIndex);
+    void stopAll();
 
 Q_SIGNALS:
     void playing(uint cameraIndex, GStreamerUtil::VideoProfile profile);

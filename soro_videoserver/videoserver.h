@@ -26,9 +26,13 @@ public:
     void setShouldUseVaapiForCodec(quint8 codec, bool vaapi);
 
 public Q_SLOTS:
-    Q_SCRIPTABLE void onChildError(qint64 childPid, QString message);
-    Q_SCRIPTABLE void onChildReady(qint64 childPid);
-    Q_SCRIPTABLE void onChildStreaming(qint64 childPid);
+    void onChildError(QString childName, QString message);
+    void onChildReady(QString childName);
+    void onChildStreaming(QString childName);
+    void onChildLogInfo(QString childName, const QString &tag, const QString &message);
+
+protected:
+    void timerEvent(QTimerEvent *e);
 
 private:
     struct Assignment
@@ -40,11 +44,12 @@ private:
         GStreamerUtil::VideoProfile profile;
         ros_generated::video originalMessage;
         bool vaapi;
+
+        Assignment();
     };
 
-    void spawnChildForAssignment(Assignment assignment);
-    void stopChild(qint64 pid);
-    void killChild(qint64 pid);
+    void giveChildAssignment(Assignment assignment);
+    void terminateChild(QString childName);
     void reportVideoState();
 
     void onVideoStateMessage(ros_generated::video_state msg);
@@ -53,6 +58,7 @@ private:
     QString findUsbCamera(QString serial, QString productId, QString vendorId, int offset);
 
     int _computerIndex;
+    int _heartbeatTimerId;
     const RosNodeList *_rosNodeList;
     ros_generated::video_state _lastVideoStateMsg;
     ros::NodeHandle _nh;
@@ -61,11 +67,17 @@ private:
     ros::Subscriber _videoStateSubscriber;
     ros::Subscriber _videoRequestSubscriber;
 
-    QHash<qint64, QDBusInterface*> _childInterfaces;
-    QHash<qint64, Assignment> _waitingVideoStreams;
-    QHash<qint64, Assignment> _assignedVideoStreams;
-    QVector<QProcess*> _children;
+    // These key to these hash sets is the device the child is assigned
+    // to stream. Each child is spawned to stream a single device (usually
+    // a /dev/video* deivce), and it will only ever serve streams for that
+    // single device. This system is done to prevent multiple children from
+    // attempting to stream the same device, which would fail.
+    QHash<QString, QProcess*> _children;
+    QHash<QString, QDBusInterface*> _childInterfaces;
+    QHash<QString, Assignment> _waitingAssignments;
+    QHash<QString, Assignment> _currentAssignments;
     QHash<quint8, bool> _useVaapi;
+
 };
 
 } // namespace Soro

@@ -6,6 +6,7 @@
 
 #include "soro_core_global.h"
 #include "ros_generated/video.h"
+#include "ros_generated/audio.h"
 
 /* This namespace has some useful functions for constructing GStreamer pipeline descriptions, as well as
  * other GStreamer-related functionality
@@ -62,8 +63,10 @@ struct SORO_CORE_SHARED_EXPORT AudioProfile
 
     AudioProfile();
     AudioProfile(QString description);
+    AudioProfile(ros_generated::audio msg);
 
     QString toString() const;
+    ros_generated::audio toRosMessage() const;
 
     bool operator==(const AudioProfile& other) const;
 

@@ -122,6 +122,11 @@ void MainController::init(QCoreApplication *app)
             //
             Logger::logInfo(LogTag, "Initializing video server...");
             _self->_videoServer = new VideoServer(_self->_settingsModel->getComputerIndex(), _self->_rosNodeList, _self);
+            _self->_videoServer->setShouldUseVaapiForCodec(GStreamerUtil::VIDEO_CODEC_H264, _self->_settingsModel->getUseH264Vaapi());
+            _self->_videoServer->setShouldUseVaapiForCodec(GStreamerUtil::VIDEO_CODEC_MPEG2, _self->_settingsModel->getUseMpeg2Vaapi());
+            _self->_videoServer->setShouldUseVaapiForCodec(GStreamerUtil::VIDEO_CODEC_VP8, _self->_settingsModel->getUseVP8Vaapi());
+            _self->_videoServer->setShouldUseVaapiForCodec(GStreamerUtil::VIDEO_CODEC_H265, _self->_settingsModel->getUseH265Vaapi());
+            _self->_videoServer->setShouldUseVaapiForCodec(GStreamerUtil::VIDEO_CODEC_MJPEG, _self->_settingsModel->getUseJpegVaapi());
 
             // Start ROS spinner loop
             _self->_rosSpinTimerId = _self->startTimer(1);

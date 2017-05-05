@@ -7,7 +7,7 @@
 #include <std_msgs/UInt64.h>
 #include <std_msgs/UInt32.h>
 
-#include <ros_generated/bitrate.h>
+#include "ros_generated/data_rate.h"
 
 #include <ros/ros.h>
 
@@ -43,14 +43,14 @@ public:
 Q_SIGNALS:
     void latencyUpdate(quint32 latency);
     void connectedChanged(bool connected);
-    void bitrateUpdate(quint64 bitrateUp, quint64 bitrateDown);
+    void dataRateUpdate(quint64 rateUp, quint64 rateDown);
 
 public Q_SLOTS:
-    void logBitsUp(quint32 bits);
-    void logBitsDown(quint32 bits);
+    void logDataUp(quint32 bytes);
+    void logDataDown(quint32 bytes);
 
     void onNewLatencyMessage(std_msgs::UInt32 msg);
-    void onNewBitrateMessage(ros_generated::bitrate msg);
+    void onNewDataRateMessage(ros_generated::data_rate msg);
     void setConnected(bool connected);
 
 protected:
@@ -59,9 +59,9 @@ protected:
 private:
     ros::NodeHandle _nh;
     ros::Subscriber _latencySubscriber;
-    ros::Subscriber _bitrateSubscriber;
-    ros::Publisher _bitsUpPublisher;
-    ros::Publisher _bitsDownPublisher;
+    ros::Subscriber _dataRateSubscriber;
+    ros::Publisher _dataUpPublisher;
+    ros::Publisher _dataDownPublisher;
 
     int _disconnectTimeThreshold;
     int _disconnectWatchdogTimerId;

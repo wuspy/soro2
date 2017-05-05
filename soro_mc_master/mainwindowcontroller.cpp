@@ -58,10 +58,10 @@ void MainWindowController::onLatencyUpdated(quint32 latency)
     _window->setProperty("latency", latency);
 }
 
-void MainWindowController::onBitrateUpdated(quint64 bitsUp, quint64 bitsDown)
+void MainWindowController::onDataRateUpdated(quint64 rateUp, quint64 rateDown)
 {
-    _window->setProperty("bitrateUp", bitsUp);
-    _window->setProperty("bitrateDown", bitsDown);
+    _window->setProperty("dataRateUp", rateUp);
+    _window->setProperty("dataRateDown", rateDown);
 }
 
 } // namespace Soro

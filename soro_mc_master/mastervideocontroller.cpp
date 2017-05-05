@@ -21,6 +21,10 @@ MasterVideoController::MasterVideoController(const CameraSettingsModel *cameraSe
         {
             MainController::panic(LogTag, "Cannot bind to UDP port " + QString::number(SORO_NET_FIRST_VIDEO_PORT + i));
         }
+        if (!socket->open(QIODevice::ReadWrite))
+        {
+            MainController::panic(LogTag, "Cannot open UDP socket " + QString::number(SORO_NET_FIRST_VIDEO_PORT + i));
+        }
         connect(socket, &QUdpSocket::readyRead, this, [this, socket, i]()
         {
             this->onSocketReadyRead(socket, SORO_NET_MC_FIRST_VIDEO_PORT + i);
@@ -33,6 +37,10 @@ MasterVideoController::MasterVideoController(const CameraSettingsModel *cameraSe
     if (!_audioSocket->bind(SORO_NET_AUDIO_PORT))
     {
         MainController::panic(LogTag, "Cannot bind to UDP port " + QString::number(SORO_NET_AUDIO_PORT));
+    }
+    if (!_audioSocket->open(QIODevice::ReadWrite))
+    {
+        MainController::panic(LogTag, "Cannot open UDP socket " + QString::number(SORO_NET_AUDIO_PORT));
     }
 
     connect(_audioSocket, &QUdpSocket::readyRead, this, [this]()
@@ -60,17 +68,17 @@ void MasterVideoController::onRosNodeListUpdated()
 
 void MasterVideoController::onSocketReadyRead(QUdpSocket *socket, quint16 bouncePort)
 {
-    quint32 totalLen;
+    quint32 totalLen = 0;
     while (socket->hasPendingDatagrams())
     {
-        int len = socket->read(_buffer, 65536);
-        for (int i = 0; i < _bounceAddresses.length(); ++i)
+        qint64 len = socket->readDatagram(_buffer, 65536);
+        for (QHostAddress bounceAddress : _bounceAddresses)
         {
-            socket->writeDatagram(_buffer, len, _bounceAddresses.value(i), bouncePort);
+            socket->writeDatagram(_buffer, len, bounceAddress, bouncePort);
         }
         totalLen += len;
     }
-    Q_EMIT bitsDown(totalLen);
+    Q_EMIT bytesDown(totalLen);
 }
 
 } // namespace Soro

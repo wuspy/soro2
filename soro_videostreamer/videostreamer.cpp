@@ -26,11 +26,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define LogTag "MediaStreamer"
+#define LogTag "VideoStreamer"
 
 namespace Soro {
 
-VideoStreamer::VideoStreamer(QObject *parent) : QObject(parent)
+VideoStreamer::VideoStreamer(QString streamName, QObject *parent) : QObject(parent)
 {
     if (!QDBusConnection::sessionBus().isConnected())
     {
@@ -39,25 +39,25 @@ VideoStreamer::VideoStreamer(QObject *parent) : QObject(parent)
         exit(12);
     }
 
-    _parentInterface = new QDBusInterface(SORO_DBUS_VIDEO_PARENT_SERVICE_NAME, "/", "", QDBusConnection::sessionBus());
-    if (!_parentInterface->isValid())
-    {
-        // Could not create interface for parent process
-        Logger::logError(LogTag, "D-Bus parent interface at /mediaParent is not valid");
-        exit(13);
-    }
-
     // Register this class as a D-Bus RPC service so other processes can call our public slots
     if (!QDBusConnection::sessionBus().registerObject("/", this, QDBusConnection::ExportAllSlots))
     {
         Logger::logError(LogTag, "Cannot register as D-Bus RPC object: " + QDBusConnection::sessionBus().lastError().message());
+        exit(13);
+    }
+
+    _parentInterface = new QDBusInterface(SORO_DBUS_VIDEO_PARENT_SERVICE_NAME, "/", "", QDBusConnection::sessionBus(), this);
+    if (!_parentInterface->isValid())
+    {
+        // Could not create interface for parent process
+        Logger::logError(LogTag, "D-Bus parent interface is not valid");
         exit(14);
     }
 
-    QTimer::singleShot(100, this, [this]()
-    {
-        _parentInterface->call(QDBus::NoBlock, "onChildReady", (qint64)getpid());
-    });
+    _name = streamName;
+    _watchdogTimerId = -1;
+    _watchdogTimerId = startTimer(3000);
+    _parentInterface->call(QDBus::NoBlock, "onChildReady", _name);
 }
 
 VideoStreamer::~VideoStreamer()
@@ -78,17 +78,18 @@ void VideoStreamer::stopPrivate(bool sendReady)
 {
     if (_pipeline)
     {
+        _parentInterface->call(QDBus::NoBlock, "onChildLogInfo", _name, LogTag, "Freeing pipeline");
         QGlib::disconnect(_pipeline->bus(), "message", this, &VideoStreamer::onBusMessage);
         _pipeline->setState(QGst::StateNull);
         _pipeline.clear();
         if (sendReady)
         {
-            _parentInterface->call(QDBus::NoBlock, "onChildReady", getpid());
+            _parentInterface->call(QDBus::NoBlock, "onChildReady", _name);
         }
     }
 }
 
-void VideoStreamer::stream(const QString &device, const QString &address, quint16 port, const QString &profile, bool vaapi)
+void VideoStreamer::stream(const QString &device, const QString &address, int port, const QString &profile, bool vaapi)
 {
     stopPrivate(false);
 
@@ -96,12 +97,48 @@ void VideoStreamer::stream(const QString &device, const QString &address, quint1
 
     // create gstreamer command
     QString binStr = GStreamerUtil::createRtpV4L2EncodeString(device, QHostAddress(address), port, GStreamerUtil::VideoProfile(profile), vaapi);
+    _parentInterface->call(QDBus::NoBlock, "onChildLogInfo", _name, LogTag, "Starting GStreamer with command " + binStr);
+
     QGst::BinPtr encoder = QGst::Bin::fromDescription(binStr);
 
     _pipeline->add(encoder);
     _pipeline->setState(QGst::StatePlaying);
 
-    _parentInterface->call(QDBus::NoBlock, "onChildStreaming", (qint64)getpid());
+    _parentInterface->call(QDBus::NoBlock, "onChildStreaming", _name);
+}
+
+void VideoStreamer::streamStereo(const QString &leftDevice, const QString &rightDevice, const QString &address, int port, const QString &profile, bool vaapi)
+{
+    stopPrivate(false);
+
+    _pipeline = createPipeline();
+
+    // create gstreamer command
+    QString binStr = GStreamerUtil::createRtpStereoV4L2EncodeString(leftDevice, rightDevice, QHostAddress(address), port, GStreamerUtil::VideoProfile(profile), vaapi);
+    _parentInterface->call(QDBus::NoBlock, "onChildLogInfo", _name, LogTag, "Starting GStreamer with command " + binStr);
+
+    QGst::BinPtr encoder = QGst::Bin::fromDescription(binStr);
+
+    _pipeline->add(encoder);
+    _pipeline->setState(QGst::StatePlaying);
+
+    _parentInterface->call(QDBus::NoBlock, "onChildStreaming", _name);
+}
+
+void VideoStreamer::heartbeat()
+{
+    if (_watchdogTimerId != -1) killTimer(_watchdogTimerId);
+    _watchdogTimerId = startTimer(3000);
+}
+
+void VideoStreamer::timerEvent(QTimerEvent *e)
+{
+    if (e->timerId() == _watchdogTimerId)
+    {
+        stopPrivate(false);
+        Logger::logError(LogTag, "Watchdog expired");
+        exit(20);
+    }
 }
 
 QGst::PipelinePtr VideoStreamer::createPipeline()
@@ -119,12 +156,12 @@ void VideoStreamer::onBusMessage(const QGst::MessagePtr & message)
     switch (message->type())
     {
     case QGst::MessageEos:
-        _parentInterface->call(QDBus::NoBlock, "onChildError", getpid(), "Received EOS message from GStreamer");
+        _parentInterface->call(QDBus::NoBlock, "onChildError", _name, "Received EOS message from GStreamer");
         stopPrivate(true);
         break;
     case QGst::MessageError:
         errorMessage = message.staticCast<QGst::ErrorMessage>()->error().message().toLatin1();
-        _parentInterface->call(QDBus::NoBlock, "onChildError", getpid(), errorMessage);
+        _parentInterface->call(QDBus::NoBlock, "onChildError", _name, errorMessage);
         stopPrivate(true);
         break;
     default:

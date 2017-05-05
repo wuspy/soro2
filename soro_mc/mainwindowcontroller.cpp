@@ -156,40 +156,40 @@ void MainWindowController::onLatencyUpdated(quint32 latency)
     _window->setProperty("latency", latency);
 }
 
-void MainWindowController::onBitrateUpdated(quint64 bitsUp, quint64 bitsDown)
+void MainWindowController::onDataRateUpdated(quint64 rateUp, quint64 rateDown)
 {
-    _window->setProperty("bitrateUp", bitsUp);
-    _window->setProperty("bitrateDown", bitsDown);
+    _window->setProperty("dataRateUp", rateUp);
+    _window->setProperty("dataRateDown", rateDown);
 }
 
-void MainWindowController::onGamepadButtonPressed(SDL_GameControllerButton button, bool pressed)
+void MainWindowController::toggleSidebar()
 {
-    if (pressed)
-    {
-        switch (button)
-        {
-        case SDL_CONTROLLER_BUTTON_Y:
-            //
-            // Toggle sidebar
-            //
-            QMetaObject::invokeMethod(_window, "toggleSidebar");
-            break;
-        case SDL_CONTROLLER_BUTTON_DPAD_UP:
-            //
-            // Move to view above
-            //
-            QMetaObject::invokeMethod(_window, "selectViewAbove");
-            break;
-        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-            //
-            // Move to view below
-            //
-            QMetaObject::invokeMethod(_window, "selectViewBelow");
-            break;
-        default:
-            break;
-        }
-    }
+    QMetaObject::invokeMethod(_window, "toggleSidebar");
+}
+
+void MainWindowController::selectViewAbove()
+{
+    QMetaObject::invokeMethod(_window, "selectViewAbove");
+}
+
+void MainWindowController::selectViewBelow()
+{
+    QMetaObject::invokeMethod(_window, "selectViewBelow");
+}
+
+void MainWindowController::dismissNotifications()
+{
+    QMetaObject::invokeMethod(_window, "dismissNotifications");
+}
+
+void MainWindowController::onAudioProfileChanged(GStreamerUtil::AudioProfile profile)
+{
+
+}
+
+void MainWindowController::onVideoProfileChanged(uint cameraIndex, GStreamerUtil::VideoProfile profile)
+{
+
 }
 
 } // namespace Soro

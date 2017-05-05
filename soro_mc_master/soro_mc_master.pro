@@ -32,7 +32,6 @@ SOURCES += main.cpp \
     masterconnectionstatuscontroller.cpp \
     pingworker.cpp \
     settingsmodel.cpp \
-    udpbouncer.cpp \
     mastervideocontroller.cpp
 
 HEADERS += \
@@ -41,7 +40,6 @@ HEADERS += \
     masterconnectionstatuscontroller.h \
     pingworker.h \
     settingsmodel.h \
-    udpbouncer.h \
     mastervideocontroller.h
 
 RESOURCES += \

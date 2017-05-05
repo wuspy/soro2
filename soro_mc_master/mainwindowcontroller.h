@@ -16,7 +16,7 @@ public:
     explicit MainWindowController(QQmlEngine *engine, const RosNodeList *rosNodeList, QObject *parent = 0);
 
 public Q_SLOTS:
-    void onBitrateUpdated(quint64 bitrateUp, quint64 bitrateDown);
+    void onDataRateUpdated(quint64 rateUp, quint64 rateDown);
     void onLatencyUpdated(quint32 latency);
     void onConnectedChanged(bool connected);
 

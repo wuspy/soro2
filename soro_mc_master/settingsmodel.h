@@ -14,7 +14,7 @@ class SettingsModel: public AbstractSettingsModel
 {
 public:
     uint getPingInterval() const;
-    uint getBitrateInterval() const;
+    uint getDataRateCalcInterval() const;
 
 protected:
     QHash<QString, int> getKeys() const override;

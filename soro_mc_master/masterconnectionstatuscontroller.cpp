@@ -28,23 +28,23 @@ MasterConnectionStatusController::MasterConnectionStatusController
 {
     _settings = settings;
 
-    Logger::logInfo(LogTag, "Creating ROS subscriber for bits_up_log topic...");
-    _bitsUpSubscriber = _nh.subscribe
+    Logger::logInfo(LogTag, "Creating ROS subscriber for data_up_log topic...");
+    _dataUpSubscriber = _nh.subscribe
             <std_msgs::UInt32, Soro::MasterConnectionStatusController>
-            ("bits_up_log", 10, &MasterConnectionStatusController::onNewBitsUpMessage, this);
-    if (!_bitsUpSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for bits_up_log topic");
+            ("data_up_log", 10, &MasterConnectionStatusController::onNewDataUpMessage, this);
+    if (!_dataUpSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for data_up_log topic");
 
-    Logger::logInfo(LogTag, "Creating ROS subscriber for bits_down_log topic...");
-    _bitsDownSubscriber = _nh.subscribe
+    Logger::logInfo(LogTag, "Creating ROS subscriber for data_down_log topic...");
+    _dataDownSubscriber = _nh.subscribe
             <std_msgs::UInt32, Soro::MasterConnectionStatusController>
-            ("bits_down_log", 10, &MasterConnectionStatusController::onNewBitsDownMessage, this);
-    if (!_bitsDownSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for bits_down_log topic");
+            ("data_down_log", 10, &MasterConnectionStatusController::onNewDataDownMessage, this);
+    if (!_dataDownSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for data_down_log topic");
 
-    Logger::logInfo(LogTag, "Creating ROS publisher for bitrate topic...");
-    _bitratePublisher = _nh.advertise<ros_generated::bitrate>("bitrate", 1);
-    if (!_bitratePublisher) MainController::panic(LogTag, "Failed to create ROS publisher for bitrate topic");
+    Logger::logInfo(LogTag, "Creating ROS publisher for data_rate topic...");
+    _dataRatePublisher = _nh.advertise<ros_generated::data_rate>("data_rate", 1);
+    if (!_dataRatePublisher) MainController::panic(LogTag, "Failed to create ROS publisher for data_rate topic");
 
-    Logger::logInfo(LogTag, "Creating ROS publisher for bits_up_log topic...");
+    Logger::logInfo(LogTag, "Creating ROS publisher for latency topic...");
     _latencyPublisher = _nh.advertise<std_msgs::UInt32>("latency", 1);
     if (!_latencyPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for latency topic");
 
@@ -57,8 +57,8 @@ MasterConnectionStatusController::MasterConnectionStatusController
 
     _disconnectWatchdogTimerId = -1;
     _connected = false;
-    _bitsDown = _bitsUp = 0;
-    _bitrateCalcTimerId = startTimer(_settings->getBitrateInterval());
+    _bytesDown = _bytesUp = 0;
+    _dataRateCalcTimerId = startTimer(_settings->getDataRateCalcInterval());
 }
 
 MasterConnectionStatusController::~MasterConnectionStatusController()
@@ -66,14 +66,14 @@ MasterConnectionStatusController::~MasterConnectionStatusController()
     if (_pingWorker) delete _pingWorker;
 }
 
-void MasterConnectionStatusController::onNewBitsUpMessage(std_msgs::UInt32 msg)
+void MasterConnectionStatusController::onNewDataUpMessage(std_msgs::UInt32 msg)
 {
-    logBitsUp(msg.data);
+    logDataUp(msg.data);
 }
 
-void MasterConnectionStatusController::onNewBitsDownMessage(std_msgs::UInt32 msg)
+void MasterConnectionStatusController::onNewDataDownMessage(std_msgs::UInt32 msg)
 {
-    logBitsDown(msg.data);
+    logDataDown(msg.data);
 }
 
 void MasterConnectionStatusController::onNewLatency(quint32 latency)
@@ -91,14 +91,14 @@ void MasterConnectionStatusController::onNewLatency(quint32 latency)
     Q_EMIT latencyUpdate(latency);
 }
 
-void MasterConnectionStatusController::logBitsDown(quint32 bits)
+void MasterConnectionStatusController::logDataDown(quint32 bytes)
 {
-    _bitsDown += bits;
+    _bytesDown += bytes;
 }
 
-void MasterConnectionStatusController::logBitsUp(quint32 bits)
+void MasterConnectionStatusController::logDataUp(quint32 bytes)
 {
-    _bitsUp += bits;
+    _bytesUp += bytes;
 }
 
 bool MasterConnectionStatusController::isConnected() const
@@ -114,20 +114,20 @@ void MasterConnectionStatusController::timerEvent(QTimerEvent *e)
         killTimer(_disconnectWatchdogTimerId);
         _disconnectWatchdogTimerId = -1;
     }
-    else if (e->timerId() == _bitrateCalcTimerId)
+    else if (e->timerId() == _dataRateCalcTimerId)
     {
-        quint64 rateUp = (float)_bitsUp / (float)_settings->getBitrateInterval();
-        quint64 rateDown = (float)_bitsDown / (float)_settings->getBitrateInterval();
-        _bitsUp = _bitsDown = 0;
+        quint64 rateUp = (double)_bytesUp / ((double)_settings->getDataRateCalcInterval() / 1000.0);
+        quint64 rateDown = (double)_bytesDown / ((double)_settings->getDataRateCalcInterval() / 1000.0);
+        _bytesDown = _bytesUp = 0;
 
-        ros_generated::bitrate msg;
-        msg.bitrateDown = rateDown;
-        msg.bitrateUp = rateUp;
+        ros_generated::data_rate msg;
+        msg.dataRateDown = rateDown;
+        msg.dataRateUp = rateUp;
 
-        // Send bitrate message on bitrate topic
-        _bitratePublisher.publish(msg);
+        // Send data_rate message on data_rate topic
+        _dataRatePublisher.publish(msg);
 
-        Q_EMIT bitrateUpdate(rateUp, rateDown);
+        Q_EMIT dataRateUpdate(rateUp, rateDown);
     }
 }
 

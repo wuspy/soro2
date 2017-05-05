@@ -51,7 +51,7 @@ VideoController::VideoController(const SettingsModel *settings, const CameraSett
     if (!_videoStateSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for video_state topic");
 
     Logger::logInfo(LogTag, "Creating ROS publisher for video_request topic...");
-    _videoRequestPublisher = _nh.advertise<ros_generated::video>("video_request", 1);
+    _videoRequestPublisher = _nh.advertise<ros_generated::video>("video_request", 100);
     if (!_videoRequestPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for video_request topic");
 
     Logger::logInfo(LogTag, "All ROS publishers and subscribers created");
@@ -67,44 +67,34 @@ VideoController::~VideoController()
 
 void VideoController::onVideoResponse(ros_generated::video_state msg)
 {
-    // Loop over all video states to see if they've changed
-    for (int i = 0; i < qMin((int)msg.videoStates.size(), _videoStates.size()); ++i)
+    Logger::logInfo(LogTag, "Received video_state message");
+    for (int i = 0; i < _videoStates.size(); ++i)
     {
-        int cameraIndex;
+        GStreamerUtil::VideoProfile newState = GStreamerUtil::VideoProfile();
+        GStreamerUtil::VideoProfile oldState = _videoStates.value(i);
 
-        // Find the camera index of this camera definition
-        for (int j = 0; j < _cameraSettings->getCameraCount(); ++j)
+        for (ros_generated::video videoMsg : msg.videoStates)
         {
-            CameraSettingsModel::Camera camera = _cameraSettings->getCamera(i);
-            if ((camera.computerIndex == msg.videoStates[j].camera_computerIndex) &&
-                    (camera.offset == msg.videoStates[j].camera_offset) &&
-                    (camera.serial == QString(msg.videoStates[j].camera_matchSerial.c_str())) &&
-                    (camera.productId == QString(msg.videoStates[j].camera_matchProductId.c_str())) &&
-                    (camera.vendorId == QString(msg.videoStates[j].camera_matchVendorId.c_str())))
+            if (videoMsg.camera_index == i)
             {
-                cameraIndex = j;
+                newState = GStreamerUtil::VideoProfile(videoMsg);
                 break;
             }
         }
 
-        // Compare the new state and the old state, to see if anything changed
-
-        GStreamerUtil::VideoProfile newState(msg.videoStates[i]);
-        GStreamerUtil::VideoProfile oldState = _videoStates.value(cameraIndex);
-
         if (newState != oldState)
         {
             // Video state has changed
-            _videoStates[cameraIndex] = newState;
+            _videoStates[i] = newState;
             if (newState.codec != GStreamerUtil::CODEC_NULL)
             {
                 // Video is streaming
-                playVideoOnSink(cameraIndex, newState);
+                playVideoOnSink(i, newState);
             }
             else
             {
                 // Video is NOT streaming
-                stopVideoOnSink(cameraIndex);
+                stopVideoOnSink(i);
             }
         }
     }
@@ -112,99 +102,115 @@ void VideoController::onVideoResponse(ros_generated::video_state msg)
 
 void VideoController::play(uint cameraIndex, GStreamerUtil::VideoProfile profile)
 {
-    // Send a request to the rover to start/change a video stream
-    ros_generated::video msg = profile.toRosMessage();
-    msg.camera_computerIndex = _cameraSettings->getCamera(cameraIndex).computerIndex;
-    msg.camera_offset = _cameraSettings->getCamera(cameraIndex).offset;
-    msg.camera_matchSerial = _cameraSettings->getCamera(cameraIndex).serial.toStdString();
-    msg.camera_matchProductId = _cameraSettings->getCamera(cameraIndex).productId.toStdString();
-    msg.camera_matchVendorId = _cameraSettings->getCamera(cameraIndex).vendorId.toStdString();
-    msg.camera_name = _cameraSettings->getCamera(cameraIndex).name.toStdString();
-    msg.camera_index = cameraIndex;
+    if (cameraIndex < (uint)_cameraSettings->getCameraCount())
+    {
+        // Send a request to the rover to start/change a video stream
+        ros_generated::video msg = profile.toRosMessage();
+        msg.camera_computerIndex = _cameraSettings->getCamera(cameraIndex).computerIndex;
+        msg.camera_offset = _cameraSettings->getCamera(cameraIndex).offset;
+        msg.camera_matchSerial = _cameraSettings->getCamera(cameraIndex).serial.toStdString();
+        msg.camera_matchProductId = _cameraSettings->getCamera(cameraIndex).productId.toStdString();
+        msg.camera_matchVendorId = _cameraSettings->getCamera(cameraIndex).vendorId.toStdString();
+        msg.camera_name = _cameraSettings->getCamera(cameraIndex).name.toStdString();
+        msg.camera_index = cameraIndex;
 
-    Logger::logInfo(LogTag, QString("Sending video ON request to the rover for camera %1: [Codec %2, %3x%4, %5fps, %6bps, %7q]").arg(
-                        QString::number(cameraIndex), QString::number(profile.codec), QString::number(profile.width), QString::number(profile.height),
-                        QString::number(profile.framerate), QString::number(profile.bitrate), QString::number(profile.mjpeg_quality)));
-    _videoRequestPublisher.publish(msg);
+        Logger::logInfo(LogTag, QString("Sending video ON request to the rover for camera %1: [Codec %2, %3x%4, %5fps, %6bps, %7q]").arg(
+                            QString::number(cameraIndex), QString::number(profile.codec), QString::number(profile.width), QString::number(profile.height),
+                            QString::number(profile.framerate), QString::number(profile.bitrate), QString::number(profile.mjpeg_quality)));
+        _videoRequestPublisher.publish(msg);
+    }
 }
 
 void VideoController::constructPipelineOnSink(uint cameraIndex, QString sourceBinString)
 {
-    clearPipeline(cameraIndex);
-
-    Logger::logInfo(LogTag, QString("Starting pipeline '%1' on sink %2").arg(sourceBinString, QString::number(cameraIndex)));
-    _pipelines[cameraIndex] = QGst::Pipeline::create(QString("video%1Pipeline").arg(cameraIndex).toLatin1().constData());
-    _bins[cameraIndex] = QGst::Bin::fromDescription(sourceBinString);
-
-    if (_sinks[cameraIndex].isNull())
+    if (cameraIndex < (uint)_cameraSettings->getCameraCount())
     {
-        Logger::logError(LogTag, QString("Supplied sink for video %1 is NULL").arg(cameraIndex));
-        Q_EMIT gstError("Supplied sink is null", cameraIndex);
-        return;
-    }
-    if (_pipelines[cameraIndex].isNull())
-    {
-        Logger::logError(LogTag, QString("Failed to create pipeline video%1Pipeline").arg(cameraIndex));
-        Q_EMIT gstError("Failed to create pipeline", cameraIndex);
-        return;
-    }
-    if (_bins[cameraIndex].isNull())
-    {
-        Logger::logError(LogTag, QString("Failed to create binary '%1' for video%2Pipeline").arg(sourceBinString, QString::number(cameraIndex)));
-        Q_EMIT gstError(QString("Failed to create binary '%1'").arg(sourceBinString), cameraIndex);
-        return;
-    }
+        clearPipeline(cameraIndex);
 
-    _pipelines[cameraIndex]->add(_bins[cameraIndex], _sinks[cameraIndex]);
-    _bins[cameraIndex]->link(_sinks[cameraIndex]);
+        Logger::logInfo(LogTag, QString("Starting pipeline '%1' on sink %2").arg(sourceBinString, QString::number(cameraIndex)));
+        _pipelines[cameraIndex] = QGst::Pipeline::create(QString("video%1Pipeline").arg(cameraIndex).toLatin1().constData());
+        _bins[cameraIndex] = QGst::Bin::fromDescription(sourceBinString);
 
-    _pipelineWatches[cameraIndex] = new GStreamerPipelineWatch(cameraIndex, _pipelines[cameraIndex], this);
-    connect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::error, this, &VideoController::gstError);
+        if (_sinks[cameraIndex].isNull())
+        {
+            Logger::logError(LogTag, QString("Supplied sink for video %1 is NULL").arg(cameraIndex));
+            Q_EMIT gstError("Supplied sink is null", cameraIndex);
+            return;
+        }
+        if (_pipelines[cameraIndex].isNull())
+        {
+            Logger::logError(LogTag, QString("Failed to create pipeline video%1Pipeline").arg(cameraIndex));
+            Q_EMIT gstError("Failed to create pipeline", cameraIndex);
+            return;
+        }
+        if (_bins[cameraIndex].isNull())
+        {
+            Logger::logError(LogTag, QString("Failed to create binary '%1' for video%2Pipeline").arg(sourceBinString, QString::number(cameraIndex)));
+            Q_EMIT gstError(QString("Failed to create binary '%1'").arg(sourceBinString), cameraIndex);
+            return;
+        }
 
-    _pipelines[cameraIndex]->setState(QGst::StatePlaying);
+        _pipelines[cameraIndex]->add(_bins[cameraIndex], _sinks[cameraIndex]);
+        _bins[cameraIndex]->link(_sinks[cameraIndex]);
+
+        _pipelineWatches[cameraIndex] = new GStreamerPipelineWatch(cameraIndex, _pipelines[cameraIndex], this);
+        connect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::error, this, &VideoController::gstError);
+
+        _pipelines[cameraIndex]->setState(QGst::StatePlaying);
+    }
 }
 
 void VideoController::stopVideoOnSink(uint cameraIndex)
 {
-    // Stop the video on the specified sink, and play a placeholder animation
-    //constructPipelineOnSink(cameraIndex, GStreamerUtil::createVideoTestSrcString("smpte", true, 800, 600, 10));
-    //Q_EMIT stopped(cameraIndex);
-
-    // TEMPORARY TESTING CODE TODO
-    constructPipelineOnSink(cameraIndex, GStreamerUtil::createRtpVideoDecodeString(
-                                QHostAddress::Any,
-                                SORO_NET_MC_FIRST_VIDEO_PORT + cameraIndex,
-                                GStreamerUtil::VIDEO_CODEC_H264, false));
-    Logger::logInfo(LogTag, GStreamerUtil::createRtpVideoDecodeString(
-                        QHostAddress::Any,
-                        SORO_NET_MC_FIRST_VIDEO_PORT + cameraIndex,
-                        GStreamerUtil::VIDEO_CODEC_H264, false));
-    Q_EMIT stopped(cameraIndex);
+    if (cameraIndex < (uint)_cameraSettings->getCameraCount())
+    {
+        // Stop the video on the specified sink, and play a placeholder animation
+        Logger::logInfo(LogTag, "Stopping video " + QString::number(cameraIndex));
+        constructPipelineOnSink(cameraIndex, GStreamerUtil::createVideoTestSrcString("smpte", true, 800, 600, 10));
+        _videoStates[cameraIndex] = GStreamerUtil::VideoProfile();
+        Q_EMIT stopped(cameraIndex);
+    }
 }
 
 void VideoController::playVideoOnSink(uint cameraIndex, GStreamerUtil::VideoProfile profile)
 {
-    // Play the video on the specified sink
-    constructPipelineOnSink(cameraIndex, GStreamerUtil::createRtpVideoDecodeString(
-                                QHostAddress::Any,
-                                SORO_NET_MC_FIRST_VIDEO_PORT + cameraIndex,
-                                profile.codec,
-                                _settings->getEnableHwDecoding()));
-    Q_EMIT playing(cameraIndex, profile);
+    if (cameraIndex < (uint)_cameraSettings->getCameraCount())
+    {
+        // Play the video on the specified sink
+        Logger::logInfo(LogTag, "Playing video " + QString::number(cameraIndex) + " with codec " + GStreamerUtil::getCodecName(profile.codec));
+        constructPipelineOnSink(cameraIndex, GStreamerUtil::createRtpVideoDecodeString(
+                                    QHostAddress::Any,
+                                    SORO_NET_MC_FIRST_VIDEO_PORT + cameraIndex,
+                                    profile.codec,
+                                    _settings->getEnableHwDecoding()));
+        _videoStates[cameraIndex] = profile;
+        Q_EMIT playing(cameraIndex, profile);
+    }
 }
 
 void VideoController::stop(uint cameraIndex)
 {
-    // Send a request to the rover to stop a video stream
-    ros_generated::video msg = GStreamerUtil::VideoProfile().toRosMessage();
-    msg.camera_computerIndex = _cameraSettings->getCamera(cameraIndex).computerIndex;
-    msg.camera_offset = _cameraSettings->getCamera(cameraIndex).offset;
-    msg.camera_matchSerial = _cameraSettings->getCamera(cameraIndex).serial.toStdString();
-    msg.camera_matchProductId = _cameraSettings->getCamera(cameraIndex).productId.toStdString();
-    msg.camera_matchVendorId = _cameraSettings->getCamera(cameraIndex).vendorId.toStdString();
+    if (cameraIndex < (uint)_cameraSettings->getCameraCount())
+    {
+        // Send a request to the rover to stop a video stream
+        ros_generated::video msg = GStreamerUtil::VideoProfile().toRosMessage();
+        msg.camera_computerIndex = _cameraSettings->getCamera(cameraIndex).computerIndex;
+        msg.camera_offset = _cameraSettings->getCamera(cameraIndex).offset;
+        msg.camera_matchSerial = _cameraSettings->getCamera(cameraIndex).serial.toStdString();
+        msg.camera_matchProductId = _cameraSettings->getCamera(cameraIndex).productId.toStdString();
+        msg.camera_matchVendorId = _cameraSettings->getCamera(cameraIndex).vendorId.toStdString();
 
-    Logger::logInfo(LogTag, QString("Sending video OFF request to the rover for camera %1").arg(cameraIndex));
-    _videoRequestPublisher.publish(msg);
+        Logger::logInfo(LogTag, QString("Sending video OFF request to the rover for camera %1").arg(cameraIndex));
+        _videoRequestPublisher.publish(msg);
+    }
+}
+
+void VideoController::stopAll()
+{
+    for (int i = 0; i < _cameraSettings->getCameraCount(); ++i)
+    {
+        stop(i);
+    }
 }
 
 void VideoController::clearPipeline(uint cameraIndex)

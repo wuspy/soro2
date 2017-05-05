@@ -12,6 +12,7 @@
 #include "settingsmodel.h"
 #include "soro_core/camerasettingsmodel.h"
 #include "ros_generated/notification.h"
+#include "soro_core/gstreamerutil.h"
 
 namespace Soro {
 
@@ -32,10 +33,15 @@ Q_SIGNALS:
     void keyPressed(int key);
 
 public Q_SLOTS:
-    void onGamepadButtonPressed(SDL_GameControllerButton button, bool pressed);
+    void onAudioProfileChanged(GStreamerUtil::AudioProfile profile);
+    void onVideoProfileChanged(uint cameraIndex, GStreamerUtil::VideoProfile profile);
+    void toggleSidebar();
+    void dismissNotifications();
+    void selectViewAbove();
+    void selectViewBelow();
     void onConnectedChanged(bool connected);
     void onLatencyUpdated(quint32 latency);
-    void onBitrateUpdated(quint64 bitsUp, quint64 bitsDown);
+    void onDataRateUpdated(quint64 rateUp, quint64 rateDown);
 
 private:
     void onNewNotification(ros_generated::notification msg);

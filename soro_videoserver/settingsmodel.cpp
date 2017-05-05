@@ -23,6 +23,11 @@
 #include <QJsonDocument>
 
 #define KEY_COMPUTER_INDEX "SORO_COMPUTER_INDEX"
+#define KEY_USE_H264_VAAPI "SORO_GST_USE_H264_VAAPI"
+#define KEY_USE_VP8_VAAPI "SORO_GST_USE_VP8_VAAPI"
+#define KEY_USE_MPEG2_VAAPI "SORO_GST_USE_MPEG2_VAAPI"
+#define KEY_USE_H265_VAAPI "SORO_GST_USE_H265_VAAPI"
+#define KEY_USE_JPEG_VAAPI "SORO_GST_USE_JPEG_VAAPI"
 
 #define LogTag "MasterSettingsModel"
 
@@ -32,6 +37,10 @@ QHash<QString, int> SettingsModel::getKeys() const
 {
     QHash<QString, int> keys;
     keys.insert(KEY_COMPUTER_INDEX, QMetaType::UInt);
+    keys.insert(KEY_USE_H264_VAAPI, QMetaType::Bool);
+    keys.insert(KEY_USE_MPEG2_VAAPI, QMetaType::Bool);
+    keys.insert(KEY_USE_H265_VAAPI, QMetaType::Bool);
+    keys.insert(KEY_USE_JPEG_VAAPI, QMetaType::Bool);
     return keys;
 }
 
@@ -39,12 +48,42 @@ QHash<QString, QVariant> SettingsModel::getDefaultValues() const
 {
     QHash<QString, QVariant> defaults;
     defaults.insert(KEY_COMPUTER_INDEX, QVariant(0));
+    defaults.insert(KEY_USE_H264_VAAPI, QVariant(false));
+    defaults.insert(KEY_USE_VP8_VAAPI, QVariant(false));
+    defaults.insert(KEY_USE_MPEG2_VAAPI, QVariant(false));
+    defaults.insert(KEY_USE_H265_VAAPI, QVariant(false));
+    defaults.insert(KEY_USE_JPEG_VAAPI, QVariant(false));
     return defaults;
 }
 
 uint SettingsModel::getComputerIndex() const
 {
     return _values.value(KEY_COMPUTER_INDEX).toUInt();
+}
+
+bool SettingsModel::getUseVP8Vaapi() const
+{
+    return _values.value(KEY_USE_VP8_VAAPI).toBool();
+}
+
+bool SettingsModel::getUseMpeg2Vaapi() const
+{
+    return _values.value(KEY_USE_MPEG2_VAAPI).toBool();
+}
+
+bool SettingsModel::getUseH265Vaapi() const
+{
+    return _values.value(KEY_USE_H265_VAAPI).toBool();
+}
+
+bool SettingsModel::getUseH264Vaapi() const
+{
+    return _values.value(KEY_USE_H264_VAAPI).toBool();
+}
+
+bool SettingsModel::getUseJpegVaapi() const
+{
+    return _values.value(KEY_USE_JPEG_VAAPI).toBool();
 }
 
 } // namespace Soro

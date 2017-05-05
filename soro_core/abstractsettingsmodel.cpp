@@ -40,7 +40,7 @@ void AbstractSettingsModel::load()
         else
         {
             value = QVariant(getenv(key.toLatin1().constData()));
-            Logger::logWarn(LogTag, QString("Using environment value '%2' for setting '%1'").arg(key, value.toString()));
+            Logger::logInfo(LogTag, QString("Using environment value '%2' for setting '%1'").arg(key, value.toString()));
         }
 
         if (!value.canConvert(keys.value(key)))

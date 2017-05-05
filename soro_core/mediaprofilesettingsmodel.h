@@ -28,12 +28,14 @@ public:
     GStreamerUtil::VideoProfile getVideoProfile(uint index) const;
 
     QString getVideoProfileName(uint index) const;
+    QString getVideoProfileName(GStreamerUtil::VideoProfile profile) const;
 
     /* Gets the audio profile at the specified index
      */
     GStreamerUtil::AudioProfile getAudioProfile(uint index) const;
 
     QString getAudioProfileName(uint index) const;
+    QString getAudioProfileName(GStreamerUtil::AudioProfile profile) const;
 
     /* Gets the number of video profiles
      */

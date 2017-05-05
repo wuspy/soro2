@@ -6,6 +6,7 @@
 #include <Qt5GStreamer/QGst/Bin>
 
 #include <ros/ros.h>
+#include "soro_core/gstreamerutil.h"
 #include "gstreamerpipelinewatch.h"
 #include "ros_generated/audio.h"
 
@@ -27,14 +28,14 @@ public:
     ~AudioController();
 
     bool isPlaying() const;
-    /* Gets the codec of the audio currently playing
+    /* Gets the profile of the audio currently playing
      */
-    quint8 getCodec() const;
+    GStreamerUtil::AudioProfile getProfile() const;
 
 Q_SIGNALS:
     /* Emitted when the rover confirms audio is playing with the specified codec
      */
-    void playing(quint8 codec);
+    void playing(GStreamerUtil::AudioProfile profile);
     /* Emitted when the rover confirms audio is no longer streaming
      */
     void stopped();
@@ -44,7 +45,7 @@ Q_SIGNALS:
     void gstError(QString message);
 
 public Q_SLOTS:
-    void play(quint8 codec);
+    void play(GStreamerUtil::AudioProfile profile);
     void stop();
 
 private:
@@ -59,7 +60,7 @@ private:
     ros::Subscriber _audioStateSubscriber;
     ros::Publisher _audioStatePublisher;
 
-    quint8 _codec;
+    GStreamerUtil::AudioProfile _profile;
 };
 
 } // namespace Soro

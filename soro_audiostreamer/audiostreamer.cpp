@@ -25,30 +25,37 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define LogTag "MediaStreamer"
+#define LogTag "VideoStreamer"
 
 namespace Soro {
 
-AudioStreamer::AudioStreamer(QObject *parent) : QObject(parent)
+AudioStreamer::AudioStreamer(QString streamName, QObject *parent) : QObject(parent)
 {
     if (!QDBusConnection::sessionBus().isConnected())
     {
         // Not connected to d-bus
         Logger::logError(LogTag, "Not connected to D-Bus system bus");
-        exit(1);
+        exit(12);
     }
 
     // Register this class as a D-Bus RPC service so other processes can call our public slots
-    QDBusConnection::sessionBus().registerObject("/", this, QDBusConnection::ExportAllSlots);
+    if (!QDBusConnection::sessionBus().registerObject("/", this, QDBusConnection::ExportAllSlots))
+    {
+        Logger::logError(LogTag, "Cannot register as D-Bus RPC object: " + QDBusConnection::sessionBus().lastError().message());
+        exit(13);
+    }
 
-    _parentInterface = new QDBusInterface(SORO_DBUS_AUDIO_PARENT_SERVICE_NAME, "/", "", QDBusConnection::sessionBus());
+    _parentInterface = new QDBusInterface(SORO_DBUS_AUDIO_PARENT_SERVICE_NAME, "/", "", QDBusConnection::sessionBus(), this);
     if (!_parentInterface->isValid())
     {
         // Could not create interface for parent process
-        Logger::logError(LogTag, "D-Bus parent interface at /audioParent is not valid");
-        exit(2);
+        Logger::logError(LogTag, "D-Bus parent interface is not valid");
+        exit(14);
     }
-    _parentInterface->call(QDBus::NoBlock, "onChildReady", getpid());
+
+    _watchdogTimerId = -1;
+    _name = streamName;
+    _parentInterface->call(QDBus::NoBlock, "onChildReady", _name);
 }
 
 AudioStreamer::~AudioStreamer()
@@ -70,12 +77,12 @@ void AudioStreamer::stopPrivate(bool sendReady)
         _pipeline.clear();
         if (sendReady)
         {
-            _parentInterface->call(QDBus::NoBlock, "onChildReady", getpid());
+            _parentInterface->call(QDBus::NoBlock, "onChildReady", _name);
         }
     }
 }
 
-void AudioStreamer::streamAudio(QString address, quint16 port, QString profile)
+void AudioStreamer::streamAudio(QString address, int port, QString profile)
 {
     stopPrivate(false);
 
@@ -88,7 +95,23 @@ void AudioStreamer::streamAudio(QString address, quint16 port, QString profile)
     _pipeline->add(encoder);
     _pipeline->setState(QGst::StatePlaying);
 
-    _parentInterface->call(QDBus::NoBlock, "onChildStreaming", getpid(), address, port, profile);
+    _parentInterface->call(QDBus::NoBlock, "onChildStreaming", _name, address, port, profile);
+}
+
+void AudioStreamer::heartbeat()
+{
+    if (_watchdogTimerId != -1) killTimer(_watchdogTimerId);
+    _watchdogTimerId = startTimer(3000);
+}
+
+void AudioStreamer::timerEvent(QTimerEvent *e)
+{
+    if (e->timerId() == _watchdogTimerId)
+    {
+        stopPrivate(false);
+        Logger::logError(LogTag, "Watchdog expired");
+        exit(20);
+    }
 }
 
 QGst::PipelinePtr AudioStreamer::createPipeline()
@@ -106,12 +129,12 @@ void AudioStreamer::onBusMessage(const QGst::MessagePtr & message)
     switch (message->type())
     {
     case QGst::MessageEos:
-        _parentInterface->call(QDBus::NoBlock, "onChildError", getpid(), "Received EOS message from GStreamer");
+        _parentInterface->call(QDBus::NoBlock, "onChildError", _name, "Received EOS message from GStreamer");
         stopPrivate(true);
         break;
     case QGst::MessageError:
         errorMessage = message.staticCast<QGst::ErrorMessage>()->error().message().toLatin1();
-        _parentInterface->call(QDBus::NoBlock, "onChildError", getpid(), errorMessage);
+        _parentInterface->call(QDBus::NoBlock, "onChildError", _name, errorMessage);
         stopPrivate(true);
         break;
     default:

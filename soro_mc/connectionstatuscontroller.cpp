@@ -30,19 +30,19 @@ ConnectionStatusController::ConnectionStatusController(QObject *parent) : QObjec
             ("latency", 10, &ConnectionStatusController::onNewLatencyMessage, this);
     if (!_latencySubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for latency topic");
 
-    Logger::logInfo(LogTag, "Creating ROS subscriber for bitrate topic...");
-    _bitrateSubscriber = _nh.subscribe
-            <ros_generated::bitrate, Soro::ConnectionStatusController>
-            ("bitrate", 10, &ConnectionStatusController::onNewBitrateMessage, this);
-    if (!_bitrateSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for bitrate topic");
+    Logger::logInfo(LogTag, "Creating ROS subscriber for data_rate topic...");
+    _dataRateSubscriber = _nh.subscribe
+            <ros_generated::data_rate, Soro::ConnectionStatusController>
+            ("data_rate", 10, &ConnectionStatusController::onNewDataRateMessage, this);
+    if (!_dataRateSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for data_rate topic");
 
-    Logger::logInfo(LogTag, "Creating ROS publisher for bits_up_log topic...");
-    _bitsUpPublisher = _nh.advertise<std_msgs::UInt32>("bits_up_log", 1);
-    if (!_bitsUpPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for bits_up_log topic");
+    Logger::logInfo(LogTag, "Creating ROS publisher for data_up_log topic...");
+    _dataUpPublisher = _nh.advertise<std_msgs::UInt32>("data_up_log", 1);
+    if (!_dataUpPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for data_up_log topic");
 
-    Logger::logInfo(LogTag, "Creating ROS publisher for bits_down_log topic...");
-    _bitsDownPublisher = _nh.advertise<std_msgs::UInt32>("bits_down_log", 1);
-    if (!_bitsDownPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for bits_down_log topic");
+    Logger::logInfo(LogTag, "Creating ROS publisher for data_down_log topic...");
+    _dataDownPublisher = _nh.advertise<std_msgs::UInt32>("data_down_log", 1);
+    if (!_dataDownPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for data_down_log topic");
 
     Logger::logInfo(LogTag, "All ROS publishers and subscribers created");
 
@@ -61,10 +61,10 @@ int ConnectionStatusController::getDisconnectTimeThreshold() const
     return _disconnectTimeThreshold;
 }
 
-void ConnectionStatusController::onNewBitrateMessage(ros_generated::bitrate msg)
+void ConnectionStatusController::onNewDataRateMessage(ros_generated::data_rate msg)
 {
-    Logger::logInfo(LogTag, "New bitrate: " + QString::number(msg.bitrateUp) + ", " + QString::number(msg.bitrateDown));
-    Q_EMIT bitrateUpdate((quint64)msg.bitrateUp, (quint64)msg.bitrateDown);
+    Logger::logInfo(LogTag, "New bitrate: " + QString::number(msg.dataRateUp) + ", " + QString::number(msg.dataRateDown));
+    Q_EMIT dataRateUpdate((quint64)msg.dataRateUp, (quint64)msg.dataRateDown);
 }
 
 void ConnectionStatusController::onNewLatencyMessage(std_msgs::UInt32 msg)
@@ -79,18 +79,18 @@ void ConnectionStatusController::onNewLatencyMessage(std_msgs::UInt32 msg)
     Q_EMIT latencyUpdate((quint32)msg.data);
 }
 
-void ConnectionStatusController::logBitsDown(quint32 bits)
+void ConnectionStatusController::logDataDown(quint32 bits)
 {
     std_msgs::UInt32 msg;
     msg.data = bits;
-    _bitsDownPublisher.publish(msg);
+    _dataDownPublisher.publish(msg);
 }
 
-void ConnectionStatusController::logBitsUp(quint32 bits)
+void ConnectionStatusController::logDataUp(quint32 bits)
 {
     std_msgs::UInt32 msg;
     msg.data = bits;
-    _bitsUpPublisher.publish(msg);
+    _dataUpPublisher.publish(msg);
 }
 
 bool ConnectionStatusController::isConnected() const

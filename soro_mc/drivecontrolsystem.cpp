@@ -87,7 +87,7 @@ void DriveControlSystem::timerEvent(QTimerEvent* e)
     {
         ros_generated::drive driveMessage = buildDriveMessage();
         _drivePublisher.publish(driveMessage);
-        _connectionStatusController->logBitsUp(48);
+        _connectionStatusController->logDataUp(6);
     }
 }
 

@@ -52,6 +52,21 @@ VideoProfile::VideoProfile(QString description)
     }
 }
 
+AudioProfile::AudioProfile(QString description)
+{
+    QStringList items = description.split(',');
+    if ((items[0] == "AP") && (items.size() == 3))
+    {
+        codec = items[1].toUInt();;
+        bitrate = items[2].toUInt();
+    }
+    else
+    {
+        codec = CODEC_NULL;
+        bitrate = BITRATE_AUTO;
+    }
+}
+
 VideoProfile::VideoProfile(ros_generated::video msg)
 {
     codec = msg.encoding;
@@ -101,6 +116,12 @@ AudioProfile::AudioProfile()
     bitrate = BITRATE_AUTO;
 }
 
+AudioProfile::AudioProfile(ros_generated::audio msg)
+{
+    codec = msg.encoding;
+    bitrate = msg.bitrate;
+}
+
 QString AudioProfile::toString() const
 {
     return QString("AP,%1,%2")
@@ -108,19 +129,12 @@ QString AudioProfile::toString() const
                  QString::number(bitrate));
 }
 
-AudioProfile::AudioProfile(QString description)
+ros_generated::audio AudioProfile::toRosMessage() const
 {
-    QStringList items = description.split(',');
-    if ((items[0] == "AP") && (items.size() == 3))
-    {
-        codec = items[1].toUInt();;
-        bitrate = items[2].toUInt();
-    }
-    else
-    {
-        codec = CODEC_NULL;
-        bitrate = BITRATE_AUTO;
-    }
+    ros_generated::audio msg;
+    msg.encoding = codec;
+    msg.bitrate = bitrate;
+    return msg;
 }
 
 bool AudioProfile::operator==(const AudioProfile& other) const
@@ -139,12 +153,8 @@ QString createRtpV4L2EncodeString(QString cameraDevice, QHostAddress address, qu
     return QString("v4l2src device=/dev/%1 ! "
                    "videoconvert ! "
                    "videoscale method=0 add-borders=true ! "
-                   "video/x-raw,format=I420,width=%2,height=%3,framerate=%4/1 ! "
-                   "%5")
+                   "%2")
             .arg(cameraDevice,
-                 QString::number(profile.width),
-                 QString::number(profile.height),
-                 QString::number(profile.framerate),
                  createRtpVideoEncodeString(address, port, profile, vaapi));
 }
 
@@ -174,7 +184,7 @@ QString createRtpStereoV4L2EncodeString(QString leftCameraDevice, QString rightC
 
 QString createRtpVideoEncodeString(QHostAddress address, quint16 port, VideoProfile profile, bool vaapi)
 {
-    return QString("video/x-raw,width=%1,height=%2,framerate=%3/1 ! "
+    return QString("video/x-raw,format=I420,width=%1,height=%2,framerate=%3/1 ! "
                    "%4 ! "
                    "%5 ! "
                    "udpsink host=%6 port=%7")
@@ -208,7 +218,7 @@ QString createRtpAudioDecodeString(QHostAddress address, quint16 port, quint8 co
 
 QString createRtpVideoDecodeString(QHostAddress address, quint16 port, quint8 codec, bool vaapi)
 {
-    return createRtpDepayString(address, port, codec) + " ! " + getVideoDecodeElement(codec, vaapi) + " ! video/x-raw,format=RGB ! videoconvert";
+    return createRtpDepayString(address, port, codec) + " ! " + getVideoDecodeElement(codec, vaapi) + " ! videoconvert ! video/x-raw,format=RGB ! videoconvert";
 }
 
 QString createVideoTestSrcString(QString pattern, bool grayscale, quint16 width, quint16 height, quint16 framerate)

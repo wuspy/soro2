@@ -17,12 +17,11 @@
 #include "maincontroller.h"
 
 #include <QTimer>
-#include <QMessageBox>
+
+#include <ros/ros.h>
 
 #include "soro_core/constants.h"
 #include "soro_core/logger.h"
-
-#include <ros/ros.h>
 
 #define LogTag "MainController"
 
@@ -35,14 +34,13 @@ MainController::MainController(QObject *parent) : QObject(parent) { }
 void MainController::panic(QString tag, QString message)
 {
     Logger::logError(LogTag, QString("panic(): %1: %2").arg(tag, message));
-    QMessageBox::critical(0, "Mission Control", "<b>Fatal error in " + tag + "</b><br><br>" + message);
     Logger::logInfo(LogTag, "Committing suicide...");
     delete _self;
     Logger::logInfo(LogTag, "Exiting with code 1");
     exit(1);
 }
 
-void MainController::init(QApplication *app)
+void MainController::init(QCoreApplication *app)
 {
     if (_self)
     {
@@ -57,32 +55,19 @@ void MainController::init(QApplication *app)
         QTimer::singleShot(0, _self, []()
         {
             //
-            // Load master settings
+            // Connect to D-Bus
             //
-            try
-            {
-                _self->_settings = new SettingsModel;
-                _self->_settings->load();
-            }
-            catch (QString err)
-            {
-                panic(LogTag, QString("Error loading settings: %1").arg(err));
+            if (!QDBusConnection::sessionBus().isConnected()) {
+                Logger::logError(LogTag, "Cannot connect to D-Bus session bus");
+                return 1;
             }
 
-            //
-            // Create camera settings model to load camera configuration
-            //
-            Logger::logInfo(LogTag, "Loading camera settings...");
-            try
-            {
-                _self->_cameraSettings = new CameraSettingsModel;
-                _self->_cameraSettings->load();
+            if (!QDBusConnection::sessionBus().registerService(SORO_DBUS_AUDIO_PARENT_SERVICE_NAME)) {
+                Logger::logError(LogTag, "Cannot register D-Bus service: " + QDBusConnection::sessionBus().lastError().message());
+                return 1;
             }
-            catch (QString err)
-            {
-                panic(LogTag, QString("Error loading camera settings: %1").arg(err));
-                return;
-            }
+
+            _self->_id = "audio_server";
 
             // Make sure ROS_MASTER_URI is set
             if (getenv("ROS_MASTER_URI") == nullptr)
@@ -110,48 +95,19 @@ void MainController::init(QApplication *app)
             catch(ros::InvalidNameException e)
             {
                 panic(LogTag, QString("Invalid name exception initializing ROS: %1").arg(e.what()));
-                return;
             }
 
             //
-            // Create ros node list
+            // Initialize ros node list
             //
             Logger::logInfo(LogTag, "Initializing ros node list...");
             _self->_rosNodeList = new RosNodeList(1000, _self);
 
             //
-            // Create master connection status controller
+            // Create video server
             //
-            Logger::logInfo(LogTag, "Initializing master connection status controller...");
-            _self->_masterConnectionStatusController = new MasterConnectionStatusController(_self->_settings, _self);
-
-            //
-            // Create the master video controller
-            //
-            Logger::logInfo(LogTag, "Initializing media bouncer...");
-            _self->_masterVideoController = new MasterVideoController(_self->_cameraSettings, _self->_rosNodeList, _self);
-
-            //
-            // Create the QML application engine
-            //
-            Logger::logInfo(LogTag, "Initializing QML engine...");
-            _self->_qmlEngine = new QQmlEngine(_self);
-
-            //
-            // Create the main UI
-            //
-            Logger::logInfo(LogTag, "Creating main window...");
-            _self->_mainWindowController = new MainWindowController(_self->_qmlEngine, _self->_rosNodeList, _self);
-
-            connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::connectedChanged,
-                    _self->_mainWindowController, &MainWindowController::onConnectedChanged);
-            connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::latencyUpdate,
-                    _self->_mainWindowController, &MainWindowController::onLatencyUpdated);
-            connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::dataRateUpdate,
-                    _self->_mainWindowController, &MainWindowController::onDataRateUpdated);
-
-            connect(_self->_masterVideoController, &MasterVideoController::bytesDown,
-                    _self->_masterConnectionStatusController, &MasterConnectionStatusController::logDataDown);
+            Logger::logInfo(LogTag, "Initializing audio server...");
+            _self->_audioServer = new AudioServer(_self->_rosNodeList, _self);
 
             // Start ROS spinner loop
             _self->_rosSpinTimerId = _self->startTimer(1);
@@ -165,10 +121,6 @@ void MainController::timerEvent(QTimerEvent *e)
 {
     if (e->timerId() == _rosSpinTimerId)
     {
-        if (!ros::ok())
-        {
-            MainController::panic(LogTag, "ROS is instructing this node to exit");
-        }
         ros::spinOnce();
     }
 }
@@ -179,7 +131,7 @@ void MainController::timerEvent(QTimerEvent *e)
 
 QString MainController::getId()
 {
-    return "mc_master";
+    return _self->_id;
 }
 
 } // namespace Soro

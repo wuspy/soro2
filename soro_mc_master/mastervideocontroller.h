@@ -17,7 +17,7 @@ public:
     explicit MasterVideoController(const CameraSettingsModel *cameraSettings, const RosNodeList *rosNodeList, QObject *parent = 0);
 
 Q_SIGNALS:
-    void bitsDown(quint32 bits);
+    void bytesDown(quint32 bytes);
 
 private Q_SLOTS:
     void onRosNodeListUpdated();

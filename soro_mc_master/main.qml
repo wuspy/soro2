@@ -33,8 +33,8 @@ ApplicationWindow {
       */
     property bool connected: false
     property int latency: 0
-    property int bitrateDown: 0
-    property int bitrateUp: 0
+    property int dataRateDown: 0
+    property int dataRateUp: 0
     property string connectedNodeInfo
 
     /*
@@ -89,7 +89,7 @@ ApplicationWindow {
     }
 
     Label {
-        id: bitrateLabel
+        id: dataRateLabel
         anchors.top: connectionStatusImage.bottom
         anchors.left: connectionStatusImage.left
         anchors.right: parent.horizontalCenter
@@ -99,32 +99,33 @@ ApplicationWindow {
         color: "black"
         text: {
             if (connected) {
-                var upUnits, downUnits;
-                if (bitrateUp > 1000000) {
-                    upUnits = "Mb/s"
-                    bitrateUp = Math.round(bitrateUp / 10000) / 100
+                var upUnits, downUnits
+                var up = dataRateUp, down = dataRateDown
+                if (up > 1000000) {
+                    upUnits = "MB/s"
+                    up = Math.round(up / 10000) / 100
                 }
-                else if (bitrateUp > 1000) {
-                    upUnits = "Kb/s"
-                    bitrateUp = Math.round(bitrateUp / 10) / 100
-                }
-                else {
-                    upUnits = "b/s"
-                }
-                if (bitrateDown > 1000000) {
-                    downUnits = "Mb/s"
-                    bitrateDown = Math.round(bitrateDown / 10000) / 100
-                }
-                else if (bitrateDown > 1000) {
-                    downUnits = "Kb/s"
-                    bitrateDown = Math.round(bitrateDown / 10) / 100
+                else if (up > 1000) {
+                    upUnits = "KB/s"
+                    up = Math.round(up / 10) / 100
                 }
                 else {
-                    downUnits = "b/s"
+                    upUnits = "B/s"
                 }
-                "▲ <b>" + bitrateUp + "</b> " + upUnits +
+                if (down > 1000000) {
+                    downUnits = "MB/s"
+                    down = Math.round(down / 10000) / 100
+                }
+                else if (down > 1000) {
+                    downUnits = "KB/s"
+                    down = Math.round(down / 10) / 100
+                }
+                else {
+                    downUnits = "B/s"
+                }
+                "▲ <b>" + up + "</b> " + upUnits +
                         "<br>" +
-                        "▼ <b>" + bitrateDown + "</b> " + downUnits
+                        "▼ <b>" + down + "</b> " + downUnits
             }
             else {
                 "---<br>---"

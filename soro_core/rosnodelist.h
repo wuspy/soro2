@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QHostAddress>
 #include <QTimerEvent>
+#include <QProcess>
 
 namespace Soro {
 
@@ -15,6 +16,7 @@ class RosNodeList : public QObject
     Q_OBJECT
 public:
     explicit RosNodeList(int pollInterval, QObject *parent = 0);
+    ~RosNodeList();
 
     struct Node
     {
@@ -33,6 +35,7 @@ protected:
 
 private:
     QVector<Node> _nodes;
+    QProcess *_runningProcess;
     int _nodePollTimerId;
 };
 

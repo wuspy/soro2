@@ -297,51 +297,194 @@ void MainController::init(QApplication *app)
                                               "There was an error while decoding the audio stream: " + message);
             });
 
-            // Connect gamepad, bitrate, and status events to the UI
-            connect(_self->_gamepadController, &GamepadController::buttonPressed,
-                    _self->_mainWindowController, &MainWindowController::onGamepadButtonPressed);
-            connect(_self->_connectionStatusController, &ConnectionStatusController::bitrateUpdate,
-                    _self->_mainWindowController, &MainWindowController::onBitrateUpdated);
+            connect(_self->_connectionStatusController, &ConnectionStatusController::dataRateUpdate,
+                    _self->_mainWindowController, &MainWindowController::onDataRateUpdated);
             connect(_self->_connectionStatusController, &ConnectionStatusController::latencyUpdate,
                     _self->_mainWindowController, &MainWindowController::onLatencyUpdated);
             connect(_self->_connectionStatusController, &ConnectionStatusController::connectedChanged,
                     _self->_mainWindowController, &MainWindowController::onConnectedChanged);
+            connect(_self->_audioController, &AudioController::playing,
+                    _self->_mainWindowController, &MainWindowController::onAudioProfileChanged);
+            connect(_self->_audioController, &AudioController::stopped, _self, []()
+            {
+                _self->_mainWindowController->onAudioProfileChanged(GStreamerUtil::AudioProfile());
+            });
+            connect(_self->_videoController, &VideoController::playing,
+                    _self->_mainWindowController, &MainWindowController::onVideoProfileChanged);
+            connect(_self->_videoController, &VideoController::stopped, _self, [](uint cameraIndex)
+            {
+                _self->_mainWindowController->onVideoProfileChanged(cameraIndex, GStreamerUtil::VideoProfile());
+            });
 
             connect(_self->_mainWindowController, &MainWindowController::keyPressed, _self, [](int key)
             {
-                if (key == Qt::Key_1)
+                // TODO temporary hardcoded key bindings
+                switch (key)
                 {
+                case Qt::Key_1:
+                    _self->_videoController->stop(0);
+                    break;
+                case Qt::Key_Q:
                     _self->_videoController->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(0));
-                }
-                else if (key == Qt::Key_Q)
-                {
+                    break;
+                case Qt::Key_A:
                     _self->_videoController->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(1));
-                }
-                else if (key == Qt::Key_A)
-                {
+                    break;
+                case Qt::Key_Z:
                     _self->_videoController->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(2));
-                }
-                else if (key == Qt::Key_2)
-                {
+                    break;
+                case Qt::Key_2:
+                    _self->_videoController->stop(1);
+                    break;
+                case Qt::Key_W:
                     _self->_videoController->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(0));
-                }
-                else if (key == Qt::Key_W)
-                {
+                    break;
+                case Qt::Key_S:
                     _self->_videoController->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(1));
-                }
-                else if (key == Qt::Key_S)
-                {
+                    break;
+                case Qt::Key_X:
                     _self->_videoController->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    break;
+                case Qt::Key_3:
+                    _self->_videoController->stop(2);
+                    break;
+                case Qt::Key_E:
+                    _self->_videoController->play(2, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    break;
+                case Qt::Key_D:
+                    _self->_videoController->play(2, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    break;
+                case Qt::Key_C:
+                    _self->_videoController->play(2, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    break;
+                case Qt::Key_4:
+                    _self->_videoController->stop(3);
+                    break;
+                case Qt::Key_R:
+                    _self->_videoController->play(3, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    break;
+                case Qt::Key_F:
+                    _self->_videoController->play(3, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    break;
+                case Qt::Key_V:
+                    _self->_videoController->play(3, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    break;
+                case Qt::Key_5:
+                    _self->_videoController->stop(4);
+                    break;
+                case Qt::Key_T:
+                    _self->_videoController->play(4, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    break;
+                case Qt::Key_G:
+                    _self->_videoController->play(4, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    break;
+                case Qt::Key_B:
+                    _self->_videoController->play(4, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    break;
+                case Qt::Key_6:
+                    _self->_videoController->stop(5);
+                    break;
+                case Qt::Key_Y:
+                    _self->_videoController->play(5, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    break;
+                case Qt::Key_H:
+                    _self->_videoController->play(5, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    break;
+                case Qt::Key_N:
+                    _self->_videoController->play(5, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    break;
+                case Qt::Key_7:
+                    _self->_videoController->stop(6);
+                    break;
+                case Qt::Key_U:
+                    _self->_videoController->play(6, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    break;
+                case Qt::Key_J:
+                    _self->_videoController->play(6, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    break;
+                case Qt::Key_M:
+                    _self->_videoController->play(6, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    break;
+                case Qt::Key_8:
+                    _self->_videoController->stop(7);
+                    break;
+                case Qt::Key_I:
+                    _self->_videoController->play(7, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    break;
+                case Qt::Key_K:
+                    _self->_videoController->play(7, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    break;
+                case Qt::Key_Comma:
+                    _self->_videoController->play(7, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    break;
+                case Qt::Key_9:
+                    _self->_videoController->stop(8);
+                    break;
+                case Qt::Key_O:
+                    _self->_videoController->play(8, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    break;
+                case Qt::Key_L:
+                    _self->_videoController->play(8, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    break;
+                case Qt::Key_Period:
+                    _self->_videoController->play(8, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    break;
+                case Qt::Key_0:
+                    _self->_videoController->stop(9);
+                    break;
+                case Qt::Key_P:
+                    _self->_videoController->play(9, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    break;
+                case Qt::Key_Semicolon:
+                    _self->_videoController->play(9, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    break;
+                case Qt::Key_Slash:
+                    _self->_videoController->play(9, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    break;
+                case Qt::Key_Escape:
+                    _self->_videoController->stopAll();
+                    _self->_audioController->stop();
+                    break;
+                case Qt::Key_Underscore:
+                    _self->_audioController->stop();
+                    break;
+                case Qt::Key_BraceLeft:
+                    _self->_audioController->play(_self->_mediaProfileSettingsModel->getAudioProfile(0));
+                    break;
+                case Qt::Key_QuoteDbl:
+                    _self->_audioController->play(_self->_mediaProfileSettingsModel->getAudioProfile(1));
+                    break;
+                case Qt::Key_Up:
+                    _self->_mainWindowController->selectViewAbove();
+                    break;
+                case Qt::Key_Down:
+                    _self->_mainWindowController->selectViewBelow();
+                    break;
+                default: break;
                 }
             });
 
-
-            // Temporary implementation for a 'turbo' button
             connect(_self->_gamepadController, &GamepadController::buttonPressed, _self, [](SDL_GameControllerButton btn, bool isPressed)
             {
-               if (btn == SDL_CONTROLLER_BUTTON_LEFTSHOULDER)
+                // Temporary implementation for a 'turbo' button
+               switch (btn)
                {
+               case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
                    _self->_driveControlSystem->setLimit(isPressed ? 1.0 : 0.6);
+                   break;
+               case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                   _self->_mainWindowController->selectViewBelow();
+                   break;
+               case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                   _self->_mainWindowController->selectViewAbove();
+                   break;
+               case SDL_CONTROLLER_BUTTON_Y:
+                   _self->_mainWindowController->toggleSidebar();
+                   break;
+               case SDL_CONTROLLER_BUTTON_A:
+                   _self->_mainWindowController->dismissNotifications();
+                   break;
+               default: break;
                }
             });
 

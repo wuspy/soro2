@@ -24,22 +24,22 @@ struct audio_
   typedef audio_<ContainerAllocator> Type;
 
   audio_()
-    : on(false)
-    , encoding(0)  {
+    : encoding(0)
+    , bitrate(0)  {
     }
   audio_(const ContainerAllocator& _alloc)
-    : on(false)
-    , encoding(0)  {
+    : encoding(0)
+    , bitrate(0)  {
   (void)_alloc;
     }
 
 
 
-   typedef uint8_t _on_type;
-  _on_type on;
-
    typedef uint8_t _encoding_type;
   _encoding_type encoding;
+
+   typedef uint32_t _bitrate_type;
+  _bitrate_type bitrate;
 
 
 
@@ -118,12 +118,12 @@ struct MD5Sum< ::ros_generated::audio_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "43c78e10b8eedb6ec4704611966e23c6";
+    return "541643d9d19aaf4178100dd56988aeda";
   }
 
   static const char* value(const ::ros_generated::audio_<ContainerAllocator>&) { return value(); }
-  static const uint64_t static_value1 = 0x43c78e10b8eedb6eULL;
-  static const uint64_t static_value2 = 0xc4704611966e23c6ULL;
+  static const uint64_t static_value1 = 0x541643d9d19aaf41ULL;
+  static const uint64_t static_value2 = 0x78100dd56988aedaULL;
 };
 
 template<class ContainerAllocator>
@@ -142,8 +142,8 @@ struct Definition< ::ros_generated::audio_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "bool on\n\
-uint8 encoding\n\
+    return "uint8 encoding\n\
+uint32 bitrate\n\
 ";
   }
 
@@ -162,8 +162,8 @@ namespace serialization
   {
     template<typename Stream, typename T> inline static void allInOne(Stream& stream, T m)
     {
-      stream.next(m.on);
       stream.next(m.encoding);
+      stream.next(m.bitrate);
     }
 
     ROS_DECLARE_ALLINONE_SERIALIZER
@@ -182,10 +182,10 @@ struct Printer< ::ros_generated::audio_<ContainerAllocator> >
 {
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::ros_generated::audio_<ContainerAllocator>& v)
   {
-    s << indent << "on: ";
-    Printer<uint8_t>::stream(s, indent + "  ", v.on);
     s << indent << "encoding: ";
     Printer<uint8_t>::stream(s, indent + "  ", v.encoding);
+    s << indent << "bitrate: ";
+    Printer<uint32_t>::stream(s, indent + "  ", v.bitrate);
   }
 };
 

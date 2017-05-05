@@ -193,9 +193,27 @@ QString MediaProfileSettingsModel::getVideoProfileName(uint index) const
     return _videoProfileNames.value(index);
 }
 
+QString MediaProfileSettingsModel::getVideoProfileName(GStreamerUtil::VideoProfile profile) const
+{
+    for (int i = 0; i < _videoProfiles.size(); ++i)
+    {
+        if (_videoProfiles.value(i) == profile) return _videoProfileNames.value(i);
+    }
+    return "";
+}
+
 QString MediaProfileSettingsModel::getAudioProfileName(uint index) const
 {
     return _audioProfileNames.value(index);
+}
+
+QString MediaProfileSettingsModel::getAudioProfileName(GStreamerUtil::AudioProfile profile) const
+{
+    for (int i = 0; i < _audioProfiles.size(); ++i)
+    {
+        if (_audioProfiles.value(i) == profile) return _audioProfileNames.value(i);
+    }
+    return "";
 }
 
 } // namespace Soro

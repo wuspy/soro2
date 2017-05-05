@@ -27,22 +27,22 @@ VideoServer::VideoServer(int computerIndex, const RosNodeList *rosNodeList, QObj
     Logger::logInfo(LogTag, "Creating ROS subscriber for video_state topic...");
     _videoStateSubscriber = _nh.subscribe
             <ros_generated::video_state, Soro::VideoServer>
-            ("video_state", 1, &VideoServer::onVideoStateMessage, this);
+            ("video_state", 100, &VideoServer::onVideoStateMessage, this);
     if (!_videoStateSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for video_state topic");
 
     Logger::logInfo(LogTag, "Creating ROS publisher for video_state topic...");
-    _videoStatePublisher = _nh.advertise<ros_generated::video_state>("video_state", 1);
+    _videoStatePublisher = _nh.advertise<ros_generated::video_state>("video_state", 100, true); // <<--- LATCH
     if (!_videoStatePublisher) MainController::panic(LogTag, "Failed to create ROS publisher for video_state topic");
 
     Logger::logInfo(LogTag, "Creating ROS subscriber for video_request topic...");
     _videoRequestSubscriber = _nh.subscribe
             <ros_generated::video, Soro::VideoServer>
-            ("video_request", 1, &VideoServer::onVideoRequestMessage, this);
-    if (!_videoStateSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for video_request topic");
+            ("video_request", 100, &VideoServer::onVideoRequestMessage, this);
+    if (!_videoRequestSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for video_request topic");
 
     Logger::logInfo(LogTag, "Creating ROS publisher for notification topic...");
     _notificationPublisher = _nh.advertise<ros_generated::notification>("notification", 1);
-    if (!_videoStatePublisher) MainController::panic(LogTag, "Failed to create ROS publisher for notification topic");
+    if (!_notificationPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for notification topic");
 
     // Default to use software encoding for all formats
     _useVaapi.insert(GStreamerUtil::VIDEO_CODEC_H264, false);
@@ -52,16 +52,40 @@ VideoServer::VideoServer(int computerIndex, const RosNodeList *rosNodeList, QObj
     _useVaapi.insert(GStreamerUtil::VIDEO_CODEC_MPEG2, false);
     _useVaapi.insert(GStreamerUtil::VIDEO_CODEC_MJPEG, false);
     _useVaapi.insert(GStreamerUtil::VIDEO_CODEC_MPEG4, false);
+
+    // Start heartbeat timer so children still know we're running
+    _heartbeatTimerId = startTimer(1000);
+}
+
+VideoServer::Assignment::Assignment()
+{
+    device = "";
+    cameraName = "";
+    address = QHostAddress::Null;
+    port = 0;
+    profile = GStreamerUtil::VideoProfile();
 }
 
 VideoServer::~VideoServer()
 {
     // Tell all children to stop themselves
-    for (QProcess *process : _children)
+    for (QString childName : _children.keys())
     {
-        if (process->state() == QProcess::Running)
+        if (_children[childName]->state() == QProcess::Running)
         {
-            stopChild(process->processId());
+            terminateChild(childName);
+        }
+    }
+}
+
+void VideoServer::terminateChild(QString childName)
+{
+    if (_children.contains(childName))
+    {
+        _children[childName]->terminate();
+        if (!_children[childName]->waitForFinished(1000))
+        {
+            _children[childName]->kill();
         }
     }
 }
@@ -69,54 +93,6 @@ VideoServer::~VideoServer()
 void VideoServer::setShouldUseVaapiForCodec(quint8 codec, bool vaapi)
 {
     _useVaapi.insert(codec, vaapi);
-}
-
-void VideoServer::spawnChildForAssignment(Assignment assignment)
-{
-    Logger::logInfo(LogTag, "Spawning new child...");
-    QProcess *child = new QProcess(this);
-    qint64 *pid = new qint64;
-    _children.append(child);
-
-    child->start(SORO_ROVER_VIDEO_STREAM_PROCESS_PATH);
-
-    connect(child, &QProcess::stateChanged, this, [this, child, pid, assignment](QProcess::ProcessState state)
-    {
-        switch (state)
-        {
-        case QProcess::Starting:
-            break;
-        case QProcess::Running:
-            *pid = child->processId();
-            Logger::logInfo(LogTag, "Child " + QString::number(*pid) + " has started");
-            _waitingVideoStreams.insert((qint64)(*pid), assignment);
-            break;
-        case QProcess::NotRunning:
-            // Remove this child from our list of children
-            Logger::logInfo(LogTag, "Child " + QString::number(*pid) + " has exited with code " + QString::number(child->exitCode()));
-            _children.removeAll(child);
-            if (_childInterfaces.contains((qint64)(*pid)))
-            {
-                delete _childInterfaces[(qint64)(*pid)];
-                _childInterfaces.remove((qint64)(*pid));
-            }
-            if (_waitingVideoStreams.contains((qint64)(*pid)))
-            {
-                Logger::logError(LogTag, "Child process died before it could be given a stream assignment");
-                _waitingVideoStreams.remove((qint64)(*pid));
-                ros_generated::notification notifyMsg;
-                notifyMsg.type = NOTIFICATION_TYPE_ERROR;
-                notifyMsg.title = QString("Cannot stream " + assignment.cameraName).toStdString();
-                notifyMsg.message = "Unexpected error - child process died before accepting its stream assignment";
-                _notificationPublisher.publish(notifyMsg);
-            }
-            delete child;
-            _assignedVideoStreams.remove((qint64)(*pid));
-            delete pid;
-            reportVideoState();
-            break;
-        }
-    });
 }
 
 QString VideoServer::findUsbCamera(QString serial, QString productId, QString vendorId, int offset)
@@ -180,9 +156,45 @@ QString VideoServer::findUsbCamera(QString serial, QString productId, QString ve
     return "";
 }
 
+void VideoServer::timerEvent(QTimerEvent *e)
+{
+    if (e->timerId() == _heartbeatTimerId)
+    {
+        for (QDBusInterface* interface : _childInterfaces)
+        {
+            interface->call(QDBus::NoBlock, "heartbeat");
+        }
+    }
+}
+
 void VideoServer::onVideoStateMessage(ros_generated::video_state msg)
 {
     _lastVideoStateMsg = msg;
+}
+
+void VideoServer::giveChildAssignment(Assignment assignment)
+{
+    if (_childInterfaces.contains(assignment.device))
+    {
+        if (assignment.profile.codec == GStreamerUtil::CODEC_NULL)
+        {
+            _childInterfaces[assignment.device]->call(
+                        QDBus::NoBlock,
+                        "stop");
+
+        }
+        else
+        {
+            _childInterfaces[assignment.device]->call(
+                        QDBus::NoBlock,
+                        "stream",
+                        assignment.device,
+                        assignment.address.toString(),
+                        assignment.port,
+                        assignment.profile.toString(),
+                        assignment.vaapi);
+        }
+    }
 }
 
 void VideoServer::onVideoRequestMessage(ros_generated::video msg)
@@ -214,7 +226,7 @@ void VideoServer::onVideoRequestMessage(ros_generated::video msg)
             ros_generated::notification notifyMsg;
             notifyMsg.type = NOTIFICATION_TYPE_ERROR;
             notifyMsg.title = QString("Cannot stream " + QString(msg.camera_name.c_str())).toStdString();
-            notifyMsg.message = "The definition for this camera does not match any cameras connected to this computer.";
+            notifyMsg.message = "The definition for this camera does not match any cameras connected to this server.";
             _notificationPublisher.publish(notifyMsg);
             return;
         }
@@ -228,7 +240,78 @@ void VideoServer::onVideoRequestMessage(ros_generated::video msg)
         assignment.port = SORO_NET_FIRST_VIDEO_PORT + msg.camera_index;
         assignment.originalMessage = msg;
 
-        spawnChildForAssignment(assignment);
+        if (!_children.contains(assignment.device))
+        {
+            // Spawn a new child, and queue this assignment to be executed when the child is ready
+            Logger::logInfo(LogTag, "Spawning new child for " + assignment.device + "...");
+            QProcess *child = new QProcess(this);
+            _children.insert(assignment.device, child);
+            _waitingAssignments.insert(assignment.device, assignment);
+
+            // The first argument to the process, representing the child's name, is the video device
+            // it is assigned to work on
+            child->start(SORO_ROVER_VIDEO_STREAM_PROCESS_PATH, QStringList() << assignment.device);
+
+            connect(child, static_cast<void (QProcess::*)(int)>(&QProcess::finished), this, [this, assignment](int exitCode)
+            {
+                Logger::logWarn(LogTag, "Child " + assignment.device + " has exited with code " + QString::number(exitCode));
+
+                if (_childInterfaces.contains(assignment.device))
+                {
+                    delete _childInterfaces[assignment.device];
+                    _childInterfaces.remove(assignment.device);
+                }
+                if (_children.contains(assignment.device))
+                {
+                    delete _children[assignment.device];
+                    _children.remove(assignment.device);
+                }
+
+                if (_waitingAssignments.contains(assignment.device))
+                {
+                    _waitingAssignments.remove(assignment.device);
+
+                    ros_generated::notification notifyMsg;
+                    notifyMsg.type = NOTIFICATION_TYPE_ERROR;
+                    notifyMsg.title = QString("Cannot stream " + assignment.cameraName).toStdString();
+                    notifyMsg.message = "Unexpected error - child process died before accepting its stream assignment.";
+                    _notificationPublisher.publish(notifyMsg);
+
+                    reportVideoState();
+                }
+                if (_currentAssignments.contains(assignment.device))
+                {
+                    _currentAssignments.remove(assignment.device);
+
+                    ros_generated::notification notifyMsg;
+                    notifyMsg.type = NOTIFICATION_TYPE_ERROR;
+                    notifyMsg.title = QString("Error streaming " + assignment.cameraName).toStdString();
+                    notifyMsg.message = "Unexpected error while streaming this device. Try agian.";
+                    _notificationPublisher.publish(notifyMsg);
+
+                    reportVideoState();
+                }
+            });
+        }
+        else
+        {
+            _waitingAssignments.remove(assignment.device);
+            _currentAssignments.remove(assignment.device);
+
+            if (_childInterfaces.contains(assignment.device))
+            {
+                // Child for this device is running and can accept assignments
+                giveChildAssignment(assignment);
+                _currentAssignments.insert(assignment.device, assignment);
+                reportVideoState();
+            }
+            else
+            {
+                // There exits a process for this device, however it is still starting up
+                // and may have a previous assignment queued for it. Queue this assignment
+                _waitingAssignments.insert(assignment.device, assignment);
+            }
+        }
     }
     else
     {
@@ -236,82 +319,60 @@ void VideoServer::onVideoRequestMessage(ros_generated::video msg)
     }
 }
 
-void VideoServer::stopChild(qint64 pid)
+void VideoServer::onChildLogInfo(QString childName, const QString &tag, const QString &message)
 {
-    if (_childInterfaces.contains(pid))
-    {
-        _childInterfaces[pid]->call(QDBus::NoBlock, "stop");
-    }
+    Logger::logInfo(QString("[child %1] %2").arg(childName, tag), message);
 }
 
-void VideoServer::killChild(qint64 pid)
+void VideoServer::onChildReady(QString childName)
 {
-    for (QProcess *child : _children)
-    {
-        if (child->processId() == pid)
-        {
-            child->kill();
-        }
-    }
-}
+    Logger::logInfo(LogTag, "Child " + childName + " is ready to accept an assignment");
 
-void VideoServer::onChildReady(qint64 childPid)
-{
-    Logger::logInfo(LogTag, "onChildReady(): " + QString::number(childPid));
-    // Open a D-Bus interface to this child's pid
-    if (!_childInterfaces.contains(childPid))
+    if (!_childInterfaces.contains(childName))
     {
-        _childInterfaces.insert(childPid, new QDBusInterface(
-                                    SORO_DBUS_VIDEO_CHILD_SERVICE_NAME(QString::number(childPid)),
+        // Open a D-Bus interface to this child
+        Logger::logInfo(LogTag, "Opening D-Bus interface to child " + childName);
+        _childInterfaces.insert(childName, new QDBusInterface(
+                                    SORO_DBUS_VIDEO_CHILD_SERVICE_NAME(childName),
                                     "/",
                                     "",
-                                    QDBusConnection::sessionBus()));
+                                    QDBusConnection::sessionBus(),
+                                    this));
     }
 
-    if (!_childInterfaces[childPid]->isValid())
+    if (!_childInterfaces[childName]->isValid())
     {
-        Logger::logError(LogTag, "Cannot create D-Bus connection to child " + QString::number(childPid) + " even though it has a D-Bus conneciton to us");
-        killChild(childPid);
-        _waitingVideoStreams.remove(childPid);
+        Logger::logError(LogTag, "Cannot create D-Bus connection to child " + childName + " even though it has a D-Bus conneciton to us");
+        terminateChild(childName);
 
-        ros_generated::notification notifyMsg;
-        notifyMsg.type = NOTIFICATION_TYPE_ERROR;
-        notifyMsg.title = "Unexpected streaming error";
-        notifyMsg.message = "Unexpected error - cannot create D-Bus connection to child stream process";
-        _notificationPublisher.publish(notifyMsg);
+        if (_waitingAssignments.contains(childName))
+        {
+            ros_generated::notification notifyMsg;
+            notifyMsg.type = NOTIFICATION_TYPE_ERROR;
+            notifyMsg.title = QString("Cannot stream " + _waitingAssignments.value(childName).cameraName).toStdString();
+            notifyMsg.message = "Unexpected error - cannot create D-Bus connection to child stream process";
+            _notificationPublisher.publish(notifyMsg);
+            _waitingAssignments.remove(childName);
+        }
 
         reportVideoState();
+        return;
     }
 
     // Check if there is a stream assignment waiting for this child
-    if (_waitingVideoStreams.contains(childPid))
+    if (_waitingAssignments.contains(childName))
     {
-        Logger::logInfo(LogTag, "Calling stream() on child " + QString::number(childPid));
-        Assignment assignment = _waitingVideoStreams.value(childPid);
-        QDBusReply<void> reply = _childInterfaces[childPid]->call(
-                    QDBus::Block,
-                    "stream",
-                    assignment.device,
-                    assignment.address.toString(),
-                    assignment.port,
-                    assignment.profile.toString(),
-                    assignment.vaapi);
-
-        if (!reply.isValid())
-        {
-            qDebug() << _childInterfaces[childPid]->lastError();
-        }
-
-        // This stream is now assigned, update video state
-        _waitingVideoStreams.remove(childPid);
-        _assignedVideoStreams.insert(childPid, assignment);
-        reportVideoState();
+        giveChildAssignment(_waitingAssignments.value(childName));
+        _currentAssignments.insert(childName, _waitingAssignments.value(childName));
+        _waitingAssignments.remove(childName);
     }
-    else
+    if (_currentAssignments.contains(childName))
     {
-        Logger::logWarn(LogTag, "Child process reports ready, however there is no stream waiting for it.");
-        stopChild(childPid);
+        // This child stopped while streaming a camera
+        _currentAssignments.remove(childName);
     }
+
+    reportVideoState();
 }
 
 void VideoServer::reportVideoState()
@@ -328,32 +389,36 @@ void VideoServer::reportVideoState()
     }
 
     // Add all video state messages from this computer
-    for (Assignment videoAssignment : _assignedVideoStreams.values())
+    for (Assignment videoAssignment : _currentAssignments.values())
     {
-        msg.videoStates.push_back(videoAssignment.originalMessage);
+        if (videoAssignment.profile.codec != GStreamerUtil::CODEC_NULL)
+        {
+            msg.videoStates.push_back(videoAssignment.originalMessage);
+        }
     }
 
     _videoStatePublisher.publish(msg);
 }
 
-void VideoServer::onChildError(qint64 childPid, QString message)
+void VideoServer::onChildError(QString childName, QString message)
 {
-    Logger::logError(LogTag, "Child " + QString::number(childPid) + " reports an error: " + message);
-    if (_assignedVideoStreams.contains(childPid))
+    Logger::logError(LogTag, "Child " + childName + " reports an error: " + message);
+    if (_currentAssignments.contains(childName))
     {
         // Send a message on the notification topic
         ros_generated::notification msg;
         msg.type = NOTIFICATION_TYPE_ERROR;
-        msg.title = "Error streaming video";
-        msg.message = QString("Error while streaming " + QString(_assignedVideoStreams[childPid].cameraName) + ": " + message).toStdString();
+        msg.title = QString("Error streaming " + _currentAssignments.value(childName).cameraName).toStdString();
+        msg.message = QString("Stream error: " + message).toStdString();
 
         _notificationPublisher.publish(msg);
+        _currentAssignments.remove(childName);
     }
 }
 
-void VideoServer::onChildStreaming(qint64 childPid)
+void VideoServer::onChildStreaming(QString childName)
 {
-    Logger::logInfo(LogTag, "Child " + QString::number(childPid) + " has started streaming");
+    Logger::logInfo(LogTag, "Child " + childName + " has started streaming");
 }
 
 } // namespace Soro

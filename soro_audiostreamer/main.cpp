@@ -28,7 +28,7 @@
 #include "soro_core/logger.h"
 #include "soro_core/constants.h"
 
-#define LOG_TAG "Main"
+#define LogTag "Main"
 
 using namespace Soro;
 
@@ -39,20 +39,31 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationName("Audio Streamer");
     QCoreApplication app(argc, argv);
 
-    Logger::logInfo(LOG_TAG, "Starting...");
+    Logger::logInfo(LogTag, "Starting...");
+
+    if (argc < 2)
+    {
+        Logger::logError(LogTag, "Missing argument");
+        return 100;
+    }
+
+    QString name = argv[1];
+    Logger::logInfo(LogTag, "Name: " + name);
+
     QGst::init();
 
     if (!QDBusConnection::sessionBus().isConnected()) {
-        Logger::logError(LOG_TAG, "Cannot connect to D-Bus session bus");
-        return 1;
+        Logger::logError(LogTag, "Cannot connect to D-Bus session bus");
+        return 10;
     }
 
-    if (!QDBusConnection::sessionBus().registerService(SORO_DBUS_AUDIO_CHILD_SERVICE_NAME(QString::number(getpid())))) {
-        Logger::logError(LOG_TAG, "Cannot register D-Bus service: " + QDBusConnection::sessionBus().lastError().message());
-        return 1;
+    if (!QDBusConnection::sessionBus().registerService(SORO_DBUS_AUDIO_CHILD_SERVICE_NAME))
+    {
+        Logger::logError(LogTag, "Cannot register D-Bus service: " + QDBusConnection::sessionBus().lastError().message());
+        return 11;
     }
 
-    AudioStreamer s;
+    AudioStreamer s(name, &app);
 
     return app.exec();
 }

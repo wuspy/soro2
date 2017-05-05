@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QCoreApplication>
 #include <QtDBus>
+#include <QTimerEvent>
 
 #include <Qt5GStreamer/QGst/Pipeline>
 #include <Qt5GStreamer/QGlib/RefPointer>
@@ -18,18 +19,24 @@ namespace Soro {
 class AudioStreamer : public QObject {
     Q_OBJECT
 public:
-    AudioStreamer(QObject *parent = 0);
+    AudioStreamer(QString streamName, QObject *parent = 0);
     ~AudioStreamer();
 
 public Q_SLOTS:
     void stop();
-    void streamAudio(QString address, quint16 port, QString profile);
+    void streamAudio(QString address, int port, QString profile);
+    void heartbeat();
+
+protected:
+    void timerEvent(QTimerEvent *e);
 
 private:
     QGst::PipelinePtr createPipeline();
 
     void stopPrivate(bool sendReady);
 
+    QString _name;
+    int _watchdogTimerId;
     QGst::PipelinePtr _pipeline;
     QDBusInterface *_parentInterface;
 

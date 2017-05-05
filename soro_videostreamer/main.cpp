@@ -40,6 +40,16 @@ int main(int argc, char *argv[])
     QCoreApplication app(argc, argv);
 
     Logger::logInfo(LogTag, "Starting...");
+
+    if (argc < 2)
+    {
+        Logger::logError(LogTag, "Missing argument");
+        return 100;
+    }
+
+    QString name = argv[1];
+    Logger::logInfo(LogTag, "Name: " + name);
+
     QGst::init();
 
     if (!QDBusConnection::sessionBus().isConnected()) {
@@ -47,12 +57,12 @@ int main(int argc, char *argv[])
         return 10;
     }
 
-    if (!QDBusConnection::sessionBus().registerService(SORO_DBUS_VIDEO_CHILD_SERVICE_NAME(QString::number(getpid())))) {
+    if (!QDBusConnection::sessionBus().registerService(SORO_DBUS_VIDEO_CHILD_SERVICE_NAME(name))) {
         Logger::logError(LogTag, "Cannot register D-Bus service: " + QDBusConnection::sessionBus().lastError().message());
         return 11;
     }
 
-    VideoStreamer s;
+    VideoStreamer s(name, &app);
 
     return app.exec();
 }
