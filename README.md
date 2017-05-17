@@ -14,9 +14,9 @@ Qt is the main development platform for this software. We target version 5.8, ho
 
 It is recommended to use the Qt development environment from [the Qt website](https://www.qt.io/), rather than your distributions builtin Qt environment.
 
-### ROS Kinetic
+### QMQTT
 
-ROS is used as the communication library for mission control and the rover. You will need to be using a distribution that supports ROS kinetic, such as Ubuntu 16.04 or Arch.
+QMQTT is a Qt implementation for the MQTT protocol. It is included in this repository for convenience.
 
 ### SDL2
 
