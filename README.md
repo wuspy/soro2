@@ -37,3 +37,7 @@ This software is only developed for Linux, and has been tested on Ubuntu 16.04 a
 Clone this repository into a directory, and open the main soro2-mc.pro project file in QtCreator. If all necessary dependencies are installed correctly, it should be able to compile without any problems.
 
 You will need to provide several configuration files to the program in the {build_dir}/config directory. You can find examples for these files in the config directory of this repository.
+
+## License
+
+Content in this repository is licensed on a per-file basis. Refer to the license header in each file.
