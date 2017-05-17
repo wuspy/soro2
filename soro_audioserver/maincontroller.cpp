@@ -18,8 +18,6 @@
 
 #include <QTimer>
 
-#include <ros/ros.h>
-
 #include "soro_core/constants.h"
 #include "soro_core/logger.h"
 
@@ -33,10 +31,10 @@ MainController::MainController(QObject *parent) : QObject(parent) { }
 
 void MainController::panic(QString tag, QString message)
 {
-    Logger::logError(LogTag, QString("panic(): %1: %2").arg(tag, message));
-    Logger::logInfo(LogTag, "Committing suicide...");
+    LOG_E(LogTag, QString("panic(): %1: %2").arg(tag, message));
+    LOG_I(LogTag, "Committing suicide...");
     delete _self;
-    Logger::logInfo(LogTag, "Exiting with code 1");
+    LOG_I(LogTag, "Exiting with code 1");
     exit(1);
 }
 
@@ -44,11 +42,11 @@ void MainController::init(QCoreApplication *app)
 {
     if (_self)
     {
-        Logger::logError(LogTag, "init() called when already initialized");
+        LOG_E(LogTag, "init() called when already initialized");
     }
     else
     {
-        Logger::logInfo(LogTag, "Starting...");
+        LOG_I(LogTag, "Starting...");
         _self = new MainController(app);
 
         // Use a timer to wait for the event loop to start
@@ -58,70 +56,37 @@ void MainController::init(QCoreApplication *app)
             // Connect to D-Bus
             //
             if (!QDBusConnection::sessionBus().isConnected()) {
-                Logger::logError(LogTag, "Cannot connect to D-Bus session bus");
+                LOG_E(LogTag, "Cannot connect to D-Bus session bus");
                 return 1;
             }
 
             if (!QDBusConnection::sessionBus().registerService(SORO_DBUS_AUDIO_PARENT_SERVICE_NAME)) {
-                Logger::logError(LogTag, "Cannot register D-Bus service: " + QDBusConnection::sessionBus().lastError().message());
+                LOG_E(LogTag, "Cannot register D-Bus service: " + QDBusConnection::sessionBus().lastError().message());
                 return 1;
             }
 
-            _self->_id = "audio_server";
-
-            // Make sure ROS_MASTER_URI is set
-            if (getenv("ROS_MASTER_URI") == nullptr)
-            {
-                panic(LogTag, "ROS_MASTER_URI is not set in the environment");
-            }
-            Logger::logInfo(LogTag, "ROS_MASTER_URI is at " + QString(getenv("ROS_MASTER_URI")));
-
             //
-            // Initialize ROS
+            // Create the settings model and load the main settings file
             //
-            int argc = QCoreApplication::arguments().size();
-            char *argv[argc];
-
-            for (int i = 0; i < argc; i++) {
-                argv[i] = QCoreApplication::arguments()[i].toLocal8Bit().data();
-            }
-
+            LOG_I(LogTag, "Loading settings...");
             try
             {
-                Logger::logInfo(LogTag, QString("Calling ros::init() with master URI \'%1\'").arg(getenv("ROS_MASTER_URI")));
-                ros::init(argc, argv, getId().toStdString());
-                Logger::logInfo(LogTag, "ROS initialized");
+                _self->_settingsModel = new SettingsModel;
+                _self->_settingsModel->load();
             }
-            catch(ros::InvalidNameException e)
+            catch (QString err)
             {
-                panic(LogTag, QString("Invalid name exception initializing ROS: %1").arg(e.what()));
+                panic(LogTag, QString("Error loading settings: %1").arg(err));
             }
 
             //
-            // Initialize ros node list
+            // Create audio server
             //
-            Logger::logInfo(LogTag, "Initializing ros node list...");
-            _self->_rosNodeList = new RosNodeList(1000, _self);
+            LOG_I(LogTag, "Initializing audio server...");
+            _self->_audioServer = new AudioServer(_self->_settingsModel, _self);
 
-            //
-            // Create video server
-            //
-            Logger::logInfo(LogTag, "Initializing audio server...");
-            _self->_audioServer = new AudioServer(_self->_rosNodeList, _self);
-
-            // Start ROS spinner loop
-            _self->_rosSpinTimerId = _self->startTimer(1);
-
-            Logger::logInfo(LogTag, "Initialization complete");
+            LOG_I(LogTag, "Initialization complete");
         });
-    }
-}
-
-void MainController::timerEvent(QTimerEvent *e)
-{
-    if (e->timerId() == _rosSpinTimerId)
-    {
-        ros::spinOnce();
     }
 }
 
@@ -131,7 +96,7 @@ void MainController::timerEvent(QTimerEvent *e)
 
 QString MainController::getId()
 {
-    return _self->_id;
+    return "audio_server";
 }
 
 } // namespace Soro

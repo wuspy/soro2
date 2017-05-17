@@ -4,14 +4,19 @@
 #include <QObject>
 #include <QStringList>
 
+#include "soro_core_global.h"
+
+#define LOG_D(tag, msg) Soro::Logger::logDebug(tag, msg)
+#define LOG_I(tag, msg) Soro::Logger::logInfo(tag, msg)
+#define LOG_W(tag, msg) Soro::Logger::logWarn(tag, msg)
+#define LOG_E(tag, msg) Soro::Logger::logError(tag, msg)
+
 namespace Soro {
 
 /* Singleton logging class for the application. All logging (Logger::log...) functions are thread-safe.
  */
-class Logger
+class SORO_CORE_EXPORT Logger
 {
-    Q_GADGET
-
 public:
     enum LogLevel {
         LogLevelDisabled = 0,

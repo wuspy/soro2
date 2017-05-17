@@ -3,6 +3,7 @@
 
 #include <QSettings>
 #include <QString>
+#include <QHostAddress>
 
 #include "soro_core/abstractsettingsmodel.h"
 
@@ -15,6 +16,7 @@ class SettingsModel: public AbstractSettingsModel
 public:
     uint getPingInterval() const;
     uint getDataRateCalcInterval() const;
+    QHostAddress getMqttBrokerAddress() const;
 
 protected:
     QHash<QString, int> getKeys() const override;

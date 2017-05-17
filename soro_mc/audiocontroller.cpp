@@ -19,35 +19,37 @@
 #include "soro_core/gstreamerutil.h"
 #include "soro_core/constants.h"
 #include "soro_core/logger.h"
-#include "ros_generated/audio.h"
+#include "soro_core/audiomessage.h"
+#include "soro_core/addmediabouncemessage.h"
 
 #include <Qt5GStreamer/QGst/Bus>
+#include <QNetworkInterface>
 
 #define LogTag "AudioController"
 
 namespace Soro {
 
-AudioController::AudioController(QObject *parent) : QObject(parent)
+AudioController::AudioController(const SettingsModel *settings, QObject *parent) : QObject(parent)
 {
-    //
-    // Setup audio_ack topic subscriber
-    //
-    Logger::logInfo(LogTag, "Creating ROS subscriber for audio_state topic...");
-    _audioStateSubscriber = _nh.subscribe
-            <ros_generated::audio, Soro::AudioController>
-            ("audio_state", 1, &AudioController::onAudioResponse, this);
-    if (!_audioStateSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for audio_state topic");
+    _settings = settings;
 
-    //
-    // Setup audio topic publisher
-    //
-    Logger::logInfo(LogTag, "Creating ROS publisher for audio_request topic...");
-    _audioStatePublisher = _nh.advertise<ros_generated::audio>("audio_request", 1);
-    if (!_audioStatePublisher) MainController::panic(LogTag, "Failed to create ROS publisher for audio_request topic");
-
-    Logger::logInfo(LogTag, "All ROS publishers and subscribers created");
+    LOG_I(LogTag, "Creating MQTT client...");
+    _mqtt = new QMQTT::Client(settings->getMqttBrokerAddress(), SORO_NET_MQTT_BROKER_PORT, this);
+    connect(_mqtt, &QMQTT::Client::received, this, &AudioController::onMqttMessage);
+    connect(_mqtt, &QMQTT::Client::connected, this, &AudioController::onMqttConnected);
+    connect(_mqtt, &QMQTT::Client::disconnected, this, &AudioController::onMqttDisconnected);
+    _mqtt->setClientId(MainController::getId() + "_audio_controller");
+    _mqtt->setAutoReconnect(true);
+    _mqtt->setAutoReconnectInterval(1000);
+    _mqtt->setWillMessage(_mqtt->clientId());
+    _mqtt->setWillQos(1);
+    _mqtt->setWillTopic("system_down");
+    _mqtt->setWillRetain(false);
+    _mqtt->connectToHost();
 
     _pipelineWatch = nullptr;
+
+    _announceTimerId = startTimer(1000);
 }
 
 AudioController::~AudioController()
@@ -55,31 +57,49 @@ AudioController::~AudioController()
     clearPipeline();
 }
 
-void AudioController::onAudioResponse(ros_generated::audio msg)
+void AudioController::onMqttConnected()
 {
-    // Rover is notifying us of a change in its audio stream
-    clearPipeline();
-    _profile = GStreamerUtil::AudioProfile(msg);
+    LOG_I(LogTag, "Connected to MQTT broker");
+    _mqtt->subscribe("audio_state", 0);
+    Q_EMIT mqttConnected();
+}
 
-    if (_profile.codec != GStreamerUtil::CODEC_NULL)
+void AudioController::onMqttDisconnected()
+{
+    LOG_I(LogTag, "Disconnected from MQTT broker");
+    Q_EMIT mqttDisconnected();
+}
+
+void AudioController::onMqttMessage(const QMQTT::Message &msg)
+{
+    if (msg.topic() == "audio_state")
     {
-        // Audio is streaming, create gstreamer pipeline
-        _pipeline = QGst::Pipeline::create("audioPipeline");
-        _bin = QGst::Bin::fromDescription(GStreamerUtil::createRtpAudioPlayString(QHostAddress::Any, SORO_NET_MC_AUDIO_PORT, _profile.codec));
-        _pipeline->add(_bin);
+        // Rover is notifying us of a change in its audio stream
+        clearPipeline();
+        AudioMessage audioMsg(msg.payload());
 
-        // Add signal watch to subscribe to bus events, like errors
-        _pipelineWatch = new GStreamerPipelineWatch(0, _pipeline, this);
-        connect(_pipelineWatch, &GStreamerPipelineWatch::error, this, &AudioController::gstError);
+        _profile = audioMsg.profile;
 
-        // Play
-        _pipeline->setState(QGst::StatePlaying);
-        Q_EMIT playing(_profile);
-    }
-    else
-    {
-        // Audio is not streaming
-        Q_EMIT stopped();
+        if (_profile.codec != GStreamerUtil::CODEC_NULL)
+        {
+            // Audio is streaming, create gstreamer pipeline
+            _pipeline = QGst::Pipeline::create("audioPipeline");
+            _bin = QGst::Bin::fromDescription(GStreamerUtil::createRtpAudioPlayString(QHostAddress::Any, SORO_NET_MC_AUDIO_PORT, _profile.codec));
+            _pipeline->add(_bin);
+
+            // Add signal watch to subscribe to bus events, like errors
+            _pipelineWatch = new GStreamerPipelineWatch(0, _pipeline, this);
+            connect(_pipelineWatch, &GStreamerPipelineWatch::error, this, &AudioController::gstError);
+
+            // Play
+            _pipeline->setState(QGst::StatePlaying);
+            Q_EMIT playing(_profile);
+        }
+        else
+        {
+            // Audio is not streaming
+            Q_EMIT stopped();
+        }
     }
 }
 
@@ -114,18 +134,59 @@ void AudioController::play(GStreamerUtil::AudioProfile profile)
 {
     // Send a request to the rover to start/change the audio stream
 
-    Logger::logInfo(LogTag, QString("Sending audio ON requet to rover with codec %1").arg(GStreamerUtil::getCodecName(profile.codec)));
-    _profile = profile;
-    _audioStatePublisher.publish(_profile.toRosMessage());
+    if (_mqtt->isConnectedToHost())
+    {
+        LOG_I(LogTag, QString("Sending audio ON requet to rover with codec %1").arg(GStreamerUtil::getCodecName(profile.codec)));
+        _profile = profile;
+
+        AudioMessage msg;
+        msg.profile = _profile;
+        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "audio_request", msg, 0));
+    }
+    else
+    {
+        LOG_E(LogTag, "Failed to send audio ON request to rover - mqtt not connected");
+    }
 }
 
 void AudioController::stop()
 {
     // Send a request to the rover to STOP the audio stream
+    if (_mqtt->isConnectedToHost())
+    {
+        LOG_I(LogTag, "Sending audio OFF requet to rover");
+        _profile = GStreamerUtil::AudioProfile();
 
-    Logger::logInfo(LogTag, "Sending audio OFF requet to rover");
-    _profile = GStreamerUtil::AudioProfile();
-    _audioStatePublisher.publish(_profile.toRosMessage());
+        AudioMessage msg;
+        msg.profile = _profile;
+        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "audio_request", msg, 0));
+    }
+    else
+    {
+        LOG_E(LogTag, "Failed to send audio OFF request to rover - mqtt not connected");
+    }
+}
+
+void AudioController::timerEvent(QTimerEvent *e)
+{
+    if (e->timerId() == _announceTimerId)
+    {
+        // Publish our address so we get an audio stream forwarded to us
+        for (const QHostAddress &address : QNetworkInterface::allAddresses())
+        {
+            if ((address.protocol() == QAbstractSocket::IPv4Protocol) && (address != QHostAddress::LocalHost))
+            {
+                LOG_I(LogTag, "Sending our address(" + address.toString() + ") as an audio bounce location");
+
+                AddMediaBounceMessage msg;
+                msg.address = address;
+                msg.clientID = _mqtt->clientId();
+
+                _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "audio_bounce", msg.serialize(), 0));
+                break;
+            }
+        }
+    }
 }
 
 } // namespace Soro

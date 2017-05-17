@@ -23,11 +23,8 @@
 
 namespace Soro {
 
-MainWindowController::MainWindowController(QQmlEngine *engine, const RosNodeList *rosNodeList, QObject *parent) : QObject(parent)
+MainWindowController::MainWindowController(QQmlEngine *engine, QObject *parent) : QObject(parent)
 {
-    _rosNodeList = rosNodeList;
-    connect(_rosNodeList, &RosNodeList::nodesUpdated, this, &MainWindowController::onRosNodeListUpdated);
-
     QQmlComponent qmlComponent(engine, QUrl("qrc:/main.qml"));
     _window = qobject_cast<QQuickWindow*>(qmlComponent.create());
     if (!qmlComponent.errorString().isEmpty() || !_window)
@@ -37,20 +34,14 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const RosNodeList
     }
 }
 
-void MainWindowController::onRosNodeListUpdated()
+void MainWindowController::onConnected()
 {
-    QString nodes = "<ul>";
-    for (RosNodeList::Node node : _rosNodeList->getNodes())
-    {
-        nodes += QString("<li><b>%1</b> at %2</li>").arg(node.name, node.address.toString());
-    }
-    nodes += "</ul>";
-    _window->setProperty("connectedNodeInfo", nodes);
+    _window->setProperty("connected", true);
 }
 
-void MainWindowController::onConnectedChanged(bool connected)
+void MainWindowController::onDisconnected()
 {
-    _window->setProperty("connected", connected);
+    _window->setProperty("connected", false);
 }
 
 void MainWindowController::onLatencyUpdated(quint32 latency)
@@ -62,6 +53,46 @@ void MainWindowController::onDataRateUpdated(quint64 rateUp, quint64 rateDown)
 {
     _window->setProperty("dataRateUp", rateUp);
     _window->setProperty("dataRateDown", rateDown);
+}
+
+void MainWindowController::onAudioBounceAddressesChanged(const QHash<QString, QHostAddress> &addresses)
+{
+    QString str = "<ul>";
+
+    if (addresses.size() > 0)
+    {
+        for (QString host : addresses.keys())
+        {
+            str += "<li>" + host + " at " + addresses.value(host).toString() + "</li>";
+        }
+    }
+    else
+    {
+        str += "<li>None</li>";
+    }
+
+    str += "</ul>";
+    _window->setProperty("audioBounceLabelText", str);
+}
+
+void MainWindowController::onVideoBounceAddressesChanged(const QHash<QString, QHostAddress> &addresses)
+{
+    QString str = "<ul>";
+
+    if (addresses.size() > 0)
+    {
+        for (QString host : addresses.keys())
+        {
+            str += "<li>" + host + " at " + addresses.value(host).toString() + "</li>";
+        }
+    }
+    else
+    {
+        str += "<li>None</li>";
+    }
+
+    str += "</ul>";
+    _window->setProperty("videoBounceLabelText", str);
 }
 
 } // namespace Soro

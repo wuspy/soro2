@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 #include <QApplication>
+#include <QNetworkInterface>
+#include <QHostAddress>
 
 #include "maincontroller.h"
 

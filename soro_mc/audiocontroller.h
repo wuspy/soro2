@@ -4,11 +4,13 @@
 #include <QObject>
 #include <Qt5GStreamer/QGst/Pipeline>
 #include <Qt5GStreamer/QGst/Bin>
+#include <QTimerEvent>
 
-#include <ros/ros.h>
+#include "qmqtt/qmqtt.h"
+
 #include "soro_core/gstreamerutil.h"
+#include "settingsmodel.h"
 #include "gstreamerpipelinewatch.h"
-#include "ros_generated/audio.h"
 
 namespace Soro {
 
@@ -24,7 +26,7 @@ class AudioController : public QObject
 {
     Q_OBJECT
 public:
-    explicit AudioController(QObject *parent = 0);
+    explicit AudioController(const SettingsModel *settings, QObject *parent = 0);
     ~AudioController();
 
     bool isPlaying() const;
@@ -44,21 +46,32 @@ Q_SIGNALS:
      */
     void gstError(QString message);
 
+    void mqttConnected();
+    void mqttDisconnected();
+
 public Q_SLOTS:
     void play(GStreamerUtil::AudioProfile profile);
     void stop();
 
+protected:
+    void timerEvent(QTimerEvent *e);
+
+private Q_SLOTS:
+    void onMqttConnected();
+    void onMqttDisconnected();
+    void onMqttMessage(const QMQTT::Message &msg);
+
 private:
-    void onAudioResponse(ros_generated::audio msg);
     void clearPipeline();
 
+    const SettingsModel *_settings;
+    int _announceTimerId;
+    quint16 _nextMqttMsgId;
     QGst::PipelinePtr _pipeline;
     QGst::BinPtr _bin;
     GStreamerPipelineWatch *_pipelineWatch;
 
-    ros::NodeHandle _nh;
-    ros::Subscriber _audioStateSubscriber;
-    ros::Publisher _audioStatePublisher;
+    QMQTT::Client *_mqtt;
 
     GStreamerUtil::AudioProfile _profile;
 };

@@ -19,9 +19,6 @@
 #include <QDataStream>
 #include <QtDBus>
 
-#include <sys/types.h>
-#include <unistd.h>
-
 #include <Qt5GStreamer/QGst/Init>
 
 #include "videostreamer.h"

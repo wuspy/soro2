@@ -23,13 +23,12 @@
 #include <QJsonDocument>
 
 #define KEY_COMPUTER_INDEX "SORO_COMPUTER_INDEX"
+#define KEY_MQTT_BROKER_IP "SORO_MQTT_BROKER_IP"
 #define KEY_USE_H264_VAAPI "SORO_GST_USE_H264_VAAPI"
 #define KEY_USE_VP8_VAAPI "SORO_GST_USE_VP8_VAAPI"
 #define KEY_USE_MPEG2_VAAPI "SORO_GST_USE_MPEG2_VAAPI"
 #define KEY_USE_H265_VAAPI "SORO_GST_USE_H265_VAAPI"
 #define KEY_USE_JPEG_VAAPI "SORO_GST_USE_JPEG_VAAPI"
-
-#define LogTag "MasterSettingsModel"
 
 namespace Soro {
 
@@ -41,6 +40,7 @@ QHash<QString, int> SettingsModel::getKeys() const
     keys.insert(KEY_USE_MPEG2_VAAPI, QMetaType::Bool);
     keys.insert(KEY_USE_H265_VAAPI, QMetaType::Bool);
     keys.insert(KEY_USE_JPEG_VAAPI, QMetaType::Bool);
+    keys.insert(KEY_MQTT_BROKER_IP, QMetaType::QString);
     return keys;
 }
 
@@ -53,6 +53,7 @@ QHash<QString, QVariant> SettingsModel::getDefaultValues() const
     defaults.insert(KEY_USE_MPEG2_VAAPI, QVariant(false));
     defaults.insert(KEY_USE_H265_VAAPI, QVariant(false));
     defaults.insert(KEY_USE_JPEG_VAAPI, QVariant(false));
+    defaults.insert(KEY_MQTT_BROKER_IP, QVariant("127.0.0.1"));
     return defaults;
 }
 
@@ -84,6 +85,11 @@ bool SettingsModel::getUseH264Vaapi() const
 bool SettingsModel::getUseJpegVaapi() const
 {
     return _values.value(KEY_USE_JPEG_VAAPI).toBool();
+}
+
+QHostAddress SettingsModel::getMqttBrokerAddress() const
+{
+    return QHostAddress(_values.value(KEY_MQTT_BROKER_IP).toString());
 }
 
 } // namespace Soro

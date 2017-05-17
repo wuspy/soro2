@@ -33,9 +33,18 @@ SOURCES += \
     logger.cpp \
     gstreamerutil.cpp \
     abstractsettingsmodel.cpp \
-    socketaddress.cpp \
     mediaprofilesettingsmodel.cpp \
-    rosnodelist.cpp
+    videomessage.cpp \
+    videostatemessage.cpp \
+    audiomessage.cpp \
+    drivemessage.cpp \
+    armmessage.cpp \
+    latencymessage.cpp \
+    dataratemessage.cpp \
+    pingmessage.cpp \
+    addmediabouncemessage.cpp \
+    coresettingsmodel.cpp \
+    notificationmessage.cpp
 
 HEADERS +=\
     soro_core_global.h \
@@ -44,34 +53,20 @@ HEADERS +=\
     logger.h \
     gstreamerutil.h \
     abstractsettingsmodel.h \
-    socketaddress.h \
     mediaprofilesettingsmodel.h \
-    rosnodelist.h
+    videomessage.h \
+    videostatemessage.h \
+    audiomessage.h \
+    drivemessage.h \
+    armmessage.h \
+    latencymessage.h \
+    dataratemessage.h \
+    pingmessage.h \
+    addmediabouncemessage.h \
+    coresettingsmodel.h \
+    abstractmessage.h \
+    notificationmessage.h
 
-# Link against SDL2
-LIBS += -lSDL2
+# Link against qmqtt
+LIBS += -L../lib -lqmqtt
 
-# In case you are curious, the following is a hacky way to link against ROS kinetic
-# from a qmake project.
-#
-# Of course you could just use cmake and catkin, however if you have a compelling
-# reason to stick with qmake (like we did) then here you go.
-
-# Include ROS headers
-INCLUDEPATH += /opt/ros/kinetic/include/
-DEPENDPATH += /opt/ros/kinetic/include/
-
-# Link against ROS
-LIBS += -L/opt/ros/kinetic/lib -lroslib
-LIBS += -L/opt/ros/kinetic/lib -lroscpp
-LIBS += -L/opt/ros/kinetic/lib -lroscpp_serialization
-LIBS += -L/opt/ros/kinetic/lib -lcpp_common
-LIBS += -L/opt/ros/kinetic/lib -lbondcpp
-LIBS += -L/opt/ros/kinetic/lib -lxmlrpcpp
-LIBS += -L/opt/ros/kinetic/lib -lmessage_filters
-LIBS += -L/opt/ros/kinetic/lib -lrosconsole
-LIBS += -L/opt/ros/kinetic/lib -lrosconsole_backend_interface
-LIBS += -L/opt/ros/kinetic/lib -lrosconsole_bridge
-LIBS += -L/opt/ros/kinetic/lib -lrosconsole_log4cxx
-LIBS += -L/opt/ros/kinetic/lib -lrostime
-LIBS += -L/opt/ros/kinetic/lib -lrospack

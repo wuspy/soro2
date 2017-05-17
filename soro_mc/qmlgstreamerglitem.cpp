@@ -96,7 +96,7 @@ QGst::ElementPtr QmlGStreamerGlItem::videoSink()
     }
     else
     {
-        Logger::logError(LogTag, "Failed to create qtquick2videosink");
+        LOG_E(LogTag, "Failed to create qtquick2videosink");
     }
 
     return _sink;

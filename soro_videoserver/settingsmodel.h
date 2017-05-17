@@ -3,6 +3,7 @@
 
 #include <QSettings>
 #include <QString>
+#include <QHostAddress>
 
 #include "soro_core/abstractsettingsmodel.h"
 
@@ -19,6 +20,7 @@ public:
     bool getUseMpeg2Vaapi() const;
     bool getUseH265Vaapi() const;
     bool getUseJpegVaapi() const;
+    QHostAddress getMqttBrokerAddress() const;
 
 protected:
     QHash<QString, int> getKeys() const override;

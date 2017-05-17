@@ -4,9 +4,9 @@
 #include <QtCore/qglobal.h>
 
 #if defined(SORO_CORE_LIBRARY)
-#  define SORO_CORE_SHARED_EXPORT Q_DECL_EXPORT
+#  define SORO_CORE_EXPORT Q_DECL_EXPORT
 #else
-#  define SORO_CORE_SHARED_EXPORT Q_DECL_IMPORT
+#  define SORO_CORE_EXPORT Q_DECL_IMPORT
 #endif
 
 #endif // SORO_CORE_GLOBAL_H

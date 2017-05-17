@@ -3,6 +3,7 @@
 
 #include <QSettings>
 #include <QString>
+#include <QHostAddress>
 
 #include "soro_core/abstractsettingsmodel.h"
 
@@ -26,6 +27,7 @@ public:
     uint getDriveSendInterval() const;
     float getDriveSkidSteerFactor() const;
     float getDrivePowerLimit() const;
+    QHostAddress getMqttBrokerAddress() const;
 
 protected:
     QHash<QString, int> getKeys() const override;

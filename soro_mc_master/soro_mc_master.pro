@@ -30,17 +30,17 @@ SOURCES += main.cpp \
     mainwindowcontroller.cpp \
     maincontroller.cpp \
     masterconnectionstatuscontroller.cpp \
-    pingworker.cpp \
     settingsmodel.cpp \
-    mastervideocontroller.cpp
+    mastervideocontroller.cpp \
+    masteraudiocontroller.cpp
 
 HEADERS += \
     mainwindowcontroller.h \
     maincontroller.h \
     masterconnectionstatuscontroller.h \
-    pingworker.h \
     settingsmodel.h \
-    mastervideocontroller.h
+    mastervideocontroller.h \
+    masteraudiocontroller.h
 
 RESOURCES += \
     qml.qrc \
@@ -49,27 +49,5 @@ RESOURCES += \
 # Link against soro_core
 LIBS += -L../lib -lsoro_core
 
-# In case you are curious, the following is a hacky way to link against ROS kinetic
-# from a qmake project.
-#
-# Of course you could just use cmake and catkin, however if you have a compelling
-# reason to stick with qmake (like we did) then here you go.
-
-# Include ROS headers
-INCLUDEPATH += /opt/ros/kinetic/include/
-DEPENDPATH += /opt/ros/kinetic/include/
-
-# Link against ROS
-LIBS += -L/opt/ros/kinetic/lib -lroslib
-LIBS += -L/opt/ros/kinetic/lib -lroscpp
-LIBS += -L/opt/ros/kinetic/lib -lroscpp_serialization
-LIBS += -L/opt/ros/kinetic/lib -lcpp_common
-LIBS += -L/opt/ros/kinetic/lib -lbondcpp
-LIBS += -L/opt/ros/kinetic/lib -lxmlrpcpp
-LIBS += -L/opt/ros/kinetic/lib -lmessage_filters
-LIBS += -L/opt/ros/kinetic/lib -lrosconsole
-LIBS += -L/opt/ros/kinetic/lib -lrosconsole_backend_interface
-LIBS += -L/opt/ros/kinetic/lib -lrosconsole_bridge
-LIBS += -L/opt/ros/kinetic/lib -lrosconsole_log4cxx
-LIBS += -L/opt/ros/kinetic/lib -lrostime
-LIBS += -L/opt/ros/kinetic/lib -lrospack
+# Link against qmqtt
+LIBS += -L../lib -lqmqtt

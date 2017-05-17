@@ -13,9 +13,8 @@ namespace Soro {
 /* Settings loader for the audio/video profile definition file. This file is a JSON formatted array
  * specifying information about the different audio/video encoding profiles that will be available.
  */
-class SORO_CORE_SHARED_EXPORT MediaProfileSettingsModel
+class SORO_CORE_EXPORT MediaProfileSettingsModel
 {
-    Q_GADGET
 public:
 
     /* Loads the media profile definitions from the settings file. This will

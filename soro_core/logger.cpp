@@ -16,11 +16,8 @@
 
 #include "logger.h"
 
-#include <ros/ros.h>
 #include <QTextStream>
 #include <QTime>
-
-//#define USE_ROSLOG
 
 namespace Soro {
 
@@ -79,28 +76,6 @@ void Logger::setMaxLogLevel(LogLevel level)
 
 void Logger::log(LogLevel level, QString tag, QString message) {
     if (level <= _maxLevel) {
-#ifdef USE_ROSLOG
-        if (ros::isInitialized()) {
-            const char* formatted = QString("[%1] %2").arg(tag, message).toLocal8Bit().constData();
-            switch (level) {
-            case LogLevelDebug:
-                ROS_DEBUG(formatted);
-                break;
-            case LogLevelInfo:
-                ROS_INFO(formatted);
-                break;
-            case LogLevelWarning:
-                ROS_WARN(formatted);
-                break;
-            case LogLevelError:
-                ROS_ERROR(formatted);
-                break;
-            default:
-                return;
-            }
-            return;
-        }
-#endif
         QString formatted = _stdoutFormat[reinterpret_cast<int&>(level) - 1].arg(QTime::currentTime().toString(), tag, message);
         QTextStream(stdout) << formatted << endl;
     }

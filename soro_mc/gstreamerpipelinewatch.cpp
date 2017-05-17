@@ -35,18 +35,18 @@ void GStreamerPipelineWatch::onBusMessage(const QGst::MessagePtr &message)
 {
     switch (message->type()) {
     case QGst::MessageEos:
-        Logger::logError(LogTag, "onBusMessage(): Received EOS message from gstreamer");
+        LOG_E(LogTag, "onBusMessage(): Received EOS message from gstreamer");
         Q_EMIT error("Received unexpected EOS message", _id);
         break;
     case QGst::MessageError: {
         QString msg = message.staticCast<QGst::ErrorMessage>()->debugMessage();
-        Logger::logError(LogTag, "onBusMessage(): Received error message from gstreamer '" + msg + "'");
+        LOG_E(LogTag, "onBusMessage(): Received error message from gstreamer '" + msg + "'");
         Q_EMIT error(msg, _id);
         break;
     }
     case QGst::MessageInfo: {
         QString msg = message.staticCast<QGst::InfoMessage>()->debugMessage();
-        Logger::logInfo(LogTag, "onBusMessage(): Received info message from gstreamer '" + msg + "'");
+        LOG_I(LogTag, "onBusMessage(): Received info message from gstreamer '" + msg + "'");
         break;
     }
     default:

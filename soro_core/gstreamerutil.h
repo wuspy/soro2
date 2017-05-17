@@ -5,8 +5,6 @@
 #include <QHostAddress>
 
 #include "soro_core_global.h"
-#include "ros_generated/video.h"
-#include "ros_generated/audio.h"
 
 /* This namespace has some useful functions for constructing GStreamer pipeline descriptions, as well as
  * other GStreamer-related functionality
@@ -32,7 +30,7 @@ const quint16 WIDTH_AUTO = 0;
 
 const quint32 BITRATE_AUTO = 0;
 
-struct SORO_CORE_SHARED_EXPORT VideoProfile
+struct SORO_CORE_EXPORT VideoProfile
 {
     quint8 codec;
     quint16 width;
@@ -43,10 +41,8 @@ struct SORO_CORE_SHARED_EXPORT VideoProfile
 
     VideoProfile();
     VideoProfile(QString description);
-    VideoProfile(ros_generated::video msg);
 
     QString toString() const;
-    ros_generated::video toRosMessage() const;
 
     bool operator==(const VideoProfile& other) const;
 
@@ -56,17 +52,15 @@ struct SORO_CORE_SHARED_EXPORT VideoProfile
     }
 };
 
-struct SORO_CORE_SHARED_EXPORT AudioProfile
+struct SORO_CORE_EXPORT AudioProfile
 {
     quint8 codec;
     quint32 bitrate;
 
     AudioProfile();
     AudioProfile(QString description);
-    AudioProfile(ros_generated::audio msg);
 
     QString toString() const;
-    ros_generated::audio toRosMessage() const;
 
     bool operator==(const AudioProfile& other) const;
 
@@ -97,6 +91,12 @@ QString createRtpAudioEncodeString(QHostAddress address, quint16 port, AudioProf
 /* Creates a pipeline string that accepts an RTP video stream on a UDP port, and decodes it from the specified codec to a raw video stream
  */
 QString createRtpVideoDecodeString(QHostAddress address, quint16 port, quint8 codec, bool vaapi=false);
+
+/* Creates a pipeline string that accepts an RTP video stream on a UDP port, and decodes it from the specified codec and
+ * re-encodes it as an H264 video file at the specifed location. If desired, a timestamp and/or custom text can be
+ * overlaid on the video.
+ */
+QString createRtpVideoFileSaveString(QHostAddress address, quint16 port, quint8 codec, QString filePath, bool timeOverlay, QString textOverlay, bool decodeVaapi=false, bool encodeVaapi=false);
 
 /* Creates a pipeline string that outputs a video test pattern
  */

@@ -4,8 +4,7 @@
 #include <QObject>
 #include <QQmlEngine>
 #include <QQuickWindow>
-
-#include "soro_core/rosnodelist.h"
+#include <QHostAddress>
 
 namespace Soro {
 
@@ -13,19 +12,18 @@ class MainWindowController : public QObject
 {
     Q_OBJECT
 public:
-    explicit MainWindowController(QQmlEngine *engine, const RosNodeList *rosNodeList, QObject *parent = 0);
+    explicit MainWindowController(QQmlEngine *engine, QObject *parent = 0);
 
 public Q_SLOTS:
     void onDataRateUpdated(quint64 rateUp, quint64 rateDown);
     void onLatencyUpdated(quint32 latency);
-    void onConnectedChanged(bool connected);
-
-private Q_SLOTS:
-    void onRosNodeListUpdated();
+    void onConnected();
+    void onDisconnected();
+    void onAudioBounceAddressesChanged(const QHash<QString, QHostAddress>& addresses);
+    void onVideoBounceAddressesChanged(const QHash<QString, QHostAddress>& addresses);
 
 private:
     QQuickWindow *_window = nullptr;
-    const RosNodeList *_rosNodeList;
 };
 
 } // namespace Soro

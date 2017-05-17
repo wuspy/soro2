@@ -31,6 +31,7 @@ void CameraSettingsModel::load()
     QByteArray rawJson;
     QJsonDocument jsonDocument;
     QJsonArray jsonCamerasArray;
+    QJsonArray jsonStereoGroupsArray;
     QJsonParseError jsonError;
     QFile file(FILE_PATH);
 
@@ -61,16 +62,37 @@ void CameraSettingsModel::load()
     QMap<int, Camera> cameraMap;
 
     jsonCamerasArray = jsonDocument.object()["cameras"].toArray();
-    Q_FOREACH (QJsonValue jsonObject, jsonCamerasArray)
+    for (QJsonValue jsonObject : jsonCamerasArray)
     {
         Camera camera;
         int index = jsonObject.toObject()["index"].toInt(-1);
         camera.computerIndex = jsonObject.toObject()["computerIndex"].toInt(0); // Computer index defaults to zero
-        camera.offset = jsonObject.toObject()["offset"].toInt(0); // Offset defaults to zero
         camera.name = jsonObject.toObject()["name"].toString("");
-        camera.serial = jsonObject.toObject()["matchSerial"].toString();
-        camera.productId = jsonObject.toObject()["matchProductId"].toString();
-        camera.vendorId = jsonObject.toObject()["matchVendorId"].toString();
+
+        if (jsonObject.toObject().contains("mono"))
+        {
+            camera.isStereo = false;
+            camera.offset = jsonObject.toObject()["mono"].toObject()["offset"].toInt(0); // Offset defaults to zero
+            camera.serial = jsonObject.toObject()["mono"].toObject()["matchSerial"].toString();
+            camera.productId = jsonObject.toObject()["mono"].toObject()["matchProductId"].toString();
+            camera.vendorId = jsonObject.toObject()["mono"].toObject()["matchVendorId"].toString();
+        }
+        else if (jsonObject.toObject().contains("left") && jsonObject.toObject().contains("right"))
+        {
+            camera.isStereo = true;
+            camera.offset = jsonObject.toObject()["left"].toObject()["offset"].toInt(0); // Offset defaults to zero
+            camera.serial = jsonObject.toObject()["left"].toObject()["matchSerial"].toString();
+            camera.productId = jsonObject.toObject()["left"].toObject()["matchProductId"].toString();
+            camera.vendorId = jsonObject.toObject()["left"].toObject()["matchVendorId"].toString();
+            camera.offset2 = jsonObject.toObject()["right"].toObject()["offset"].toInt(0); // Offset defaults to zero
+            camera.serial2 = jsonObject.toObject()["right"].toObject()["matchSerial"].toString();
+            camera.productId2 = jsonObject.toObject()["right"].toObject()["matchProductId"].toString();
+            camera.vendorId2 = jsonObject.toObject()["right"].toObject()["matchVendorId"].toString();
+        }
+        else
+        {
+            throw QString("Error parsing camera settings file '%1': Camera entry must either specify a mono camera description, or left and right stereo camera descriptions.").arg(FILE_PATH);
+        }
 
         if (index < 0)
         {
@@ -91,7 +113,7 @@ void CameraSettingsModel::load()
     _cameras = cameraMap.values();
 }
 
-CameraSettingsModel::Camera CameraSettingsModel::getCamera(uint index) const
+CameraSettingsModel::Camera CameraSettingsModel::getCamera(int index) const
 {
     return _cameras.value(index);
 }

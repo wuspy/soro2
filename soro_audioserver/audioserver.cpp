@@ -2,47 +2,207 @@
 #include "soro_core/constants.h"
 #include "soro_core/logger.h"
 #include "soro_core/gstreamerutil.h"
+#include "soro_core/notificationmessage.h"
 
 #include "maincontroller.h"
 
-#define LogTag "VideoServer"
+#define LogTag "AudioServer"
 
 namespace Soro {
 
-AudioServer::AudioServer(const RosNodeList *rosNodeList, QObject *parent) : QObject(parent)
+AudioServer::AudioServer(const SettingsModel *settings, QObject *parent) : QObject(parent)
 {
-    _rosNodeList = rosNodeList;
+    _settings = settings;
+    _hasWaitingAssignment = false;
+    _hasCurrentAssignment = false;
+    _child = nullptr;
+    _childInterface = nullptr;
 
     // Ensure child process executable exits
     if (!QFile(SORO_ROVER_AUDIO_STREAM_PROCESS_PATH).exists())
     {
-        MainController::panic(LogTag, "Video stream process is not at the correct path");
+        MainController::panic(LogTag, "Audio stream process is not at the correct path");
     }
 
-    Logger::logInfo(LogTag, "Registering as D-Bus RPC object...");
+    LOG_I(LogTag, "Registering as D-Bus RPC object...");
     // Register this class as a D-Bus RPC service so other processes can call our public slots
     QDBusConnection::sessionBus().registerObject("/", this, QDBusConnection::ExportAllSlots);
 
-    Logger::logInfo(LogTag, "Creating ROS publisher for audio_state topic...");
-    _audioStatePublisher = _nh.advertise<ros_generated::audio>("audio_state", 1, true); // <<--- LATCH
-    if (!_audioStatePublisher) MainController::panic(LogTag, "Failed to create ROS publisher for audio_state topic");
+    connect(&_audioSocket, &QUdpSocket::readyRead, this, [this]()
+    {
+        char buffer[6];
+        QHostAddress host;
+        quint16 port;
+        while (_audioSocket.hasPendingDatagrams())
+        {
+            _audioSocket.readDatagram(buffer, 6, &host, &port);
+            if (strncmp(buffer, "audio", 5) == 0)
+            {
+                // Valid message
+                if ((_clientAddress != host) || (_clientPort != port))
+                {
+                    // Address changed, see if there is a stream running
+                    if (_hasWaitingAssignment)
+                    {
+                        // Modify the waiting assignment to point torwards the new address
+                        LOG_W(LogTag, "Client has changed addresses while a stream is queued, modifying the queued stream");
+                        _waitingAssignment.address = host;
+                        _waitingAssignment.port = port;
+                    }
+                    if (_hasCurrentAssignment)
+                    {
+                        // Stop the active assignment, and start a new one
+                        LOG_W(LogTag, "Client has changed addresses while a stream is in progress, attempting to restart");
+                        _currentAssignment.address = host;
+                        _currentAssignment.port = port;
+                        giveChildAssignment(_currentAssignment);
+                    }
+                    _clientAddress = host;
+                    _clientPort = port;
+                }
+            }
+        }
+    });
 
-    Logger::logInfo(LogTag, "Creating ROS subscriber for audio_request topic...");
-    _audioRequestSubscriber = _nh.subscribe
-            <ros_generated::audio, Soro::AudioServer>
-            ("audio_request", 1, &AudioServer::onAudioRequestMessage, this);
-    if (!_audioRequestSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for audio_request topic");
-
-    Logger::logInfo(LogTag, "Creating ROS publisher for notification topic...");
-    _notificationPublisher = _nh.advertise<ros_generated::notification>("notification", 1);
-    if (!_notificationPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for notification topic");
+    if (!_audioSocket.bind(SORO_NET_AUDIO_PORT, QAbstractSocket::ShareAddress))
+    {
+        MainController::panic(LogTag, "Cannot bind to UDP port");
+    }
+    if (!_audioSocket.open(QIODevice::ReadOnly))
+    {
+        MainController::panic(LogTag, "Cannot open UDP port");
+    }
 
     // Start heartbeat timer so children still know we're running
     _heartbeatTimerId = startTimer(1000);
-    _child = nullptr;
-    _childInterface = nullptr;
-    _hasWaitingAssignment = false;
-    _hasCurrentAssignment = false;
+
+    LOG_I(LogTag, "Creating MQTT client...");
+    _mqtt = new QMQTT::Client(settings->getMqttBrokerAddress(), SORO_NET_MQTT_BROKER_PORT, this);
+    connect(_mqtt, &QMQTT::Client::received, this, &AudioServer::onMqttMessage);
+    connect(_mqtt, &QMQTT::Client::connected, this, &AudioServer::onMqttConnected);
+    connect(_mqtt, &QMQTT::Client::disconnected, this, &AudioServer::onMqttDisconnected);
+    _mqtt->setClientId("audio_server");
+    _mqtt->setAutoReconnect(true);
+    _mqtt->setAutoReconnectInterval(1000);
+    _mqtt->setWillMessage(_mqtt->clientId());
+    _mqtt->setWillQos(1);
+    _mqtt->setWillTopic("system_down");
+    _mqtt->setWillRetain(false);
+    _mqtt->connectToHost();
+}
+
+void AudioServer::onMqttConnected()
+{
+    LOG_I(LogTag, "Connected to MQTT broker");
+    _mqtt->subscribe("audio_request", 0);
+    Q_EMIT mqttConnected();
+}
+
+void AudioServer::onMqttDisconnected()
+{
+    LOG_W(LogTag, "Disconnected from MQTT broker");
+    Q_EMIT mqttDisconnected();
+}
+
+void AudioServer::onMqttMessage(const QMQTT::Message &msg)
+{
+    if (msg.topic() == "audio_request")
+    {
+        AudioMessage audioMsg(msg.payload());
+
+        LOG_I(LogTag, "Received new audio request");
+
+        if (_clientAddress == QHostAddress::Null)
+        {
+            // No handshake has been received for this video port
+            LOG_E(LogTag, "No destination address available for audio, cannot stream");
+            NotificationMessage notifyMsg;
+            notifyMsg.level = NotificationMessage::Level_Error;
+            notifyMsg.title = "Cannot stream audio";
+            notifyMsg.message = "Audio client has not yet given this server an address for this stream";
+            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+            return;
+        }
+
+        Assignment assignment;
+        assignment.profile = audioMsg.profile;
+        assignment.address = _clientAddress;
+        assignment.port = _clientPort;
+        assignment.originalMessage = audioMsg;
+
+        if (!_child)
+        {
+            // Spawn a new child, and queue this assignment to be executed when the child is ready
+            LOG_I(LogTag, "Spawning new child...");
+            _waitingAssignment = assignment;
+
+            // The first argument to the process, representing the child's name, is the video device
+            // it is assigned to work on
+            _child->start(SORO_ROVER_AUDIO_STREAM_PROCESS_PATH);
+
+            connect(_child, static_cast<void (QProcess::*)(int)>(&QProcess::finished), this, [this, assignment](int exitCode)
+            {
+                LOG_W(LogTag, "Child has exited with code " + QString::number(exitCode));
+
+                if (_childInterface)
+                {
+                    delete _childInterface;
+                    _childInterface = nullptr;
+                }
+                if (_child)
+                {
+                    delete _child;
+                    _child = nullptr;
+                }
+
+                if (_hasWaitingAssignment)
+                {
+                    _hasWaitingAssignment = false;
+
+                    NotificationMessage notifyMsg;
+                    notifyMsg.level = NotificationMessage::Level_Error;
+                    notifyMsg.title = "Cannot stream audio";
+                    notifyMsg.message = "Unexpected error - child process died before accepting its stream assignment.";
+                    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+
+                    reportAudioState();
+                }
+                if (_hasCurrentAssignment)
+                {
+                    _hasCurrentAssignment = false;
+
+                    NotificationMessage notifyMsg;
+                    notifyMsg.level = NotificationMessage::Level_Error;
+                    notifyMsg.title = "Error streaming audio";
+                    notifyMsg.message = "Unexpected error while streaming this audio. Try agian.";
+                    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+
+                    reportAudioState();
+                }
+            });
+        }
+        else
+        {
+            _hasWaitingAssignment = false;
+            _hasCurrentAssignment = false;
+
+            if (_childInterface && _childInterface->isValid())
+            {
+                // Child is running and can accept assignments
+                giveChildAssignment(assignment);
+                _currentAssignment = assignment;
+                _hasCurrentAssignment = true;
+                reportAudioState();
+            }
+            else
+            {
+                // Process exists, however it is still starting up and this assignment
+                // must be queued
+                _waitingAssignment = assignment;
+                _hasWaitingAssignment = true;
+            }
+        }
+    }
 }
 
 AudioServer::Assignment::Assignment()
@@ -50,36 +210,54 @@ AudioServer::Assignment::Assignment()
     address = QHostAddress::Null;
     port = 0;
     profile = GStreamerUtil::AudioProfile();
+    originalMessage = AudioMessage();
 }
 
 AudioServer::~AudioServer()
 {
+    // Tell all children to stop themselves
     terminateChild();
 }
 
 void AudioServer::terminateChild()
 {
-    if (_child && (_child->state() != QProcess::NotRunning))
+    if (_child)
     {
-        _child->terminate();
-        if (!_child->waitForFinished(1000))
+        if (_child->state() == QProcess::Running)
         {
-            _child->kill();
+            _child->terminate();
+            if (!_child->waitForFinished(1000))
+            {
+                _child->kill();
+                _child->waitForFinished(3000);
+            }
         }
+
+        delete _child;
+        _child = nullptr;
+    }
+
+    if (_childInterface)
+    {
+        delete _childInterface;
+        _childInterface = nullptr;
     }
 }
 
 void AudioServer::timerEvent(QTimerEvent *e)
 {
-    if ((e->timerId() == _heartbeatTimerId) && _childInterface)
+    if (e->timerId() == _heartbeatTimerId)
     {
-        _childInterface->call(QDBus::NoBlock, "heartbeat");
+        if (_childInterface && _childInterface->isValid())
+        {
+            _childInterface->call(QDBus::NoBlock, "heartbeat");
+        }
     }
 }
 
 void AudioServer::giveChildAssignment(Assignment assignment)
 {
-    if (_childInterface)
+    if (_childInterface && _childInterface->isValid())
     {
         if (assignment.profile.codec == GStreamerUtil::CODEC_NULL)
         {
@@ -87,7 +265,6 @@ void AudioServer::giveChildAssignment(Assignment assignment)
                         QDBus::NoBlock,
                         "stop");
 
-            _hasCurrentAssignment = false;
         }
         else
         {
@@ -97,122 +274,27 @@ void AudioServer::giveChildAssignment(Assignment assignment)
                         assignment.address.toString(),
                         assignment.port,
                         assignment.profile.toString());
-
-            _hasCurrentAssignment = true;
-            _currentAssignment = assignment;
         }
-
-        reportAudioState();
-    }
-}
-
-void AudioServer::onAudioRequestMessage(ros_generated::audio msg)
-{
-    Logger::logInfo(LogTag, "Received new audio request for this server");
-    QHostAddress mcAddress = _rosNodeList->getAddressForNode("/mc_master");
-    if (mcAddress == QHostAddress::Null)
-    {
-        // Master mission control isn't running, we can't stream video anywhere
-        Logger::logError(LogTag, "Master mission control is not connected, unable to stream video");
-        ros_generated::notification notifyMsg;
-        notifyMsg.type = NOTIFICATION_TYPE_ERROR;
-        notifyMsg.title = "Cannot stream audio";
-        notifyMsg.message = "The master mission control program was not found on the network, so audio can't be streamed to mission control.";
-        _notificationPublisher.publish(notifyMsg);
-        return;
-    }
-
-    Assignment assignment;
-    assignment.profile = GStreamerUtil::AudioProfile(msg);
-    assignment.address = mcAddress;
-    assignment.port = SORO_NET_AUDIO_PORT;
-    assignment.originalMessage = msg;
-
-    if (!_child)
-    {
-        // Spawn a new child, and queue this assignment to be executed when the child is ready
-        Logger::logInfo(LogTag, "Spawning new child");
-        _child = new QProcess(this);
-
-        _hasWaitingAssignment = true;
-        _waitingAssignment = assignment;
-
-        _child->start(SORO_ROVER_AUDIO_STREAM_PROCESS_PATH);
-
-        connect(_child, static_cast<void (QProcess::*)(int)>(&QProcess::finished), this, [this, assignment](int exitCode)
-        {
-            Logger::logWarn(LogTag, "Child has exited with code " + QString::number(exitCode));
-
-            if (_childInterface)
-            {
-                delete _childInterface;
-                _childInterface = nullptr;
-            }
-            if (_child)
-            {
-                delete _child;
-                _child = nullptr;
-            }
-
-            if (_hasWaitingAssignment)
-            {
-                _hasWaitingAssignment = false;
-
-                ros_generated::notification notifyMsg;
-                notifyMsg.type = NOTIFICATION_TYPE_ERROR;
-                notifyMsg.title = "Cannot stream audio";
-                notifyMsg.message = "Unexpected error - child process died before accepting its stream assignment.";
-                _notificationPublisher.publish(notifyMsg);
-
-                reportAudioState();
-            }
-            if (_hasCurrentAssignment)
-            {
-                _hasCurrentAssignment = false;
-
-                ros_generated::notification notifyMsg;
-                notifyMsg.type = NOTIFICATION_TYPE_ERROR;
-                notifyMsg.title = "Error streaming audio";
-                notifyMsg.message = "Unexpected error while streaming this device. Try agian.";
-                _notificationPublisher.publish(notifyMsg);
-
-                reportAudioState();
-            }
-        });
     }
     else
     {
-        _hasWaitingAssignment = false;
-        _hasCurrentAssignment = false;
-
-        if (_childInterface)
-        {
-            // Child for this device is running and can accept assignments
-            giveChildAssignment(assignment);
-        }
-        else
-        {
-            // There exits a process for this device, however it is still starting up
-            // and may have a previous assignment queued for it. Queue this assignment
-            _hasWaitingAssignment = true;
-            _waitingAssignment = assignment;
-        }
+        LOG_E(LogTag, "Tried to give child assignment with invalid dbus interface");
     }
 }
 
 void AudioServer::onChildLogInfo(const QString &tag, const QString &message)
 {
-    Logger::logInfo(QString("[child] %2").arg(tag), message);
+    LOG_I(QString("[child] %1").arg(tag), message);
 }
 
 void AudioServer::onChildReady()
 {
-    Logger::logInfo(LogTag, "Child is ready to accept an assignment");
+    LOG_I(LogTag, "Child is ready to accept an assignment");
 
     if (!_childInterface)
     {
         // Open a D-Bus interface to this child
-        Logger::logInfo(LogTag, "Opening D-Bus interface to child");
+        LOG_I(LogTag, "Opening D-Bus interface to child");
         _childInterface = new QDBusInterface(
                                     SORO_DBUS_AUDIO_CHILD_SERVICE_NAME,
                                     "/",
@@ -223,68 +305,70 @@ void AudioServer::onChildReady()
 
     if (!_childInterface->isValid())
     {
-        Logger::logError(LogTag, "Cannot create D-Bus connection to child even though it has a D-Bus conneciton to us");
+        LOG_E(LogTag, "Cannot create D-Bus connection to child even though it has a D-Bus conneciton to us");
         terminateChild();
-
-        delete _childInterface;
-        _childInterface = nullptr;
 
         if (_hasWaitingAssignment)
         {
-            ros_generated::notification notifyMsg;
-            notifyMsg.type = NOTIFICATION_TYPE_ERROR;
+            NotificationMessage notifyMsg;
+            notifyMsg.level = NotificationMessage::Level_Error;
             notifyMsg.title = "Cannot stream audio";
             notifyMsg.message = "Unexpected error - cannot create D-Bus connection to child stream process";
-            _notificationPublisher.publish(notifyMsg);
+            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+            _waitingAssignment = Assignment();
+            _hasWaitingAssignment = false;
         }
 
         reportAudioState();
         return;
     }
 
-    // Check if there is a stream assignment waiting
+    _currentAssignment = Assignment();
+
+    // Check if there is a stream assignment waiting for this child
     if (_hasWaitingAssignment)
     {
         giveChildAssignment(_waitingAssignment);
+        _currentAssignment = _waitingAssignment;
+        _hasCurrentAssignment = true;
+        _hasWaitingAssignment = false;
     }
-    else
-    {
-        // Ensure there is no current assignment still logged
-        _hasCurrentAssignment = false;
-    }
+
+    reportAudioState();
 }
 
 void AudioServer::reportAudioState()
 {
     if (_hasCurrentAssignment)
     {
-        _audioStatePublisher.publish(_currentAssignment.originalMessage);
+        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "audio_state", _currentAssignment.originalMessage, 0, true)); // <-- Retain message
     }
     else
     {
-        _audioStatePublisher.publish(GStreamerUtil::AudioProfile().toRosMessage());
+       _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "audio_state", AudioMessage(), 0, true)); // <-- Retain message
     }
 }
 
 void AudioServer::onChildError(QString message)
 {
-    Logger::logError(LogTag, "Child reports an error: " + message);
+    LOG_E(LogTag, "Child reports an error: " + message);
     if (_hasCurrentAssignment)
     {
         // Send a message on the notification topic
-        ros_generated::notification msg;
-        msg.type = NOTIFICATION_TYPE_ERROR;
-        msg.title = "Error streaming audio";
-        msg.message = QString("Stream error: " + message).toStdString();
+        NotificationMessage notifyMsg;
+        notifyMsg.level = NotificationMessage::Level_Error;
+        notifyMsg.title = "Error streaming audio";
+        notifyMsg.message = "Stream error: " + message;
 
-        _notificationPublisher.publish(msg);
+        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
         _hasCurrentAssignment = false;
+        reportAudioState();
     }
 }
 
 void AudioServer::onChildStreaming()
 {
-    Logger::logInfo(LogTag, "Child has started streaming");
+    LOG_I(LogTag, "Child has started streaming");
 }
 
 } // namespace Soro

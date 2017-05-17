@@ -1,18 +1,17 @@
-#ifndef MEDIASERVER_H
-#define MEDIASERVER_H
+#ifndef AUDIOSERVER_H
+#define AUDIOSERVER_H
 
 #include <QObject>
 #include <QTimerEvent>
 #include <QtDBus>
 #include <QHostAddress>
+#include <QUdpSocket>
 
-#include <ros/ros.h>
+#include "qmqtt/qmqtt.h"
 
+#include "settingsmodel.h"
+#include "soro_core/audiomessage.h"
 #include "soro_core/gstreamerutil.h"
-#include "soro_core/rosnodelist.h"
-
-#include "ros_generated/audio.h"
-#include "ros_generated/notification.h"
 
 namespace Soro {
 
@@ -20,7 +19,7 @@ class AudioServer : public QObject
 {
     Q_OBJECT
 public:
-    explicit AudioServer(const RosNodeList *rosNodeList, QObject *parent = 0);
+    explicit AudioServer(const SettingsModel *settings, QObject *parent = 0);
     ~AudioServer();
 
 public Q_SLOTS:
@@ -29,8 +28,17 @@ public Q_SLOTS:
     void onChildStreaming();
     void onChildLogInfo(const QString &tag, const QString &message);
 
+Q_SIGNALS:
+    void mqttConnected();
+    void mqttDisconnected();
+
 protected:
     void timerEvent(QTimerEvent *e);
+
+private Q_SLOTS:
+    void onMqttConnected();
+    void onMqttDisconnected();
+    void onMqttMessage(const QMQTT::Message &msg);
 
 private:
     struct Assignment
@@ -38,7 +46,7 @@ private:
         QHostAddress address;
         quint16 port;
         GStreamerUtil::AudioProfile profile;
-        ros_generated::audio originalMessage;
+        AudioMessage originalMessage;
 
         Assignment();
     };
@@ -47,24 +55,29 @@ private:
     void terminateChild();
     void reportAudioState();
 
-    void onAudioRequestMessage(ros_generated::audio msg);
-
+    const SettingsModel *_settings;
     int _heartbeatTimerId;
-    const RosNodeList *_rosNodeList;
-    ros::NodeHandle _nh;
-    ros::Publisher _audioStatePublisher;
-    ros::Publisher _notificationPublisher;
-    ros::Subscriber _audioRequestSubscriber;
+    quint16 _nextMqttMsgId;
 
-    QProcess* _child;
+    // These key to these hash sets is the device the child is assigned
+    // to stream. Each child is spawned to stream a single device (usually
+    // a /dev/video* deivce), and it will only ever serve streams for that
+    // single device. This system is done to prevent multiple children from
+    // attempting to stream the same device, which would fail.
+    QProcess *_child;
     QDBusInterface* _childInterface;
-    bool _hasWaitingAssignment;
     Assignment _waitingAssignment;
-    bool _hasCurrentAssignment;
+    bool _hasWaitingAssignment;
     Assignment _currentAssignment;
+    bool _hasCurrentAssignment;
+    QUdpSocket _audioSocket;
+    QHostAddress _clientAddress;
+    quint16 _clientPort;
+
+    QMQTT::Client *_mqtt;
 
 };
 
 } // namespace Soro
 
-#endif // MEDIASERVER_H
+#endif // AUDIOSERVER_H

@@ -32,9 +32,6 @@ public:
 
     static QString getId();
 
-protected:
-    void timerEvent(QTimerEvent *e);
-
 private:
 
     explicit MainController(QObject *parent=0);
@@ -42,9 +39,6 @@ private:
 
     static MainController *_self;
 
-    int _rosSpinTimerId;
-
-    QUdpSocket *_rosInitUdpSocket = nullptr;
     QString _mcId;
     QQmlEngine *_qmlEngine = nullptr;
     GamepadController* _gamepadController = nullptr;

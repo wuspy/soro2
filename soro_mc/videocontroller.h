@@ -2,6 +2,8 @@
 #define VIDEOCONTROLLER_H
 
 #include <QObject>
+#include <QUdpSocket>
+#include <QTimerEvent>
 
 #include "soro_core/camerasettingsmodel.h"
 #include "settingsmodel.h"
@@ -11,12 +13,9 @@
 #include <Qt5GStreamer/QGst/Bin>
 #include <Qt5GStreamer/QGst/Element>
 
-#include "ros_generated/video.h"
-#include "ros_generated/video_state.h"
-
 #include "soro_core/gstreamerutil.h"
 
-#include <ros/ros.h>
+#include "qmqtt/qmqtt.h"
 
 namespace Soro {
 
@@ -41,7 +40,8 @@ class VideoController : public QObject
 {
     Q_OBJECT
 public:
-    explicit VideoController(const SettingsModel *settings, const CameraSettingsModel *cameraSettings, QVector<QGst::ElementPtr> sinks, QObject *parent = 0);
+    explicit VideoController(const SettingsModel *settings, const CameraSettingsModel *cameraSettings,
+                             QVector<QGst::ElementPtr> sinks, QObject *parent = 0);
     ~VideoController();
 
     bool isPlaying(uint cameraIndex) const;
@@ -60,25 +60,34 @@ Q_SIGNALS:
      */
     void gstError(QString message, uint cameraIndex);
 
+    void mqttConnected();
+    void mqttDisconnected();
+
+protected:
+    void timerEvent(QTimerEvent *e);
+
+private Q_SLOTS:
+    void onMqttMessage(const QMQTT::Message &msg);
+    void onMqttConnected();
+    void onMqttDisconnected();
+
 private:
-    void onVideoResponse(ros_generated::video_state msg);
     void clearPipeline(uint cameraIndex);
     void playVideoOnSink(uint cameraIndex, GStreamerUtil::VideoProfile profile);
     void constructPipelineOnSink(uint cameraIndex, QString sourceBinString);
     void stopVideoOnSink(uint cameraIndex);
 
+    QMQTT::Client *_mqtt;
     const SettingsModel *_settings;
     const CameraSettingsModel *_cameraSettings;
 
+    int _announceTimerId;
+    quint16 _nextMqttMsgId;
     QVector<QGst::PipelinePtr> _pipelines;
     QVector<QGst::BinPtr> _bins;
     QVector<QGst::ElementPtr> _sinks;
     QVector<GStreamerPipelineWatch*> _pipelineWatches;
     QVector<GStreamerUtil::VideoProfile> _videoStates;
-
-    ros::NodeHandle _nh;
-    ros::Publisher _videoRequestPublisher;
-    ros::Subscriber _videoStateSubscriber;
 };
 
 } // namespace Soro

@@ -7,11 +7,11 @@
 #include <Qt5GStreamer/QGst/Element>
 #include <SDL2/SDL.h>
 
-#include <ros/ros.h>
+#include "qmqtt/qmqtt.h"
 
 #include "settingsmodel.h"
 #include "soro_core/camerasettingsmodel.h"
-#include "ros_generated/notification.h"
+#include "soro_core/notificationmessage.h"
 #include "soro_core/gstreamerutil.h"
 
 namespace Soro {
@@ -24,13 +24,15 @@ public:
     explicit MainWindowController(QQmlEngine *engine, const SettingsModel *settings,
                                   const CameraSettingsModel *cameraSettings, QObject *parent = 0);
 
-    void notify(int type, QString title, QString message);
-    void notifyAll(int type, QString title, QString message);
+    void notify(NotificationMessage::Level level, QString title, QString message);
+    void notifyAll(NotificationMessage::Level level, QString title, QString message);
 
     QVector<QGst::ElementPtr> getVideoSinks();
 
 Q_SIGNALS:
     void keyPressed(int key);
+    void mqttConnected();
+    void mqttDisconnected();
 
 public Q_SLOTS:
     void onAudioProfileChanged(GStreamerUtil::AudioProfile profile);
@@ -43,17 +45,19 @@ public Q_SLOTS:
     void onLatencyUpdated(quint32 latency);
     void onDataRateUpdated(quint64 rateUp, quint64 rateDown);
 
-private:
-    void onNewNotification(ros_generated::notification msg);
+private Q_SLOTS:
+    void onMqttConnected();
+    void onMqttDisconnected();
+    void onMqttMessage(const QMQTT::Message &msg);
 
+private:
     QQuickWindow *_window;
 
+    quint16 _notificationMsgId;
     const SettingsModel *_settings;
     const CameraSettingsModel *_cameraSettings;
 
-    ros::NodeHandle _nh;
-    ros::Publisher _notifyPublisher;
-    ros::Subscriber _notifySubscriber;
+    QMQTT::Client *_mqtt;
 };
 
 } // namespace Soro

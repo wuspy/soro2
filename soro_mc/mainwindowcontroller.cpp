@@ -64,15 +64,51 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
     connect(_window, SIGNAL(keyPressed(int)), this, SIGNAL(keyPressed(int)));
 
     //
-    // Setup ROS communication
+    // Setup MQTT
     //
+    LOG_I(LogTag, "Creating MQTT client...");
+    _mqtt = new QMQTT::Client(settings->getMqttBrokerAddress(), SORO_NET_MQTT_BROKER_PORT, this);
+    connect(_mqtt, &QMQTT::Client::received, this, &MainWindowController::onMqttMessage);
+    connect(_mqtt, &QMQTT::Client::connected, this, &MainWindowController::onMqttConnected);
+    connect(_mqtt, &QMQTT::Client::disconnected, this, &MainWindowController::onMqttDisconnected);
+    _mqtt->setClientId(MainController::getId() + "_mainwindowcontroller");
+    _mqtt->setAutoReconnect(true);
+    _mqtt->setAutoReconnectInterval(1000);
+    _mqtt->connectToHost();
+}
 
-    Logger::logInfo(LogTag, "Creating ROS publisher and subscriber for notificaiton topic...");
-    _notifyPublisher = _nh.advertise<ros_generated::notification>("notification", 10);
-    _notifySubscriber = _nh.subscribe
-            <ros_generated::notification, Soro::MainWindowController>
-            ("notification", 10, &MainWindowController::onNewNotification, this);
-    Logger::logInfo(LogTag, "ROS publisher and subscriber created");
+void MainWindowController::onMqttConnected()
+{
+    LOG_I(LogTag, "Connected to MQTT broker");
+    _mqtt->subscribe("notification", 0);
+    Q_EMIT mqttConnected();
+}
+
+void MainWindowController::onMqttDisconnected()
+{
+    LOG_W(LogTag, "Disconnected from MQTT broker");
+    Q_EMIT mqttDisconnected();
+}
+
+void MainWindowController::onMqttMessage(const QMQTT::Message &msg)
+{
+    if (msg.topic() == "notification")
+    {
+        NotificationMessage notificationMsg(msg.payload());
+
+        switch (notificationMsg.level)
+        {
+        case NotificationMessage::Level_Error:
+            LOG_E(LogTag, QString("Received error notification: %1 - %2 ").arg(notificationMsg.title, notificationMsg.message));
+            break;
+        case NotificationMessage::Level_Warning:
+            LOG_W(LogTag, QString("Received warning notification: %1 - %2 ").arg(notificationMsg.title, notificationMsg.message));
+            break;
+        case NotificationMessage::Level_Info:
+            LOG_I(LogTag, QString("Received info notification: %1 - %2 ").arg(notificationMsg.title, notificationMsg.message));
+            break;
+        }
+    }
 }
 
 QVector<QGst::ElementPtr> MainWindowController::getVideoSinks()
@@ -94,39 +130,18 @@ QVector<QGst::ElementPtr> MainWindowController::getVideoSinks()
     return sinks;
 }
 
-void MainWindowController::onNewNotification(ros_generated::notification msg)
-{
-    // Show this message in the UI
-    QString title = QString(msg.title.c_str());
-    QString message = QString(msg.message.c_str());
-    notify((int)msg.type, title, message);
-
-    switch (msg.type)
-    {
-    case NOTIFICATION_TYPE_ERROR:
-        Logger::logError(LogTag, QString("Received error notification: %1 - %2 ").arg(title, message));
-        break;
-    case NOTIFICATION_TYPE_WARNING:
-        Logger::logWarn(LogTag, QString("Received warning notification: %1 - %2 ").arg(title, message));
-        break;
-    case NOTIFICATION_TYPE_INFO:
-        Logger::logInfo(LogTag, QString("Received info notification: %1 - %2 ").arg(title, message));
-        break;
-    }
-}
-
-void MainWindowController::notify(int type, QString title, QString message)
+void MainWindowController::notify(NotificationMessage::Level level, QString title, QString message)
 {
     QString typeString;
-    switch (type)
+    switch (level)
     {
-    case NOTIFICATION_TYPE_INFO:
+    case NotificationMessage::Level_Error:
         typeString = "info";
         break;
-    case NOTIFICATION_TYPE_WARNING:
+    case NotificationMessage::Level_Warning:
         typeString = "warning";
         break;
-    case NOTIFICATION_TYPE_ERROR:
+    case NotificationMessage::Level_Info:
         typeString = "error";
         break;
     }
@@ -134,16 +149,16 @@ void MainWindowController::notify(int type, QString title, QString message)
     QMetaObject::invokeMethod(_window, "notify", Q_ARG(QVariant, typeString), Q_ARG(QVariant, title), Q_ARG(QVariant, message));
 }
 
-void MainWindowController::notifyAll(int type, QString title, QString message)
+void MainWindowController::notifyAll(NotificationMessage::Level level, QString title, QString message)
 {
-    ros_generated::notification msg;
-    msg.type = (uint8_t)type;
-    msg.title = title.toStdString();
-    msg.message = message.toStdString();
+    NotificationMessage msg;
+    msg.level = level;
+    msg.title = title;
+    msg.message = message;
 
     // Publish this notification on the notification topic. We will get this message back,
     // since we are also subscribed to it, and that's when we'll show it from the onNewNotification() function
-    _notifyPublisher.publish(msg);
+    _mqtt->publish(QMQTT::Message(_notificationMsgId++, "notification", msg, 0));
 }
 
 void MainWindowController::onConnectedChanged(bool connected)

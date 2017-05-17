@@ -2,7 +2,7 @@
 #define GAMEPADCONTROLLER_H
 
 #include <QObject>
-#include <QTimerEvent>
+#include <QTimer>
 #include <SDL2/SDL.h>
 
 namespace Soro {
@@ -40,9 +40,6 @@ public:
     bool getButtonPressed(SDL_GameControllerButton button) const;
     float getAxisValue(SDL_GameControllerAxis axis) const;
 
-    void updateIfChangedAxis(SDL_GameControllerAxis axis, qint16 *currentValue);
-    void updateIfChangedButton(SDL_GameControllerButton button, bool *currentValue);
-
 Q_SIGNALS:
     /* Emitted when a gamepad button is pressed */
     void buttonPressed(SDL_GameControllerButton button, bool isPressed);
@@ -53,19 +50,18 @@ Q_SIGNALS:
     /* Emitted when new values are read from the gamepad */
     void poll();
 
-protected:
-    void timerEvent(QTimerEvent *event);
-
 private:
-    int _pollInterval;
-    int _timerId;
+    QTimer _pollTimer, _searchTimer;
     float _deadzone;
+
+    void updateIfChangedAxis(SDL_GameControllerAxis axis, qint16 *currentValue);
+    void updateIfChangedButton(SDL_GameControllerButton button, bool *currentValue);
 
     /* Sets the currently active controller to be polled */
     void setGamepad(SDL_GameController *controller);
     static float convertToFloatWithDeadzone(qint16 value, float deadzone);
 
-    SDL_GameController *_gameController = nullptr;
+    SDL_GameController *_gameController;
     QString _gamepadName;
 
     /* Axises for controller initialized to dead center */

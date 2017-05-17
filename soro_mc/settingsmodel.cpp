@@ -21,6 +21,7 @@
 #include <QCoreApplication>
 
 #define KEY_CONFIGURATION "SORO_MC_CONFIGURATION"
+#define KEY_MQTT_BROKER_IP "SORO_MQTT_BROKER_IP"
 #define KEY_DRIVE_SEND_INTERVAL "SORO_DRIVE_SEND_INTERVAL"
 #define KEY_ENABLE_HWDECODING "SORO_ENABLE_HW_DECODING"
 #define KEY_ENABLE_HWRENDERING "SORO_ENABLE_HW_RENDERING"
@@ -40,6 +41,7 @@ QHash<QString, int> SettingsModel::getKeys() const
     keys.insert(KEY_ENABLE_HWRENDERING, QMetaType::Bool);
     keys.insert(KEY_DRIVE_POWER_LIMIT, QMetaType::Float);
     keys.insert(KEY_DRIVE_SKIDSTEER_FACTOR, QMetaType::Float);
+    keys.insert(KEY_MQTT_BROKER_IP, QMetaType::QString);
     return keys;
 }
 
@@ -52,6 +54,7 @@ QHash<QString, QVariant> SettingsModel::getDefaultValues() const
     defaults.insert(KEY_ENABLE_HWRENDERING, QVariant(true));
     defaults.insert(KEY_DRIVE_POWER_LIMIT, QVariant(0.5f));
     defaults.insert(KEY_DRIVE_SKIDSTEER_FACTOR, QVariant(0.2f));
+    defaults.insert(KEY_MQTT_BROKER_IP, QVariant("127.0.0.1"));
     return defaults;
 }
 
@@ -85,6 +88,11 @@ uint SettingsModel::getDriveSendInterval() const
 bool SettingsModel::getEnableHwDecoding() const
 {
     return _values.value(KEY_ENABLE_HWDECODING).toBool();
+}
+
+QHostAddress SettingsModel::getMqttBrokerAddress() const
+{
+    return QHostAddress(_values.value(KEY_MQTT_BROKER_IP).toString());
 }
 
 bool SettingsModel::getEnableHwRendering() const

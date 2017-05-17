@@ -2,11 +2,10 @@
 #define DRIVECONTROLSYSTEM_H
 
 #include <QObject>
-#include "gamepadcontroller.h"
-#include "connectionstatuscontroller.h"
-#include "ros_generated/drive.h"
-#include "ros/ros.h"
-#include <QTimerEvent>
+#include <QTimer>
+#include <SDL2/SDL.h>
+
+#include "qmqtt/qmqtt.h"
 
 namespace Soro {
 
@@ -15,32 +14,46 @@ class DriveControlSystem : public QObject
     Q_OBJECT
 
 public:
-    explicit DriveControlSystem(int sendInterval, const GamepadController *gamepad,
-                                ConnectionStatusController *connectionStatusController,
-                                QObject *parent = 0);
+    enum InputMode
+    {
+        InputMode_TwoStick,
+        InputMode_SingleStick
+    };
+
+    explicit DriveControlSystem(QHostAddress mqttAddress, quint16 mqttPort, int interval, QObject *parent = 0);
 
     void setSkidSteerFactor(float factor);
     float getSkidSteerFactor() const;
 
+    void setInputMode(InputMode mode);
+    InputMode getInputMode() const;
+
     void setLimit(float limit);
     float getLimit() const;
 
+    void setInterval(int interval);
+    int getInterval() const;
+
+Q_SIGNALS:
+    void mqttConnected();
+    void mqttDisconnected();
+
+public Q_SLOTS:
+    void enable();
+    void disable();
+
+    void onGamepadAxisUpdate(SDL_GameControllerAxis axis, float value);
+
 private:
-    ros_generated::drive buildDriveMessage();
+    QTimer _timer;
+    QMQTT::Client *_mqtt;
 
-    QString _gamepadName;
-    const GamepadController *_gamepad;
-    ConnectionStatusController *_connectionStatusController;
-
-    ros::NodeHandle _nh;
-    ros::Publisher _drivePublisher;
-
-    int _sendTimerId;
+    quint16 _nextMqttMsgId;
     float _skidSteerFactor;
     float _limit;
-
-protected:
-    void timerEvent(QTimerEvent* e);
+    bool _enabled;
+    InputMode _mode;
+    float _gamepadLeftX, _gamepadRightX, _gamepadLeftY, _gamepadRightY;
 
 };
 

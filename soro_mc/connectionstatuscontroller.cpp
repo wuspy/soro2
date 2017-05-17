@@ -17,103 +17,73 @@
 #include "connectionstatuscontroller.h"
 #include "maincontroller.h"
 #include "soro_core/logger.h"
+#include "soro_core/constants.h"
+#include "soro_core/dataratemessage.h"
+#include "soro_core/latencymessage.h"
 
 #define LogTag "ConnectionStatusController"
 
 namespace Soro {
 
-ConnectionStatusController::ConnectionStatusController(QObject *parent) : QObject(parent)
+ConnectionStatusController::ConnectionStatusController(QHostAddress brokerAddress, quint16 brokerPort, int disconnectTimeout, QObject *parent) : QObject(parent)
 {
-    Logger::logInfo(LogTag, "Creating ROS subscriber for latency topic...");
-    _latencySubscriber = _nh.subscribe
-            <std_msgs::UInt32, Soro::ConnectionStatusController>
-            ("latency", 10, &ConnectionStatusController::onNewLatencyMessage, this);
-    if (!_latencySubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for latency topic");
-
-    Logger::logInfo(LogTag, "Creating ROS subscriber for data_rate topic...");
-    _dataRateSubscriber = _nh.subscribe
-            <ros_generated::data_rate, Soro::ConnectionStatusController>
-            ("data_rate", 10, &ConnectionStatusController::onNewDataRateMessage, this);
-    if (!_dataRateSubscriber) MainController::panic(LogTag, "Failed to create ROS subscriber for data_rate topic");
-
-    Logger::logInfo(LogTag, "Creating ROS publisher for data_up_log topic...");
-    _dataUpPublisher = _nh.advertise<std_msgs::UInt32>("data_up_log", 1);
-    if (!_dataUpPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for data_up_log topic");
-
-    Logger::logInfo(LogTag, "Creating ROS publisher for data_down_log topic...");
-    _dataDownPublisher = _nh.advertise<std_msgs::UInt32>("data_down_log", 1);
-    if (!_dataDownPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for data_down_log topic");
-
-    Logger::logInfo(LogTag, "All ROS publishers and subscribers created");
-
-    _disconnectWatchdogTimerId = -1;
-    setDisconnectTimeThreshold(2000);
+    _connectionWatchdog.setInterval(disconnectTimeout);
     _connected = false;
-}
 
-void ConnectionStatusController::setDisconnectTimeThreshold(int threshold)
-{
-    _disconnectTimeThreshold = threshold;
-}
+    LOG_I(LogTag, "Creating MQTT client...");
+    _mqtt = new QMQTT::Client(brokerAddress, brokerPort, this);
+    _mqtt->setClientId(MainController::getId() + "_connectionstatuscontroller");
+    _mqtt->setAutoReconnect(true);
+    _mqtt->setAutoReconnectInterval(1000);
+    _mqtt->connectToHost();
 
-int ConnectionStatusController::getDisconnectTimeThreshold() const
-{
-    return _disconnectTimeThreshold;
-}
+    connect(_mqtt, &QMQTT::Client::connected, this, [this]()
+    {
+        Logger::logInfo(LogTag, "Connected to MQTT broker");
+        _mqtt->subscribe("latency", 0);
+        _mqtt->subscribe("data_rate", 0);
+    });
 
-void ConnectionStatusController::onNewDataRateMessage(ros_generated::data_rate msg)
-{
-    Logger::logInfo(LogTag, "New bitrate: " + QString::number(msg.dataRateUp) + ", " + QString::number(msg.dataRateDown));
-    Q_EMIT dataRateUpdate((quint64)msg.dataRateUp, (quint64)msg.dataRateDown);
-}
+    connect(_mqtt, &QMQTT::Client::disconnected, this, [this]()
+    {
+        Logger::logInfo(LogTag, "Disconnected from to MQTT broker");
+    });
 
-void ConnectionStatusController::onNewLatencyMessage(std_msgs::UInt32 msg)
-{
-    Logger::logInfo(LogTag, "New latency: " + QString::number(msg.data));
-    if (_disconnectWatchdogTimerId != -1) {
-        killTimer(_disconnectWatchdogTimerId);
-    }
-    _disconnectWatchdogTimerId = startTimer(_disconnectTimeThreshold);
-    setConnected(true);
+    connect(_mqtt, &QMQTT::Client::received, this, [this](const QMQTT::Message &msg)
+    {
+        if (msg.topic() == "latency")
+        {
+            if (!_connected)
+            {
+                _connected = true;
+                Q_EMIT connectedChanged(true);
+            }
+            _connectionWatchdog.stop();
+            _connectionWatchdog.start();
 
-    Q_EMIT latencyUpdate((quint32)msg.data);
-}
+            LatencyMessage latencyMsg(msg.payload());
+            Q_EMIT latencyUpdate(latencyMsg.latency);
+        }
+        else if (msg.topic() == "data_rate")
+        {
+            DataRateMessage dataRateMsg(msg.payload());
+            Q_EMIT dataRateUpdate(dataRateMsg.dataRateUp, dataRateMsg.dataRateDown);
+        }
+    });
 
-void ConnectionStatusController::logDataDown(quint32 bits)
-{
-    std_msgs::UInt32 msg;
-    msg.data = bits;
-    _dataDownPublisher.publish(msg);
-}
-
-void ConnectionStatusController::logDataUp(quint32 bits)
-{
-    std_msgs::UInt32 msg;
-    msg.data = bits;
-    _dataUpPublisher.publish(msg);
+    connect(&_connectionWatchdog, &QTimer::timeout, this, [this]()
+    {
+       if (_connected)
+       {
+           _connected = false;
+           Q_EMIT connectedChanged(false);
+       }
+    });
 }
 
 bool ConnectionStatusController::isConnected() const
 {
-    return _connected;
-}
-
-void ConnectionStatusController::timerEvent(QTimerEvent *e)
-{
-    if (e->timerId() == _disconnectWatchdogTimerId)
-    {
-        setConnected(false);
-        killTimer(_disconnectWatchdogTimerId);
-        _disconnectWatchdogTimerId = -1;
-    }
-}
-
-void ConnectionStatusController::setConnected(bool connected)
-{
-    if (connected != _connected) {
-        _connected = connected;
-        Q_EMIT connectedChanged(_connected);
-    }
+    return _mqtt->isConnectedToHost();
 }
 
 } // namespace Soro

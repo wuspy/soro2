@@ -19,7 +19,7 @@ namespace Soro {
 class AudioStreamer : public QObject {
     Q_OBJECT
 public:
-    AudioStreamer(QString streamName, QObject *parent = 0);
+    AudioStreamer(QObject *parent = 0);
     ~AudioStreamer();
 
 public Q_SLOTS:
@@ -35,7 +35,6 @@ private:
 
     void stopPrivate(bool sendReady);
 
-    QString _name;
     int _watchdogTimerId;
     QGst::PipelinePtr _pipeline;
     QDBusInterface *_parentInterface;

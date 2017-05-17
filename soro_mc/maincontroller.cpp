@@ -29,8 +29,7 @@
 #include "qmlgstreamerpainteditem.h"
 #include "soro_core/constants.h"
 #include "soro_core/logger.h"
-
-#include <ros/ros.h>
+#include "soro_core/notificationmessage.h"
 
 #define LogTag "MainController"
 
@@ -42,11 +41,11 @@ MainController::MainController(QObject *parent) : QObject(parent) { }
 
 void MainController::panic(QString tag, QString message)
 {
-    Logger::logError(LogTag, QString("panic(): %1: %2").arg(tag, message));
+    LOG_E(LogTag, QString("panic(): %1: %2").arg(tag, message));
     QMessageBox::critical(0, "Mission Control", "<b>Fatal error in " + tag + "</b><br><br>" + message);
-    Logger::logInfo(LogTag, "Committing suicide...");
+    LOG_I(LogTag, "Committing suicide...");
     delete _self;
-    Logger::logInfo(LogTag, "Exiting with code 1");
+    LOG_I(LogTag, "Exiting with code 1");
     exit(1);
 }
 
@@ -54,11 +53,11 @@ void MainController::init(QApplication *app)
 {
     if (_self)
     {
-        Logger::logError(LogTag, "init() called when already initialized");
+        LOG_E(LogTag, "init() called when already initialized");
     }
     else
     {
-        Logger::logInfo(LogTag, "Starting...");
+        LOG_I(LogTag, "Starting...");
         _self = new MainController(app);
 
         // Use a timer to wait for the event loop to start
@@ -67,7 +66,7 @@ void MainController::init(QApplication *app)
             //
             // Create the settings model and load the main settings file
             //
-            Logger::logInfo(LogTag, "Loading settings...");
+            LOG_I(LogTag, "Loading settings...");
             try
             {
                 _self->_settingsModel = new SettingsModel;
@@ -79,15 +78,15 @@ void MainController::init(QApplication *app)
             }
 
             //
-            // Create a unique identifier for this mission control, it is mainly used as a unique node name for ROS
+            // Create a unique identifier for this mission control, it is mainly used as a unique node name for MQTT
             //
             _self->_mcId = _self->genId();
-            Logger::logInfo(LogTag, QString("Mission Control ID is: %1").arg(_self->_mcId).toLocal8Bit().constData());
+            LOG_I(LogTag, QString("Mission Control ID is: %1").arg(_self->_mcId).toLocal8Bit().constData());
 
             //
             // Create camera settings model to load camera configuration
             //
-            Logger::logInfo(LogTag, "Loading camera settings...");
+            LOG_I(LogTag, "Loading camera settings...");
             try
             {
                 _self->_cameraSettingsModel = new CameraSettingsModel;
@@ -102,7 +101,7 @@ void MainController::init(QApplication *app)
             //
             // Create media settings model to load audio/video profile configuration
             //
-            Logger::logInfo(LogTag, "Loading media profile settings...");
+            LOG_I(LogTag, "Loading media profile settings...");
             try
             {
                 _self->_mediaProfileSettingsModel = new MediaProfileSettingsModel;
@@ -117,7 +116,7 @@ void MainController::init(QApplication *app)
             //
             // Create media settings model to load keyboard & gamepad bindings
             //
-            Logger::logInfo(LogTag, "Loading keyboard and gamepad binding profile settings...");
+            LOG_I(LogTag, "Loading keyboard and gamepad binding profile settings...");
             try
             {
                 _self->_bindsSettingsModel = new BindsSettingsModel;
@@ -132,7 +131,7 @@ void MainController::init(QApplication *app)
             //
             // Initialize Qt5GStreamer, must be called before anything else is done with it
             //
-            Logger::logInfo(LogTag, "Initializing QtGstreamer...");
+            LOG_I(LogTag, "Initializing QtGstreamer...");
             try
             {
                 QGst::init();
@@ -146,13 +145,13 @@ void MainController::init(QApplication *app)
             //
             // Initiaize the Qt webengine (i.e. blink web engine) for use in QML
             //
-            Logger::logInfo(LogTag, "Initializing QtWebEngine...");
+            LOG_I(LogTag, "Initializing QtWebEngine...");
             QtWebEngine::initialize();
 
             //
             // Initialize SDL (for gamepad reading)
             //
-            Logger::logInfo(LogTag, "Initializing SDL...");
+            LOG_I(LogTag, "Initializing SDL...");
             if (SDL_Init(SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) != 0)
             {
                 panic(LogTag, QString("Failed to initialize SDL:  %1").arg(SDL_GetError()));
@@ -164,7 +163,7 @@ void MainController::init(QApplication *app)
             // This map file allows SDL to know which button/axis (i.e. "Left X Axis") corresponds
             // to the raw reading from the controller (i.e. "Axis 0")
             //
-            Logger::logInfo(LogTag, "Initializing SDL gamepad map...");
+            LOG_I(LogTag, "Initializing SDL gamepad map...");
             QFile gamepadMap(":/config/gamecontrollerdb.txt"); // Loads from assets.qrc
             gamepadMap.open(QIODevice::ReadOnly);
             while (gamepadMap.bytesAvailable())
@@ -178,45 +177,19 @@ void MainController::init(QApplication *app)
             }
             gamepadMap.close();
 
-            // Make sure ROS_MASTER_URI is set
-            if (getenv("ROS_MASTER_URI") == nullptr)
-            {
-                panic(LogTag, "ROS_MASTER_URI is not set in the environment");
-            }
-            Logger::logInfo(LogTag, "ROS_MASTER_URI is at " + QString(getenv("ROS_MASTER_URI")));
-
-            //
-            // Initialize ROS
-            //
-            int argc = QCoreApplication::arguments().size();
-            char *argv[argc];
-
-            for (int i = 0; i < argc; i++) {
-                argv[i] = QCoreApplication::arguments()[i].toLocal8Bit().data();
-            }
-
-            try
-            {
-                Logger::logInfo(LogTag, QString("Calling ros::init() with master URI \'%1\'").arg(getenv("ROS_MASTER_URI")));
-                ros::init(argc, argv, MainController::getId().toStdString());
-                Logger::logInfo(LogTag, "ROS initialized");
-            }
-            catch(ros::InvalidNameException e)
-            {
-                panic(LogTag, QString("Invalid name exception initializing ROS: %1").arg(e.what()));
-                return;
-            }
-
             //
             // Create connection status controller
             //
-            Logger::logInfo(LogTag, "Initializing connection status controller...");
-            _self->_connectionStatusController = new ConnectionStatusController(_self);
+            LOG_I(LogTag, "Initializing connection status controller...");
+            _self->_connectionStatusController = new ConnectionStatusController(_self->_settingsModel->getMqttBrokerAddress(),
+                                                                                SORO_NET_MQTT_BROKER_PORT,
+                                                                                2000,
+                                                                                _self);
 
             //
             // Create the GamepadController instance
             //
-            Logger::logInfo(LogTag, "Initializing Gamepad Controller...");
+            LOG_I(LogTag, "Initializing Gamepad Controller...");
             _self->_gamepadController = new GamepadController(_self);
 
             switch (_self->_settingsModel->getConfiguration()) {
@@ -224,20 +197,25 @@ void MainController::init(QApplication *app)
                 //
                 // Create drive control system
                 //
-                Logger::logInfo(LogTag, "Initializing drive control system...");
-                _self->_driveControlSystem = new DriveControlSystem(_self->_settingsModel->getDriveSendInterval(),
-                                                             _self->_gamepadController,
-                                                             _self->_connectionStatusController,
-                                                             _self);
+                LOG_I(LogTag, "Initializing drive control system...");
+                _self->_driveControlSystem = new DriveControlSystem(_self->_settingsModel->getMqttBrokerAddress(),
+                                                                    SORO_NET_MQTT_BROKER_PORT,
+                                                                    _self->_settingsModel->getDriveSendInterval(),
+                                                                    _self);
                 _self->_driveControlSystem->setLimit(_self->_settingsModel->getDrivePowerLimit());
                 _self->_driveControlSystem->setSkidSteerFactor(_self->_settingsModel->getDriveSkidSteerFactor());
+                _self->_driveControlSystem->enable();
                 break;
             case SettingsModel::ArmOperatorConfiguration:
                 //
                 // Create arm control system
                 //
-                Logger::logInfo(LogTag, "Initializing arm control system...");
-                _self->_armControlSystem = new ArmControlSystem(_self);
+                LOG_I(LogTag, "Initializing arm control system...");
+                _self->_armControlSystem = new ArmControlSystem(_self->_settingsModel->getMqttBrokerAddress(),
+                                                                SORO_NET_MQTT_BROKER_PORT,
+                                                                1000,
+                                                                _self);
+                _self->_armControlSystem->enable();
                 break;
             case SettingsModel::CameraOperatorConfiguration:
                 //TODO
@@ -249,8 +227,8 @@ void MainController::init(QApplication *app)
             //
             // Create the audio controller instance
             //
-            Logger::logInfo(LogTag, "Initializing audio controller...");
-            _self->_audioController = new AudioController(_self);
+            LOG_I(LogTag, "Initializing audio controller...");
+            _self->_audioController = new AudioController(_self->_settingsModel, _self);
 
             //
             // Create the QML application engine and setup the GStreamer surface
@@ -258,41 +236,41 @@ void MainController::init(QApplication *app)
             if (_self->_settingsModel->getEnableHwRendering())
             {
                 // Use the hardware opengl rendering surface, doesn't work on some hardware
-                Logger::logInfo(LogTag, "Registering QmlGStreamerItem as GStreamerSurface...");
+                LOG_I(LogTag, "Registering QmlGStreamerItem as GStreamerSurface...");
                 qmlRegisterType<QmlGStreamerGlItem>("Soro", 1, 0, "GStreamerSurface");
             }
             else
             {
                 // Use the software rendering surface, works everywhere but slower
-                Logger::logInfo(LogTag, "Registering QmlGStreamerPaintedItem as GStreamerSurface...");
+                LOG_I(LogTag, "Registering QmlGStreamerPaintedItem as GStreamerSurface...");
                 qmlRegisterType<QmlGStreamerPaintedItem>("Soro", 1, 0, "GStreamerSurface");
             }
-            Logger::logInfo(LogTag, "Initializing QML engine...");
+            LOG_I(LogTag, "Initializing QML engine...");
             _self->_qmlEngine = new QQmlEngine(_self);
 
             //
             // Create the main UI
             //
-            Logger::logInfo(LogTag, "Creating main window...");
+            LOG_I(LogTag, "Creating main window...");
             _self->_mainWindowController = new MainWindowController(_self->_qmlEngine, _self->_settingsModel, _self->_cameraSettingsModel, _self);
 
             //
             // Create the video controller instance
             //
-            Logger::logInfo(LogTag, "Initializing video controller...");
+            LOG_I(LogTag, "Initializing video controller...");
             _self->_videoController = new VideoController(_self->_settingsModel, _self->_cameraSettingsModel, _self->_mainWindowController->getVideoSinks(), _self);
 
 
             // Forward audio/video errors to the UI
             connect(_self->_videoController, &VideoController::gstError, _self, [](QString message, uint cameraIndex)
             {
-                _self->_self->_mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
+                _self->_self->_mainWindowController->notify(NotificationMessage::Level_Error,
                                               "Error playing " + _self->_cameraSettingsModel->getCamera(cameraIndex).name,
                                               "There was an error while decoding the video stream: " + message);
             });
             connect(_self->_audioController, &AudioController::gstError, _self, [](QString message)
             {
-                _self->_mainWindowController->notify(NOTIFICATION_TYPE_ERROR,
+                _self->_mainWindowController->notify(NotificationMessage::Level_Error,
                                               "Error playing audio",
                                               "There was an error while decoding the audio stream: " + message);
             });
@@ -315,6 +293,8 @@ void MainController::init(QApplication *app)
             {
                 _self->_mainWindowController->onVideoProfileChanged(cameraIndex, GStreamerUtil::VideoProfile());
             });
+            connect(_self->_gamepadController, &GamepadController::axisChanged,
+                    _self->_driveControlSystem, &DriveControlSystem::onGamepadAxisUpdate);
 
             connect(_self->_mainWindowController, &MainWindowController::keyPressed, _self, [](int key)
             {
@@ -466,41 +446,33 @@ void MainController::init(QApplication *app)
 
             connect(_self->_gamepadController, &GamepadController::buttonPressed, _self, [](SDL_GameControllerButton btn, bool isPressed)
             {
-                // Temporary implementation for a 'turbo' button
-               switch (btn)
-               {
-               case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
-                   _self->_driveControlSystem->setLimit(isPressed ? 1.0 : 0.6);
-                   break;
-               case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                   _self->_mainWindowController->selectViewBelow();
-                   break;
-               case SDL_CONTROLLER_BUTTON_DPAD_UP:
-                   _self->_mainWindowController->selectViewAbove();
-                   break;
-               case SDL_CONTROLLER_BUTTON_Y:
-                   _self->_mainWindowController->toggleSidebar();
-                   break;
-               case SDL_CONTROLLER_BUTTON_A:
-                   _self->_mainWindowController->dismissNotifications();
-                   break;
-               default: break;
-               }
+                if (_self->_driveControlSystem)
+                {
+                    // Temporary implementation for a 'turbo' button
+                    switch (btn)
+                    {
+                    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                        _self->_driveControlSystem->setLimit(isPressed ? 1.0 : 0.6);
+                        break;
+                    case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                        _self->_mainWindowController->selectViewBelow();
+                        break;
+                    case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                        _self->_mainWindowController->selectViewAbove();
+                        break;
+                    case SDL_CONTROLLER_BUTTON_Y:
+                        _self->_mainWindowController->toggleSidebar();
+                        break;
+                    case SDL_CONTROLLER_BUTTON_A:
+                        _self->_mainWindowController->dismissNotifications();
+                        break;
+                    default: break;
+                    }
+                }
             });
 
-            // Start ROS spinner loop
-            _self->_rosSpinTimerId = _self->startTimer(1);
-
-            Logger::logInfo(LogTag, "Initialization complete");
+            LOG_I(LogTag, "Initialization complete");
         });
-    }
-}
-
-void MainController::timerEvent(QTimerEvent *e)
-{
-    if (e->timerId() == _rosSpinTimerId)
-    {
-        ros::spinOnce();
     }
 }
 

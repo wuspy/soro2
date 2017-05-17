@@ -5,8 +5,6 @@
 #include <QCoreApplication>
 #include <QTimerEvent>
 
-#include "soro_core/rosnodelist.h"
-
 #include "videoserver.h"
 #include "settingsmodel.h"
 
@@ -23,19 +21,14 @@ public:
 
     static QString getId();
 
-protected:
-    void timerEvent(QTimerEvent *e);
-
 private:
     explicit MainController(QObject *parent=0);
     static MainController *_self;
 
     QString _id;
-    int _rosSpinTimerId;
 
     VideoServer *_videoServer = nullptr;
     SettingsModel *_settingsModel = nullptr;
-    RosNodeList *_rosNodeList = nullptr;
 };
 
 } // namespace Soro

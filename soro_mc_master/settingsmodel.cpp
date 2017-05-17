@@ -23,9 +23,8 @@
 #include <QJsonDocument>
 
 #define KEY_PING_INTERVAL "SORO_PING_INTERVAL"
+#define KEY_MQTT_BROKER_IP "SORO_MQTT_BROKER_IP"
 #define KEY_DATA_RATE_CALC_INTERVAL "SORO_DATARATE_CALC_INTERVAL"
-
-#define LogTag "MasterSettingsModel"
 
 namespace Soro {
 
@@ -34,6 +33,7 @@ QHash<QString, int> SettingsModel::getKeys() const
     QHash<QString, int> keys;
     keys.insert(KEY_PING_INTERVAL, QMetaType::UInt);
     keys.insert(KEY_DATA_RATE_CALC_INTERVAL, QMetaType::UInt);
+    keys.insert(KEY_MQTT_BROKER_IP, QMetaType::QString);
     return keys;
 }
 
@@ -42,6 +42,7 @@ QHash<QString, QVariant> SettingsModel::getDefaultValues() const
     QHash<QString, QVariant> defaults;
     defaults.insert(KEY_PING_INTERVAL, QVariant(500));
     defaults.insert(KEY_DATA_RATE_CALC_INTERVAL, QVariant(1000));
+    defaults.insert(KEY_MQTT_BROKER_IP, "127.0.0.1");
     return defaults;
 }
 
@@ -53,6 +54,11 @@ uint SettingsModel::getPingInterval() const
 uint SettingsModel::getDataRateCalcInterval() const
 {
     return _values.value(KEY_DATA_RATE_CALC_INTERVAL).toUInt();
+}
+
+QHostAddress SettingsModel::getMqttBrokerAddress() const
+{
+    return QHostAddress(_values.value(KEY_MQTT_BROKER_IP).toString());
 }
 
 } // namespace Soro

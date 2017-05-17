@@ -67,16 +67,6 @@ AudioProfile::AudioProfile(QString description)
     }
 }
 
-VideoProfile::VideoProfile(ros_generated::video msg)
-{
-    codec = msg.encoding;
-    width = msg.width;
-    height = msg.height;
-    framerate = msg.fps;
-    bitrate = msg.bitrate;
-    mjpeg_quality = msg.quality;
-}
-
 QString VideoProfile::toString() const
 {
     return QString("VP,%1,%2,%3,%4,%5,%6")
@@ -86,18 +76,6 @@ QString VideoProfile::toString() const
                  QString::number(framerate),
                  QString::number(bitrate),
                  QString::number(mjpeg_quality));
-}
-
-ros_generated::video VideoProfile::toRosMessage() const
-{
-    ros_generated::video msg;
-    msg.encoding = codec;
-    msg.width = width;
-    msg.height = height;
-    msg.fps = framerate;
-    msg.bitrate = bitrate;
-    msg.quality = mjpeg_quality;
-    return msg;
 }
 
 bool VideoProfile::operator==(const VideoProfile& other) const
@@ -116,25 +94,11 @@ AudioProfile::AudioProfile()
     bitrate = BITRATE_AUTO;
 }
 
-AudioProfile::AudioProfile(ros_generated::audio msg)
-{
-    codec = msg.encoding;
-    bitrate = msg.bitrate;
-}
-
 QString AudioProfile::toString() const
 {
     return QString("AP,%1,%2")
             .arg(QString::number(codec),
                  QString::number(bitrate));
-}
-
-ros_generated::audio AudioProfile::toRosMessage() const
-{
-    ros_generated::audio msg;
-    msg.encoding = codec;
-    msg.bitrate = bitrate;
-    return msg;
 }
 
 bool AudioProfile::operator==(const AudioProfile& other) const
@@ -219,6 +183,26 @@ QString createRtpAudioDecodeString(QHostAddress address, quint16 port, quint8 co
 QString createRtpVideoDecodeString(QHostAddress address, quint16 port, quint8 codec, bool vaapi)
 {
     return createRtpDepayString(address, port, codec) + " ! " + getVideoDecodeElement(codec, vaapi) + " ! videoconvert ! video/x-raw,format=RGB ! videoconvert";
+}
+
+QString createRtpVideoFileSaveString(QHostAddress address, quint16 port, quint8 codec, QString filePath, bool timeOverlay, QString textOverlay, bool decodeVaapi, bool encodeVaapi)
+{
+    QString bin = createRtpDepayString(address, port, codec) + " ! " + getVideoDecodeElement(codec, decodeVaapi) + " ! videoconvert ! video/x-raw,format=I420 ! ";
+    if (timeOverlay)
+    {
+        bin += "timeoverlay halignment=center valignment=top ! ";
+    }
+    if (!textOverlay.isEmpty())
+    {
+        bin += QString("textoverlay text=\"%1\" halignment=center valignment=bottom ! ").arg(textOverlay);
+    }
+
+    VideoProfile encodeProfile;
+    encodeProfile.codec = VIDEO_CODEC_H264;
+
+    bin += getVideoEncodeElement(encodeProfile, encodeVaapi) + QString(" ! queue ! avimux ! filesink location=\"%1\"").arg(filePath);
+
+    return bin;
 }
 
 QString createVideoTestSrcString(QString pattern, bool grayscale, quint16 width, quint16 height, quint16 framerate)

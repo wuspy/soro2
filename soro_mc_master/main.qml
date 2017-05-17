@@ -24,9 +24,12 @@ ApplicationWindow {
     visible: true
     minimumWidth: 400
     maximumWidth: 400
-    minimumHeight: connectedNodesLabel.y + connectedNodesLabel.height
-    maximumHeight: connectedNodesLabel.y + connectedNodesLabel.height
+    minimumHeight: videoBounceLabel.y + videoBounceLabel.height
+    maximumHeight: videoBounceLabel.y + videoBounceLabel.height
     title: "Mission Control Master"
+
+    property alias videoBounceLabelText: videoBounceLabel.text
+    property alias audioBounceLabelText: audioBounceLabel.text
 
     /*
       Connection status properties
@@ -133,20 +136,42 @@ ApplicationWindow {
         }
     }
 
-    Label {
-        id: connectedNodesLabelHeader
-        color: "black"
+    Label
+    {
+        id: audioBounceTitleLabel
+        anchors.left: dataRateLabel.left
+        anchors.right: pingLabel.right
         anchors.top: pingLabel.bottom
-        anchors.left: connectionStatusImage.left
         anchors.topMargin: 20
-        font.pixelSize: 20
-        text: "Connected Nodes"
+        text: "Audio Bounce Addresses"
+        font.bold: true
     }
 
-    Label {
-        id: connectedNodesLabel
-        anchors.top: connectedNodesLabelHeader.bottom
-        anchors.left: connectedNodesLabelHeader.left
-        text: connectedNodeInfo
+    Label
+    {
+        id: audioBounceLabel
+        anchors.left: audioBounceTitleLabel.left
+        anchors.right: audioBounceTitleLabel.right
+        anchors.top: audioBounceTitleLabel.bottom
+        text: "<ul><li>None</li></ul>"
+    }
+
+    Label
+    {
+        id: videoBounceTitleLabel
+        anchors.left: dataRateLabel.left
+        anchors.right: pingLabel.right
+        anchors.top: audioBounceLabel.bottom
+        text: "Video Bounce Addresses"
+        font.bold: true
+    }
+
+    Label
+    {
+        id: videoBounceLabel
+        anchors.left: videoBounceTitleLabel.left
+        anchors.right: videoBounceTitleLabel.right
+        anchors.top: videoBounceTitleLabel.bottom
+        text: "<ul><li>None</li></ul>"
     }
 }

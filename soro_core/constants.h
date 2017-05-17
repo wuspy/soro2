@@ -14,12 +14,18 @@
 #define SORO_DBUS_AUDIO_PARENT_SERVICE_NAME "edu.ou.soonerrover.audio_parent"
 #define SORO_DBUS_AUDIO_CHILD_SERVICE_NAME "edu.ou.soonerrover.audio_child"
 
-#define SORO_NET_MC_BROADCAST_PORT          5557
+#define SORO_NET_MC_BROADCAST_PORT          5552
+#define SORO_NET_GIMBAL_SYSTEM_PORT         5553
+#define SORO_NET_ARM_SYSTEM_PORT            5554
+#define SORO_NET_DRIVE_SYSTEM_PORT          5556
+#define SORO_NET_MQTT_BROKER_PORT           1883
 #define SORO_NET_MASTER_ARM_PORT            5558
 #define SORO_NET_AUDIO_PORT                 5559
 #define SORO_NET_FIRST_VIDEO_PORT           5560
+#define SORO_NET_LAST_VIDEO_PORT            5650
 #define SORO_NET_MC_AUDIO_PORT              5659
 #define SORO_NET_MC_FIRST_VIDEO_PORT        5660
+#define SORO_NET_MC_LAST_VIDEO_PORT         5750
 
 #define NOTIFICATION_TYPE_ERROR     0
 #define NOTIFICATION_TYPE_WARNING   1

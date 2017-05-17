@@ -16,6 +16,7 @@
 
 #include "armcontrolsystem.h"
 #include "maincontroller.h"
+#include "soro_core/armmessage.h"
 #include "soro_core/logger.h"
 #include "soro_core/constants.h"
 
@@ -24,58 +25,82 @@
 namespace Soro
 {
 
-ArmControlSystem::ArmControlSystem(QObject *parent) : QObject(parent)
+ArmControlSystem::ArmControlSystem(QHostAddress brokerAddress, quint16 brokerPort, int masterArmConnectionTimeout, QObject *parent) : QObject(parent)
 {
-    Logger::logInfo(LogTag, "Creating publisher...");
-    _armPublisher = _nh.advertise<std_msgs::UInt8MultiArray>("arm", 1);
-    if (!_armPublisher) MainController::panic(LogTag, "Failed to create ROS publisher for arm topic");
-    Logger::logInfo(LogTag, "Arm Publisher created");
-}
+    _enabled = false;
 
-void ArmControlSystem::initArmUdpSocket(){
-    Logger::logInfo(LogTag, "Initializing arm udp socket...");
-
-    try{
-        if(!_armUdpSocket.bind(SORO_NET_MASTER_ARM_PORT)){
-            MainController::panic(LogTag, QString("Cannot bind to mission control arm port: %1").arg(_armUdpSocket.errorString()));
-                        return;
-        }
-        connect(&_armUdpSocket, &QUdpSocket::readyRead, this, &ArmControlSystem::readArmData);
-    }
-    catch(QString err){
-        MainController::panic(LogTag, QString("Error initializing arm udp socket: %1").arg(err));
-                return;
-    }
-}
-
-void ArmControlSystem::readArmData()
-{
-    Logger::logInfo(LogTag, "Received arm datagram");
-    QByteArray armData;
-    QHostAddress address;
-    quint16 port;
-
-    while (_armUdpSocket.hasPendingDatagrams())
+    LOG_I(LogTag, "Creating UDP socket...");
+    if (!_armUdpSocket.bind(SORO_NET_MASTER_ARM_PORT))
     {
-        //resize buffer and fill with 0's
-        armData.fill(0, _armUdpSocket.pendingDatagramSize());
-
-        _armUdpSocket.readDatagram(armData.data(), armData.size(), &address, &port);
-
-        std_msgs::UInt8MultiArray armMessage;
-        armMessage.data.clear();
-
-        for(int i = 0; i < armData.size(); i++){
-            armMessage.data.push_back(armData.at(i));
-        }
-
-        _armPublisher.publish(armMessage);
-
-        Logger::logInfo(LogTag, QString("Published arm message containing: %1").arg(QString(armData.data())));
-
-
-
+        MainController::panic(LogTag, "Unable to bind master arm UDP socket");
     }
+    if (!_armUdpSocket.open(QIODevice::ReadWrite))
+    {
+        MainController::panic(LogTag, "Unable to open master arm UDP socket");
+    }
+
+    LOG_I(LogTag, "Creating MQTT client...");
+    _mqtt = new QMQTT::Client(brokerAddress, brokerPort, this);
+    _mqtt->setClientId("arm_control_system");
+    _mqtt->setAutoReconnect(true);
+    _mqtt->setAutoReconnectInterval(1000);
+    _mqtt->setWillMessage(_mqtt->clientId());
+    _mqtt->setWillQos(1);
+    _mqtt->setWillTopic("system_down");
+    _mqtt->setWillRetain(false);
+    _mqtt->connectToHost();
+
+    _watchdogTimer.setInterval(masterArmConnectionTimeout);
+
+    connect(&_armUdpSocket, &QUdpSocket::readyRead, this,[this]()
+    {
+        while (_armUdpSocket.hasPendingDatagrams())
+        {
+            qint64 len = _armUdpSocket.readDatagram(_buffer, USHRT_MAX);
+            if (_buffer[0] != 'm')
+            {
+                Logger::logWarn(LogTag, "Received invalid master arm message, discarding");
+                return;
+            }
+            if (!_masterConnected)
+            {
+                Logger::logInfo(LogTag, "Master arm is connected");
+                _masterConnected = true;
+                Q_EMIT masterArmConnectedChanged(true);
+            }
+            _watchdogTimer.stop();
+            _watchdogTimer.start();
+
+            if (_enabled && _mqtt->isConnectedToHost())
+            {
+                if (len > 1) // If this is only a heartbeat, length will be 1
+                {
+                    ArmMessage msg(QByteArray(_buffer, len));
+                    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "arm", msg, 0));
+                }
+            }
+        }
+    });
+
+    connect(&_watchdogTimer, &QTimer::timeout, this, [this]()
+    {
+       if (_masterConnected)
+       {
+           Logger::logWarn(LogTag, "Master arm is no longer connected");
+           _masterConnected = false;
+           Q_EMIT masterArmConnectedChanged(false);
+       }
+    });
+}
+
+void ArmControlSystem::enable()
+{
+    _enabled = true;
+}
+
+void ArmControlSystem::disable()
+{
+    _enabled = false;
 }
 
 }

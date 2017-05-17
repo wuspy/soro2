@@ -1,6 +1,7 @@
 #include "mastervideocontroller.h"
 #include "soro_core/logger.h"
 #include "soro_core/constants.h"
+#include "soro_core/addmediabouncemessage.h"
 
 #include "maincontroller.h"
 
@@ -8,60 +9,101 @@
 
 namespace Soro {
 
-MasterVideoController::MasterVideoController(const CameraSettingsModel *cameraSettings, const RosNodeList *rosNodeList, QObject *parent) : QObject(parent)
+MasterVideoController::MasterVideoController(const SettingsModel *settings, const CameraSettingsModel *cameraSettings, QObject *parent) : QObject(parent)
 {
     _cameraSettings = cameraSettings;
-    _rosNodeList = rosNodeList;
+    _settings = settings;
 
     for (int i = 0; i < cameraSettings->getCameraCount(); i++)
     {
         QUdpSocket *socket = new QUdpSocket(this);
 
-        if (!socket->bind(SORO_NET_FIRST_VIDEO_PORT + i))
+        if (!socket->bind())
         {
-            MainController::panic(LogTag, "Cannot bind to UDP port " + QString::number(SORO_NET_FIRST_VIDEO_PORT + i));
+            MainController::panic(LogTag, "Cannot bind UDP socket");
         }
         if (!socket->open(QIODevice::ReadWrite))
         {
-            MainController::panic(LogTag, "Cannot open UDP socket " + QString::number(SORO_NET_FIRST_VIDEO_PORT + i));
+            MainController::panic(LogTag, "Cannot open UDP socket");
         }
         connect(socket, &QUdpSocket::readyRead, this, [this, socket, i]()
         {
             this->onSocketReadyRead(socket, SORO_NET_MC_FIRST_VIDEO_PORT + i);
         });
         _videoSockets.append(socket);
-        Logger::logInfo(LogTag, "Bound UDP video socket " + QString::number(socket->localPort()));
+        LOG_I(LogTag, "Bound UDP video socket");
     }
 
-    _audioSocket = new QUdpSocket(this);
-    if (!_audioSocket->bind(SORO_NET_AUDIO_PORT))
-    {
-        MainController::panic(LogTag, "Cannot bind to UDP port " + QString::number(SORO_NET_AUDIO_PORT));
-    }
-    if (!_audioSocket->open(QIODevice::ReadWrite))
-    {
-        MainController::panic(LogTag, "Cannot open UDP socket " + QString::number(SORO_NET_AUDIO_PORT));
-    }
-
-    connect(_audioSocket, &QUdpSocket::readyRead, this, [this]()
-    {
-        this->onSocketReadyRead(_audioSocket, SORO_NET_MC_AUDIO_PORT);
-    });
-    Logger::logInfo(LogTag, "Bound UDP audio socket " + QString::number(_audioSocket->localPort()));
-
-    connect(_rosNodeList, &RosNodeList::nodesUpdated, this, &MasterVideoController::onRosNodeListUpdated);
+    LOG_I(LogTag, "Creating MQTT client...");
+    _mqtt = new QMQTT::Client(settings->getMqttBrokerAddress(), SORO_NET_MQTT_BROKER_PORT, this);
+    connect(_mqtt, &QMQTT::Client::received, this, &MasterVideoController::onMqttMessage);
+    connect(_mqtt, &QMQTT::Client::connected, this, &MasterVideoController::onMqttConnected);
+    connect(_mqtt, &QMQTT::Client::disconnected, this, &MasterVideoController::onMqttDisconnected);
+    _mqtt->setClientId("master_video_controller");
+    _mqtt->setAutoReconnect(true);
+    _mqtt->setAutoReconnectInterval(1000);
+    _mqtt->setWillMessage(_mqtt->clientId());
+    _mqtt->setWillQos(1);
+    _mqtt->setWillTopic("system_down");
+    _mqtt->setWillRetain(false);
+    _mqtt->connectToHost();
 
     _announceTimerId = startTimer(1000);
 }
 
-void MasterVideoController::onRosNodeListUpdated()
+void MasterVideoController::onMqttMessage(const QMQTT::Message &msg)
 {
-    _bounceAddresses.clear();
-    for (RosNodeList::Node node : _rosNodeList->getNodes())
+    if (msg.topic() == "video_bounce")
     {
-        if (node.name.startsWith("/mc_") && node.name != "/mc_master")
+        AddMediaBounceMessage bounceMsg(msg.payload());
+        if (bounceMsg.address == QHostAddress::Null)
         {
-            _bounceAddresses.append(node.address);
+            LOG_W(LogTag, "Got video_bounce message with invalid address");
+        }
+        else
+        {
+            if (!_bounceMap.contains(bounceMsg.clientID))
+            {
+                LOG_I(LogTag, "Adding client " + bounceMsg.clientID + " at " + bounceMsg.address.toString() + " to video bounce list");
+                _bounceMap.insert(bounceMsg.clientID, bounceMsg.address);
+                _bounceAddresses = _bounceMap.values();
+                Q_EMIT bounceAddressesChanged(_bounceMap);
+            }
+        }
+    }
+    else if (msg.topic() == "system_down")
+    {
+        QString clientID(msg.payload());
+
+        if (_bounceMap.contains(clientID))
+        {
+            LOG_I(LogTag, "Removing client " + clientID + " at " + _bounceMap.value(clientID).toString() + " from video bounce list");
+            _bounceMap.remove(clientID);
+            _bounceAddresses = _bounceMap.values();
+            Q_EMIT bounceAddressesChanged(_bounceMap);
+        }
+    }
+}
+
+void MasterVideoController::onMqttConnected()
+{
+    LOG_I(LogTag, "Connected to MQTT broker");
+    _mqtt->subscribe("video_bounce", 0);
+    _mqtt->subscribe("system_down", 1);
+}
+
+void MasterVideoController::onMqttDisconnected()
+{
+    LOG_W(LogTag, "Disconnected from MQTT broker");
+}
+
+void MasterVideoController::timerEvent(QTimerEvent *e)
+{
+    if (e->timerId() == _announceTimerId)
+    {
+        for (int i = 0; i < _videoSockets.size(); ++i)
+        {
+            _videoSockets[i]->writeDatagram("video", 6, _settings->getMqttBrokerAddress(), SORO_NET_FIRST_VIDEO_PORT + i);
         }
     }
 }

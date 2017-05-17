@@ -5,11 +5,13 @@
 #include <QString>
 #include <QHash>
 
+#include "soro_core_global.h"
+
 namespace Soro {
 
 /* Abstract class that can be made into a settings loader for environment variables.
  */
-class AbstractSettingsModel
+class SORO_CORE_EXPORT AbstractSettingsModel
 {
 public:
     /* Loads the settings from the environment. This will throw an exception of type QString if an error occurrs

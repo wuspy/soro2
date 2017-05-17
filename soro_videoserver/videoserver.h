@@ -1,19 +1,18 @@
-#ifndef MEDIASERVER_H
-#define MEDIASERVER_H
+#ifndef VIDEOSERVER_H
+#define VIDEOSERVER_H
 
 #include <QObject>
 #include <QTimerEvent>
 #include <QtDBus>
 #include <QHostAddress>
+#include <QUdpSocket>
 
-#include <ros/ros.h>
+#include "qmqtt/qmqtt.h"
 
+#include "settingsmodel.h"
+#include "soro_core/videomessage.h"
+#include "soro_core/videostatemessage.h"
 #include "soro_core/gstreamerutil.h"
-#include "soro_core/rosnodelist.h"
-
-#include "ros_generated/video.h"
-#include "ros_generated/video_state.h"
-#include "ros_generated/notification.h"
 
 namespace Soro {
 
@@ -21,9 +20,8 @@ class VideoServer : public QObject
 {
     Q_OBJECT
 public:
-    explicit VideoServer(int computerIndex, const RosNodeList *rosNodeList, QObject *parent = 0);
+    explicit VideoServer(const SettingsModel *settings, QObject *parent = 0);
     ~VideoServer();
-    void setShouldUseVaapiForCodec(quint8 codec, bool vaapi);
 
 public Q_SLOTS:
     void onChildError(QString childName, QString message);
@@ -31,18 +29,29 @@ public Q_SLOTS:
     void onChildStreaming(QString childName);
     void onChildLogInfo(QString childName, const QString &tag, const QString &message);
 
+Q_SIGNALS:
+    void mqttConnected();
+    void mqttDisconnected();
+
 protected:
     void timerEvent(QTimerEvent *e);
+
+private Q_SLOTS:
+    void onMqttConnected();
+    void onMqttDisconnected();
+    void onMqttMessage(const QMQTT::Message &msg);
 
 private:
     struct Assignment
     {
         QString device;
+        QString device2;
+        bool isStereo;
         QString cameraName;
         QHostAddress address;
         quint16 port;
         GStreamerUtil::VideoProfile profile;
-        ros_generated::video originalMessage;
+        VideoMessage originalMessage;
         bool vaapi;
 
         Assignment();
@@ -52,20 +61,13 @@ private:
     void terminateChild(QString childName);
     void reportVideoState();
 
-    void onVideoStateMessage(ros_generated::video_state msg);
-    void onVideoRequestMessage(ros_generated::video msg);
-
     QString findUsbCamera(QString serial, QString productId, QString vendorId, int offset);
 
-    int _computerIndex;
+    const SettingsModel *_settings;
     int _heartbeatTimerId;
-    const RosNodeList *_rosNodeList;
-    ros_generated::video_state _lastVideoStateMsg;
-    ros::NodeHandle _nh;
-    ros::Publisher _videoStatePublisher;
-    ros::Publisher _notificationPublisher;
-    ros::Subscriber _videoStateSubscriber;
-    ros::Subscriber _videoRequestSubscriber;
+    quint16 _nextMqttMsgId;
+    quint16 _nextVideoStateMsgId;
+    VideoStateMessage _lastVideoStateMsg;
 
     // These key to these hash sets is the device the child is assigned
     // to stream. Each child is spawned to stream a single device (usually
@@ -76,10 +78,15 @@ private:
     QHash<QString, QDBusInterface*> _childInterfaces;
     QHash<QString, Assignment> _waitingAssignments;
     QHash<QString, Assignment> _currentAssignments;
+    QHash<quint16, QUdpSocket*> _videoSockets;
+    QHash<quint16, QHostAddress> _clientAddresses;
+    QHash<quint16, quint16> _clientPorts;
     QHash<quint8, bool> _useVaapi;
+
+    QMQTT::Client *_mqtt;
 
 };
 
 } // namespace Soro
 
-#endif // MEDIASERVER_H
+#endif // VIDEOSERVER_H

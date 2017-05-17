@@ -61,7 +61,7 @@ QGst::ElementPtr QmlGStreamerPaintedItem::videoSink()
     }
     else
     {
-        Logger::logError(LogTag, "Failed to create qt5videosink");
+        LOG_E(LogTag, "Failed to create qt5videosink");
     }
 
     return _sink;

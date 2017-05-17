@@ -3,9 +3,9 @@
 
 #include <QObject>
 #include <QUdpSocket>
+#include <QTimer>
 
-#include "ros/ros.h"
-#include "std_msgs/UInt8MultiArray.h"
+#include "qmqtt/qmqtt.h"
 
 namespace Soro {
 
@@ -14,17 +14,24 @@ class ArmControlSystem: public QObject
     Q_OBJECT
 
 public:
-    explicit ArmControlSystem(QObject *parent=0);
+    explicit ArmControlSystem(QHostAddress brokerAddress, quint16 brokerPort, int masterArmConnectionTimeout, QObject *parent=0);
+
+Q_SIGNALS:
+    void dataWritten(uint bytes);
+    void masterArmConnectedChanged(bool connected);
+
+public Q_SLOTS:
+    void enable();
+    void disable();
 
 private:
-    ros::NodeHandle _nh;
-    ros::Publisher _armPublisher;
+    QTimer _watchdogTimer;
+    bool _enabled;
+    bool _masterConnected;
+    quint16 _nextMqttMsgId;
     QUdpSocket _armUdpSocket;
-
-    void initArmUdpSocket();
-
-private Q_SLOTS:
-    void readArmData();
+    QMQTT::Client *_mqtt;
+    char _buffer[USHRT_MAX];
 };
 
 }

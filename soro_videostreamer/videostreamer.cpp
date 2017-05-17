@@ -23,9 +23,6 @@
 #include <Qt5GStreamer/QGst/Bus>
 #include <QTimer>
 
-#include <sys/types.h>
-#include <unistd.h>
-
 #define LogTag "VideoStreamer"
 
 namespace Soro {
@@ -35,14 +32,14 @@ VideoStreamer::VideoStreamer(QString streamName, QObject *parent) : QObject(pare
     if (!QDBusConnection::sessionBus().isConnected())
     {
         // Not connected to d-bus
-        Logger::logError(LogTag, "Not connected to D-Bus system bus");
+        LOG_E(LogTag, "Not connected to D-Bus system bus");
         exit(12);
     }
 
     // Register this class as a D-Bus RPC service so other processes can call our public slots
     if (!QDBusConnection::sessionBus().registerObject("/", this, QDBusConnection::ExportAllSlots))
     {
-        Logger::logError(LogTag, "Cannot register as D-Bus RPC object: " + QDBusConnection::sessionBus().lastError().message());
+        LOG_E(LogTag, "Cannot register as D-Bus RPC object: " + QDBusConnection::sessionBus().lastError().message());
         exit(13);
     }
 
@@ -50,7 +47,7 @@ VideoStreamer::VideoStreamer(QString streamName, QObject *parent) : QObject(pare
     if (!_parentInterface->isValid())
     {
         // Could not create interface for parent process
-        Logger::logError(LogTag, "D-Bus parent interface is not valid");
+        LOG_E(LogTag, "D-Bus parent interface is not valid");
         exit(14);
     }
 
@@ -136,7 +133,7 @@ void VideoStreamer::timerEvent(QTimerEvent *e)
     if (e->timerId() == _watchdogTimerId)
     {
         stopPrivate(false);
-        Logger::logError(LogTag, "Watchdog expired");
+        LOG_E(LogTag, "Watchdog expired");
         exit(20);
     }
 }
