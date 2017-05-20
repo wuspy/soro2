@@ -307,6 +307,11 @@ void MainController::init(QApplication *app)
                 }
             });
 
+            connect(_self->_videoController, &VideoController::videoServerExited, _self, [](uint computer)
+            {
+                _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Video Server Stopped", "Video server #" + QString::number(computer) + " has either exited or crashed.");
+            });
+
             connect(_self->_mainWindowController, &MainWindowController::keyPressed, _self, [](int key)
             {
                 // TODO temporary hardcoded key bindings

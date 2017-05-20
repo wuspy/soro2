@@ -78,6 +78,7 @@ void VideoController::onMqttConnected()
 {
     LOG_I(LogTag, "Connected to MQTT broker");
     _mqtt->subscribe("video_state", 0);
+    _mqtt->subscribe("system_down", 2);
     Q_EMIT mqttConnected();
 }
 
@@ -123,6 +124,26 @@ void VideoController::onMqttMessage(const QMQTT::Message &msg)
                     // Video is NOT streaming
                     stopVideoOnSink(i);
                 }
+            }
+        }
+    }
+    else if (msg.topic() == "system_down")
+    {
+        QString client = QString(msg.payload());
+        if (client.startsWith("videoserver_"))
+        {
+            bool ok;
+            int computer = client.mid(client.indexOf("_") + 1).toInt(&ok);
+            if (ok && computer >= 0)
+            {
+                for (int i = 0; i < _cameraSettings->getCameraCount(); ++i)
+                {
+                    if (_cameraSettings->getCamera(i).computerIndex == computer)
+                    {
+                        stopVideoOnSink(i);
+                    }
+                }
+                Q_EMIT videoServerExited(computer);
             }
         }
     }
@@ -236,6 +257,7 @@ void VideoController::stop(uint cameraIndex)
         {
             LOG_E(LogTag, "Failed to send video OFF request to rover - mqtt not connected");
         }
+        stopVideoOnSink(cameraIndex);
     }
 }
 

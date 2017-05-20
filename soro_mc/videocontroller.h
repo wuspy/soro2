@@ -59,7 +59,9 @@ Q_SIGNALS:
      * rover is no longer streaming this camera, only that we could not play it
      */
     void gstError(QString message, uint cameraIndex);
-
+    /* Emitted when a video server on the rover exits or crashes
+     */
+    void videoServerExited(uint computerIndex);
     void mqttConnected();
     void mqttDisconnected();
 
