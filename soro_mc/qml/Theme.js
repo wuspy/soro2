@@ -6,4 +6,5 @@ var blue = "#1976D2"
 var background = "#a0000000"
 var foreground = "white"
 var shadow = "#000000"
+var shadowSpread = 0.25
 var blurRadius = 64

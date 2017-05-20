@@ -69,10 +69,10 @@ GamepadController::GamepadController(QObject *parent) : QObject(parent) {
 
     connect(&_searchTimer, &QTimer::timeout, this, [this]()
     {
+        SDL_GameControllerUpdate();
         LOG_I(LOG_TAG, QString("Searching for useable controllers (%1 candidates)...").arg(SDL_NumJoysticks()));
         for (int i = 0; i < SDL_NumJoysticks(); ++i)
         {
-
             if (SDL_IsGameController(i))
             {
                 SDL_GameController *controller = SDL_GameControllerOpen(i);

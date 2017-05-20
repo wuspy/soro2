@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 The University of Oklahoma.
+ * Copyright 2017 Jacob Jordan <doublejinitials@ou.edu>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,19 @@
  * limitations under the License.
  */
 
-
 import QtQuick 2.7
 import QtQuick.Controls 2.1
 import QtGraphicalEffects 1.0
 
 import "Theme.js" as Theme
 
-Item
-{
+Item {
     id: host
-    width: 900
-    height: 1200
-
-    /* Width of the notifications
-      */
-    property alias notificationWidth: list.width
+    width: 400
+    height: 200
+    property alias dismissButtonHint: buttonHint.button
+    property alias dismissKeyHint: buttonHint.key
+    property alias dismissButtonHintTheme: buttonHint.buttonTheme
 
     /* In order for the blur behind the notifications to work, you must specify the item
       from which to source the texture to blur. This item should be behind the notificaiton host,
@@ -37,173 +34,214 @@ Item
       */
     property Item blurSource
 
+    /* Width of the notifications
+      */
+    property int notificationWidth: 400
+
     /* Padding around the text and icon of the notification
       */
     property int padding: 8
 
-    /* Spacing between each notification in the list
-      */
-    property int spacing: 8
+    property var queue: [];
 
-    function notify(type, title, text)
-    {
-        notificationListModel.append({"item_type": type, "item_title": title, "item_text": text})
-    }
-
-    function dismiss()
-    {
-        notificationListModel.clear()
-    }
-
-    ListView
-    {
-        id: list
-        width: 400
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        height: contentHeight
-
-        model: ListModel
-        {
-            id: notificationListModel
+    function notify(level, title, message) {
+        if (messageItem.state == "visible") {
+            var remaining = queue.push({"level": level, "title": title, "message": message })
+        }
+        else {
+            messageItem.level = level
+            messageItem.title = title
+            messageItem.message = message
+            messageItem.state = "visible"
         }
 
-        delegate: Item
-        {
-            height: message.height + host.spacing
-            anchors.left: parent.left
-            anchors.right: parent.right
-            Item
-            {
-                id: message
-                anchors.left: parent.left
+        if (queue.length > 0) {
+            remainingLabel.text = "+" + queue.length + " more"
+        }
+        else {
+            remainingLabel.text = ""
+        }
+    }
+
+    function dismiss() {
+        messageItem.state = "hidden"
+        if (queue.length > 0) {
+            var notification = queue.shift()
+            notify(notification.level, notification.title, notification.message)
+        }
+    }
+
+    Item {
+        id: messageItem
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        height: buttonHint.y + buttonHint.height
+        state: "hidden"
+        width: notificationWidth
+
+        property string level: "info"
+        property alias title: notificationTitleLabel.text
+        property alias message: notificationLabel.text
+
+        states: [
+            State {
+                name: "visible"
+                PropertyChanges {
+                    target: messageItem
+                    opacity: 1
+                }
+            },
+            State {
+                name: "hidden"
+                PropertyChanges {
+                    target: messageItem
+                    opacity: 0
+                }
+            }
+        ]
+
+        transitions: [
+            Transition {
+                from: "visible"
+                to: "hidden"
+                PropertyAnimation {
+                    properties: "opacity"
+                    duration: 100
+                    easing.type: Easing.OutQuad
+                }
+            },
+            Transition {
+                from: "hidden"
+                to: "visible"
+                PropertyAnimation {
+                    properties: "opacity"
+                    duration: 100
+                    easing.type: Easing.InQuad
+                }
+            }
+        ]
+
+        DropShadow {
+            id: notificationShadow
+            anchors.fill: notificationPane
+            source: notificationPane
+            radius: 32
+            samples: radius
+            color: Theme.shadow
+        }
+
+        FastBlur {
+            id: notificationBlur
+            anchors.fill: notificationPane
+            source: ShaderEffectSource {
+               sourceItem: host.blurSource
+               sourceRect: Qt.rect(host.x + messageItem.x + x, host.y + messageItem.y + y, notificationBlur.width, notificationBlur.height)
+            }
+
+            radius: Theme.blurRadius
+        }
+
+        Rectangle {
+            id: notificationPane
+            width: host.notificationWidth
+            height: Math.max(notificationLabel.y + notificationLabel.height + host.padding,
+                             notificationImage.y + notificationImage.height + host.padding)
+            color: Theme.background
+
+            Text {
+                id: notificationTitleLabel
+                font.pixelSize: 20
+                font.bold: true
                 anchors.right: parent.right
-                height: Math.max(notificationLabel.y + notificationLabel.height + host.padding,
-                            notificationImage.y + notificationImage.height + host.padding)
+                anchors.rightMargin: host.padding
+                anchors.left: notificationImage.right
+                anchors.leftMargin: 12
+                anchors.top: parent.top
+                anchors.topMargin: host.padding
+                color: Theme.foreground
+                wrapMode: Text.ElideRight
+            }
 
-                DropShadow
-                {
-                    id: notificationShadow
-                    anchors.fill: notificationPane
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    source: notificationPane
-                    radius: 32
-                    samples: radius
-                    color: Theme.shadow
+            Text {
+                id: notificationLabel
+                anchors.topMargin: 0
+                anchors.leftMargin: 12
+                anchors.rightMargin: host.padding
+                anchors.right: parent.right
+                anchors.left: notificationImage.right
+                anchors.top: notificationTitleLabel.bottom
+                verticalAlignment: Text.AlignTop
+                wrapMode: Text.WordWrap
+                font.pixelSize: 14
+                color: Theme.foreground
+            }
+
+            Image {
+                id: notificationImage
+                height: 64
+                width: height
+                sourceSize.height: height
+                sourceSize.width: width
+                anchors.topMargin: host.padding
+                anchors.leftMargin: host.padding
+                anchors.rightMargin: 8
+                fillMode: Image.PreserveAspectFit
+                anchors.left: parent.left
+                anchors.top: parent.top
+                visible: false
+                source: {
+                   switch (messageItem.level) {
+                   case "info":
+                       "qrc:/icons/ic_info_white_48px.svg"
+                       break
+                   case "warning":
+                       "qrc:/icons/ic_warning_white_48px.svg"
+                       break
+                   case "error":
+                       "qrc:/icons/ic_error_white_48px.svg"
+                       break
+                   }
                 }
+            }
 
-                FastBlur
-                {
-                    id: notificationBlur
-                    anchors.fill: notificationPane
-                    source: ShaderEffectSource {
-                       sourceItem: host.blurSource
-                       sourceRect: Qt.rect(host.x + list.x + x, host.y + list.y + y, notificationBlur.width, notificationBlur.height)
-                    }
-
-                    radius: Theme.blurRadius
-                }
-
-                Rectangle
-                {
-                    id: notificationPane
-                    anchors.fill: parent
-                    //state: "visible"
-                    color: Theme.background
-
-                    Text
-                    {
-                        id: notificationTitleLabel
-                        text: item_title
-                        font.pixelSize: 20
-                        font.bold: true
-                        anchors.right: parent.right
-                        anchors.rightMargin: host.padding
-                        anchors.left: notificationImage.right
-                        anchors.leftMargin: 12
-                        anchors.top: parent.top
-                        anchors.topMargin: host.padding
-                        color: Theme.foreground
-                        wrapMode: Text.ElideRight
-                    }
-
-                    Text
-                    {
-                        id: notificationLabel
-                        text: item_text
-                        anchors.topMargin: 0
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: host.padding
-                        anchors.right: parent.right
-                        anchors.left: notificationImage.right
-                        anchors.top: notificationTitleLabel.bottom
-                        verticalAlignment: Text.AlignTop
-                        wrapMode: Text.WordWrap
-                        font.pixelSize: 14
-                        color: Theme.foreground
-                    }
-
-                    Image
-                    {
-                        id: notificationImage
-                        height: 96
-                        width: height
-                        sourceSize.height: height
-                        sourceSize.width: width
-                        anchors.topMargin: host.padding
-                        anchors.leftMargin: host.padding
-                        anchors.rightMargin: 8
-                        fillMode: Image.PreserveAspectFit
-                        anchors.left: parent.left
-                        anchors.top: parent.top
-                        visible: false
-                        source: {
-                           switch (item_type) {
-                           case "info":
-                               "qrc:/icons/ic_info_white_48px.svg"
-                               break
-                           case "warning":
-                               "qrc:/icons/ic_warning_white_48px.svg"
-                               break
-                           case "error":
-                               "qrc:/icons/ic_error_white_48px.svg"
-                               break
-                           }
-                        }
-                    }
-
-                    ColorOverlay
-                    {
-                        id: notificationImageColorOverlay
-                        anchors.fill: notificationImage
-                        source: notificationImage
-                        color: {
-                            switch (item_type)
-                            {
-                            case "info":
-                                Theme.blue
-                                break
-                            case "warning":
-                                Theme.yellow
-                                break
-                            case "error":
-                                Theme.red
-                                break
-                            }
-                        }
+            ColorOverlay {
+                id: notificationImageColorOverlay
+                anchors.fill: notificationImage
+                source: notificationImage
+                color: {
+                    switch (messageItem.level) {
+                    case "info":
+                        Theme.blue
+                        break
+                    case "warning":
+                        Theme.yellow
+                        break
+                    case "error":
+                        Theme.red
+                        break
                     }
                 }
             }
         }
-    }
 
-    ButtonHint
-    {
-        anchors.top: list.bottom
-        anchors.topMargin: 20
-        anchors.right: list.right
-        button: "a"
-        text: "Dismiss all"
-        visible: list.count > 0
+        Label {
+            id: remainingLabel
+            anchors.top: notificationPane.bottom
+            anchors.right: notificationPane.right
+            anchors.topMargin: 4
+            color: Theme.foreground
+            font.bold: true
+            font.pixelSize: 20
+        }
+
+        ButtonHint {
+            id: buttonHint
+            anchors.top: notificationPane.bottom
+            anchors.topMargin: 4
+            anchors.left: notificationPane.left
+            text: "Dismiss"
+            button: "dp_right"
+            key: "enter"
+        }
     }
 }

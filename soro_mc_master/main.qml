@@ -154,6 +154,7 @@ ApplicationWindow {
         anchors.right: audioBounceTitleLabel.right
         anchors.top: audioBounceTitleLabel.bottom
         text: "<ul><li>None</li></ul>"
+        wrapMode: Text.WordWrap
     }
 
     Label
@@ -173,5 +174,6 @@ ApplicationWindow {
         anchors.right: videoBounceTitleLabel.right
         anchors.top: videoBounceTitleLabel.bottom
         text: "<ul><li>None</li></ul>"
+        wrapMode: Text.WordWrap
     }
 }

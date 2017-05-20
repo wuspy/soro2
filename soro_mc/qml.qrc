@@ -1,12 +1,12 @@
 <RCC>
     <qresource prefix="/">
         <file>qml/main.qml</file>
-        <file>qml/NotificationHost.qml</file>
-        <file>qml/ViewSelector.qml</file>
         <file>qml/CameraThumbnailView.qml</file>
         <file>qml/ItemThumbnailView.qml</file>
-        <file>qml/MainContentView.qml</file>
         <file>qml/Theme.js</file>
         <file>qml/ButtonHint.qml</file>
+        <file>qml/NotificationHost.qml</file>
+        <file>qml/ViewSelector.qml</file>
+        <file>qml/MainContentView.qml</file>
     </qresource>
 </RCC>

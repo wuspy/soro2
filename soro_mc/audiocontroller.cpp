@@ -176,8 +176,6 @@ void AudioController::timerEvent(QTimerEvent *e)
         {
             if ((address.protocol() == QAbstractSocket::IPv4Protocol) && (address != QHostAddress::LocalHost))
             {
-                LOG_I(LogTag, "Sending our address(" + address.toString() + ") as an audio bounce location");
-
                 AddMediaBounceMessage msg;
                 msg.address = address;
                 msg.clientID = _mqtt->clientId();

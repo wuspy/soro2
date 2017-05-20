@@ -1,23 +1,54 @@
-import QtQuick 2.0
+/*
+ * Copyright 2017 Jacob Jordan <doublejinitials@ou.edu>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import QtQuick 2.7
 import QtWebEngine 1.4
 import Soro 1.0
 
 Item {
+    id: mainContentView
 
     property alias mapView: mapWebEngine
-    property alias video0Surface: video0Surface
-    property alias video1Surface: video1Surface
-    property alias video2Surface: video2Surface
-    property alias video3Surface: video3Surface
-    property alias video4Surface: video4Surface
-    property alias video5Surface: video5Surface
-    property alias video6Surface: video6Surface
-    property alias video7Surface: video7Surface
-    property alias video8Surface: video8Surface
-    property alias video9Surface: video9Surface
+    property variant videoSurfaces: []
 
-    property string activeView: "video0"
+    property int videoCount: 0
+    readonly property int viewCount: videoCount + 1
 
+    property int activeViewIndex: -1
+
+    onActiveViewIndexChanged: {
+        for (var i = 0; i < videoSurfaces.length; ++i) {
+            videoSurfaces[i].z = i == activeViewIndex ? 1 : 0
+            videoSurfaces[i].enabled = i == activeViewIndex
+        }
+        mapWebEngine.z = activeViewIndex == viewCount - 1 ? 1 : 0
+        mapWebEngine.enabled = activeViewIndex == viewCount - 1
+    }
+
+    onVideoCountChanged: {
+        while (videoSurfaces.length > 0) {
+            videoSurfaces.pop().destroy()
+        }
+
+        for (var i = 0; i < videoCount; ++i) {
+            var surface = Qt.createQmlObject("import QtQuick 2.7; import Soro 1.0; GStreamerSurface { anchors.fill: parent; z: 0; enabled: false; focus: false; }", mainContentView, "")
+            videoSurfaces.push(surface)
+        }
+        activeViewIndex = 0
+    }
 
     /*
       The web view that shows the Google Maps overlay
@@ -26,81 +57,8 @@ Item {
         id: mapWebEngine
         anchors.fill: parent
         url: "qrc:/html/map.html"
-        enabled: activeView === "map"
-        z: enabled ? 1 : 0
-    }
-
-    /*
-      GStreamer video surfaces, one per camera
-      */
-
-    GStreamerSurface {
-        id: video0Surface
-        anchors.fill: parent
-        enabled: activeView === "video0"
-        z: enabled ? 1 : 0
-    }
-
-    GStreamerSurface {
-        id: video1Surface
-        anchors.fill: parent
-        enabled: activeView === "video1"
-        z: enabled ? 1 : 0
-    }
-
-    GStreamerSurface {
-        id: video2Surface
-        anchors.fill: parent
-        enabled: activeView === "video2"
-        z: enabled ? 1 : 0
-    }
-
-    GStreamerSurface {
-        id: video3Surface
-        anchors.fill: parent
-        enabled: activeView === "video3"
-        z: enabled ? 1 : 0
-    }
-
-    GStreamerSurface {
-        id: video4Surface
-        anchors.fill: parent
-        enabled: activeView === "video4"
-        z: enabled ? 1 : 0
-    }
-
-    GStreamerSurface {
-        id: video5Surface
-        anchors.fill: parent
-        enabled: activeView === "video5"
-        z: enabled ? 1 : 0
-    }
-
-    GStreamerSurface {
-        id: video6Surface
-        anchors.fill: parent
-        enabled: activeView === "video6"
-        z: enabled ? 1 : 0
-    }
-
-    GStreamerSurface {
-        id: video7Surface
-        anchors.fill: parent
-        enabled: activeView === "video7"
-        z: enabled ? 1 : 0
-    }
-
-    GStreamerSurface {
-        id: video8Surface
-        anchors.fill: parent
-        enabled: activeView === "video8"
-        z: enabled ? 1 : 0
-    }
-
-    GStreamerSurface {
-        id: video9Surface
-        anchors.fill: parent
-        enabled: activeView === "video9"
-        z: enabled ? 1 : 0
+        z: 0
+        enabled: false
+        focus: false
     }
 }

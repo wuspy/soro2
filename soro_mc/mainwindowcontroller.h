@@ -12,6 +12,7 @@
 #include "settingsmodel.h"
 #include "soro_core/camerasettingsmodel.h"
 #include "soro_core/notificationmessage.h"
+#include "soro_core/mediaprofilesettingsmodel.h"
 #include "soro_core/gstreamerutil.h"
 
 namespace Soro {
@@ -21,7 +22,7 @@ class MainWindowController : public QObject
     Q_OBJECT
 public:
 
-    explicit MainWindowController(QQmlEngine *engine, const SettingsModel *settings,
+    explicit MainWindowController(QQmlEngine *engine, const SettingsModel *settings, const MediaProfileSettingsModel *mediaProfileSettings,
                                   const CameraSettingsModel *cameraSettings, QObject *parent = 0);
 
     void notify(NotificationMessage::Level level, QString title, QString message);
@@ -38,7 +39,7 @@ public Q_SLOTS:
     void onAudioProfileChanged(GStreamerUtil::AudioProfile profile);
     void onVideoProfileChanged(uint cameraIndex, GStreamerUtil::VideoProfile profile);
     void toggleSidebar();
-    void dismissNotifications();
+    void dismissNotification();
     void selectViewAbove();
     void selectViewBelow();
     void onConnectedChanged(bool connected);
@@ -55,6 +56,7 @@ private:
 
     quint16 _notificationMsgId;
     const SettingsModel *_settings;
+    const MediaProfileSettingsModel *_mediaProfileSettings;
     const CameraSettingsModel *_cameraSettings;
 
     QMQTT::Client *_mqtt;

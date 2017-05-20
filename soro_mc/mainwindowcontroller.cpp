@@ -30,10 +30,11 @@
 
 namespace Soro {
 
-MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsModel *settings,
+MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsModel *settings, const MediaProfileSettingsModel *mediaProfileSettings,
                                            const CameraSettingsModel *cameraSettings, QObject *parent) : QObject(parent)
 {
     _cameraSettings = cameraSettings;
+    _mediaProfileSettings = mediaProfileSettings;
     _settings = settings;
 
     QQmlComponent qmlComponent(engine, QUrl("qrc:/qml/main.qml"));
@@ -56,7 +57,8 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
     for (int i = 0; i < videoCount; i++)
     {
         // Set camera name
-        _window->setProperty(QString("video%1Name").arg(i).toLatin1().constData(), cameraSettings->getCamera(i).name);
+        //_window->setProperty(QString("video%1Name").arg(i).toLatin1().constData(), cameraSettings->getCamera(i).name);
+        QMetaObject::invokeMethod(_window, "setVideoName", Q_ARG(QVariant, i), Q_ARG(QVariant, cameraSettings->getCamera(i).name));
     }
 
     _window->setProperty("selectedView", "video0");
@@ -114,17 +116,23 @@ void MainWindowController::onMqttMessage(const QMQTT::Message &msg)
 QVector<QGst::ElementPtr> MainWindowController::getVideoSinks()
 {
     QVector<QGst::ElementPtr> sinks;
-    for (int i = 0; i < 10; ++i)
+    for (int i = 0; i < _cameraSettings->getCameraCount(); ++i)
     {
         if (_settings->getEnableHwRendering())
         {
             // Item should be of the class QmlGStreamerGlItem
-            sinks.append(qvariant_cast<QmlGStreamerGlItem*>(_window->property(QString("video%1Surface").arg(i).toLatin1().constData()))->videoSink());
+            QVariant returnValue;
+            QMetaObject::invokeMethod(_window, "getVideoSurface", Q_RETURN_ARG(QVariant, returnValue), Q_ARG(QVariant, i));
+            //sinks.append(qvariant_cast<QmlGStreamerGlItem*>(_window->property(QString("video%1Surface").arg(i).toLatin1().constData()))->videoSink());
+            sinks.append(qvariant_cast<QmlGStreamerGlItem*>(returnValue)->videoSink());
         }
         else
         {
             // Item should be of the class QmlGStreamerPaintedItem
-            sinks.append(qvariant_cast<QmlGStreamerPaintedItem*>(_window->property(QString("video%1Surface").arg(i).toLatin1().constData()))->videoSink());
+            QVariant returnValue;
+            QMetaObject::invokeMethod(_window, "getVideoSurface", Q_RETURN_ARG(QVariant, returnValue), Q_ARG(QVariant, i));
+            //sinks.append(qvariant_cast<QmlGStreamerPaintedItem*>(_window->property(QString("video%1Surface").arg(i).toLatin1().constData()))->videoSink());
+            sinks.append(qvariant_cast<QmlGStreamerPaintedItem*>(returnValue)->videoSink());
         }
     }
     return sinks;
@@ -136,13 +144,13 @@ void MainWindowController::notify(NotificationMessage::Level level, QString titl
     switch (level)
     {
     case NotificationMessage::Level_Error:
-        typeString = "info";
+        typeString = "error";
         break;
     case NotificationMessage::Level_Warning:
         typeString = "warning";
         break;
     case NotificationMessage::Level_Info:
-        typeString = "error";
+        typeString = "info";
         break;
     }
 
@@ -192,19 +200,21 @@ void MainWindowController::selectViewBelow()
     QMetaObject::invokeMethod(_window, "selectViewBelow");
 }
 
-void MainWindowController::dismissNotifications()
+void MainWindowController::dismissNotification()
 {
-    QMetaObject::invokeMethod(_window, "dismissNotifications");
+    QMetaObject::invokeMethod(_window, "dismissNotification");
 }
 
 void MainWindowController::onAudioProfileChanged(GStreamerUtil::AudioProfile profile)
 {
-
+    _window->setProperty("audioStreaming", profile.codec != GStreamerUtil::CODEC_NULL);
+    _window->setProperty("audioProfile", _mediaProfileSettings->getAudioProfileName(profile));
 }
 
 void MainWindowController::onVideoProfileChanged(uint cameraIndex, GStreamerUtil::VideoProfile profile)
 {
-
+    QMetaObject::invokeMethod(_window, "setVideoIsStreaming", Q_ARG(QVariant, cameraIndex), Q_ARG(QVariant, profile.codec != GStreamerUtil::CODEC_NULL));
+    QMetaObject::invokeMethod(_window, "setVideoProfileName", Q_ARG(QVariant, cameraIndex), Q_ARG(QVariant, _mediaProfileSettings->getVideoProfileName(profile)));
 }
 
 } // namespace Soro

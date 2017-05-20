@@ -204,6 +204,8 @@ void MainController::init(QApplication *app)
                                                                     _self);
                 _self->_driveControlSystem->setLimit(_self->_settingsModel->getDrivePowerLimit());
                 _self->_driveControlSystem->setSkidSteerFactor(_self->_settingsModel->getDriveSkidSteerFactor());
+                connect(_self->_gamepadController, &GamepadController::axisChanged,
+                        _self->_driveControlSystem, &DriveControlSystem::onGamepadAxisUpdate);
                 _self->_driveControlSystem->enable();
                 break;
             case SettingsModel::ArmOperatorConfiguration:
@@ -252,7 +254,7 @@ void MainController::init(QApplication *app)
             // Create the main UI
             //
             LOG_I(LogTag, "Creating main window...");
-            _self->_mainWindowController = new MainWindowController(_self->_qmlEngine, _self->_settingsModel, _self->_cameraSettingsModel, _self);
+            _self->_mainWindowController = new MainWindowController(_self->_qmlEngine, _self->_settingsModel, _self->_mediaProfileSettingsModel, _self->_cameraSettingsModel, _self);
 
             //
             // Create the video controller instance
@@ -293,8 +295,17 @@ void MainController::init(QApplication *app)
             {
                 _self->_mainWindowController->onVideoProfileChanged(cameraIndex, GStreamerUtil::VideoProfile());
             });
-            connect(_self->_gamepadController, &GamepadController::axisChanged,
-                    _self->_driveControlSystem, &DriveControlSystem::onGamepadAxisUpdate);
+            connect(_self->_gamepadController, &GamepadController::gamepadChanged, _self, [](bool connected, QString name)
+            {
+                if (connected)
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Info, name + " connected", "This controller is ready for use.");
+                }
+                else
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Controller disconnected", "No active controller available.");
+                }
+            });
 
             connect(_self->_mainWindowController, &MainWindowController::keyPressed, _self, [](int key)
             {
@@ -440,19 +451,27 @@ void MainController::init(QApplication *app)
                 case Qt::Key_Down:
                     _self->_mainWindowController->selectViewBelow();
                     break;
+                case Qt::Key_Return:
+                    _self->_mainWindowController->dismissNotification();
+                    break;
+                case Qt::Key_Left:
+                    _self->_mainWindowController->toggleSidebar();
+                    break;
                 default: break;
                 }
             });
 
             connect(_self->_gamepadController, &GamepadController::buttonPressed, _self, [](SDL_GameControllerButton btn, bool isPressed)
             {
-                if (_self->_driveControlSystem)
+                if (isPressed)
                 {
-                    // Temporary implementation for a 'turbo' button
                     switch (btn)
                     {
                     case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
-                        _self->_driveControlSystem->setLimit(isPressed ? 1.0 : 0.6);
+                        if (_self->_driveControlSystem)
+                        {
+                            _self->_driveControlSystem->setLimit(isPressed ? 1.0 : 0.6);
+                        }
                         break;
                     case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
                         _self->_mainWindowController->selectViewBelow();
@@ -460,11 +479,11 @@ void MainController::init(QApplication *app)
                     case SDL_CONTROLLER_BUTTON_DPAD_UP:
                         _self->_mainWindowController->selectViewAbove();
                         break;
-                    case SDL_CONTROLLER_BUTTON_Y:
+                    case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
                         _self->_mainWindowController->toggleSidebar();
                         break;
-                    case SDL_CONTROLLER_BUTTON_A:
-                        _self->_mainWindowController->dismissNotifications();
+                    case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                        _self->_mainWindowController->dismissNotification();
                         break;
                     default: break;
                     }

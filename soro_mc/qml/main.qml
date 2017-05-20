@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 The University of Oklahoma.
+ * Copyright 2017 Jacob Jordan <doublejinitials@ou.edu>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import Soro 1.0
 import "Theme.js" as Theme
 
 ApplicationWindow {
+    id: root
     visible: true
     width: 800
     height: 600
@@ -44,49 +45,45 @@ ApplicationWindow {
     property int dataRateDown: 0
 
     /*
-      Selected view in the UI, can be either 'map' or 'camera0'-'camera9'
+      Selected view in the UI, can be eselectedViewither 'map' or 'camera0'-'camera9'
       */
-    property alias selectedView: sidebarViewSelector.selectedView
+    property int selectedViewIndex: 0
 
     /*
       Number of videos available to show
       */
-    property alias videoCount: sidebarViewSelector.videoCount
+    property int videoCount: 0
 
     /*
-      Names used to label each video with
+      Total number of views, number of videos +1 for the map
       */
-    property alias video0Name: sidebarViewSelector.video0Name
-    property alias video1Name: sidebarViewSelector.video1Name
-    property alias video2Name: sidebarViewSelector.video2Name
-    property alias video3Name: sidebarViewSelector.video3Name
-    property alias video4Name: sidebarViewSelector.video4Name
-    property alias video5Name: sidebarViewSelector.video5Name
-    property alias video6Name: sidebarViewSelector.video6Name
-    property alias video7Name: sidebarViewSelector.video7Name
-    property alias video8Name: sidebarViewSelector.video8Name
-    property alias video9Name: sidebarViewSelector.video9Name
+    readonly property int viewCount: mainContentView.viewCount
 
-    /*
-      GStreamer surfaces for each video
-      */
-    property alias video0Surface: mainContentView.video0Surface
-    property alias video1Surface: mainContentView.video1Surface
-    property alias video2Surface: mainContentView.video2Surface
-    property alias video3Surface: mainContentView.video3Surface
-    property alias video4Surface: mainContentView.video4Surface
-    property alias video5Surface: mainContentView.video5Surface
-    property alias video6Surface: mainContentView.video6Surface
-    property alias video7Surface: mainContentView.video7Surface
-    property alias video8Surface: mainContentView.video8Surface
-    property alias video9Surface: mainContentView.video9Surface
+    function setVideoName(index, name) {
+        sidebarViewSelector.setViewTitle(index, name)
+    }
+
+    function setVideoIsStreaming(index, streaming) {
+        sidebarViewSelector.setViewIsStreaming(index, streaming)
+    }
+
+    function setVideoProfileName(index, name) {
+        sidebarViewSelector.setViewStreamProfileName(index, name)
+    }
+
+    function getVideoSurface(index) {
+        return mainContentView.videoSurfaces[index]
+    }
+
+    property string audioProfile: ""
+    property bool audioStreaming: false
+    property bool audioMuted: false
 
     /* Emitted when a key is pressed in the UI
       */
     signal keyPressed(int key)
 
-    /*
-      Fullscreen state of the application, boolean
+    /* Fullscreen state of the application, boolean
       */
     property bool fullscreen: false;
     onFullscreenChanged: {
@@ -98,15 +95,12 @@ ApplicationWindow {
         }
     }
 
-    function dismissNotifications()
-    {
+    function dismissNotification() {
         notificationHost.dismiss()
     }
 
-    function toggleSidebar()
-    {
-        switch (sidebarState)
-        {
+    function toggleSidebar() {
+        switch (sidebarState) {
         case "visible":
             sidebarState = "hidden"
             break
@@ -117,92 +111,37 @@ ApplicationWindow {
         }
     }
 
-    function selectViewBelow()
-    {
-        switch (selectedView)
-        {
-        case "video0":
-            selectedView = videoCount > 1 ? "video1" : "map"
-            break
-        case "video1":
-            selectedView = videoCount > 2 ? "video2" : "map"
-            break
-        case "video2":
-            selectedView = videoCount > 3 ? "video3" : "map"
-            break
-        case "video3":
-            selectedView = videoCount > 4 ? "video4" : "map"
-            break
-        case "video4":
-            selectedView = videoCount > 5 ? "video5" : "map"
-            break
-        case "video5":
-            selectedView = videoCount > 6 ? "video6" : "map"
-            break
-        case "video6":
-            selectedView = videoCount > 7 ? "video7" : "map"
-            break
-        case "video7":
-            selectedView = videoCount > 8 ? "video8" : "map"
-            break
-        case "video8":
-            selectedView = videoCount > 9 ? "video9" : "map"
-            break
-        case "video9":
-            selectedView = "map"
-            break
-        case "map":
-            selectedView = videoCount > 0 ? "video0" : "map"
-            break
+    function selectViewBelow() {
+        if (selectedViewIndex == viewCount - 1) {
+            selectedViewIndex = 0
+        }
+        else {
+            selectedViewIndex++
         }
     }
 
-    function selectViewAbove()
-    {
-        switch (selectedView)
-        {
-        case "video0":
-            selectedView = "map"
-            break
-        case "video1":
-            selectedView = "video0"
-            break
-        case "video2":
-            selectedView = "video1"
-            break
-        case "video3":
-            selectedView = "video2"
-            break
-        case "video4":
-            selectedView = "video3"
-            break
-        case "video5":
-            selectedView = "video4"
-            break
-        case "video6":
-            selectedView = "video5"
-            break
-        case "video7":
-            selectedView = "video6"
-            break
-        case "video8":
-            selectedView = "video7"
-            break
-        case "video9":
-            selectedView = "video8"
-            break
-        case "map":
-            selectedView = videoCount > 0 ? "video" + (videoCount - 1) : "map"
-            break
+    function selectViewAbove() {
+        if (selectedViewIndex == 0) {
+            selectedViewIndex = viewCount - 1
+        }
+        else {
+            selectedViewIndex--
         }
     }
 
-    Item {
-        id: keyItem
-        focus: true
-        Keys.onPressed: {
-            keyPressed(event.key)
+    onVideoCountChanged: {
+        mainContentView.videoCount = videoCount
+        sidebarViewSelector.clearItems()
+        for (var i = 0; i < videoCount; ++i) {
+            sidebarViewSelector.addItem(mainContentView.videoSurfaces[i], "Video " + i)
         }
+        sidebarViewSelector.addItem(mainContentView.mapView, "Map")
+        selectedViewIndex = 0
+    }
+
+    onSelectedViewIndexChanged: {
+        sidebarViewSelector.selectedViewIndex = selectedViewIndex
+        mainContentView.activeViewIndex = selectedViewIndex
     }
 
     function notify(type, title, text) {
@@ -212,7 +151,7 @@ ApplicationWindow {
     MainContentView {
         id: mainContentView
         anchors.fill: parent
-        activeView: sidebarViewSelector.selectedView
+        activeViewIndex: sidebarViewSelector.selectedViewIndex
     }
 
     /*
@@ -223,6 +162,7 @@ ApplicationWindow {
         anchors.fill: miniConnectionStatusImageColorOverlay
         radius: 20
         samples: 20
+        spread: Theme.shadowSpread
         visible: miniConnectionStatusImageColorOverlay.visible
     }
 
@@ -258,6 +198,7 @@ ApplicationWindow {
         anchors.fill: miniPingLabel
         radius: 10
         samples: 20
+        spread: Theme.shadowSpread
         color: Theme.shadow
     }
 
@@ -273,21 +214,61 @@ ApplicationWindow {
     }
 
     DropShadow {
-        source: activeViewLabel
-        anchors.fill: activeViewLabel
+        source: activeViewOverlay
+        anchors.fill: activeViewOverlay
         radius: 10
         samples: 20
+        spread: Theme.shadowSpread
         color: Theme.shadow
     }
 
-    Text {
-        id: activeViewLabel
-        color: Theme.foreground
-        font.pixelSize: 48
+    Item {
+        id: activeViewOverlay
+        anchors.top: parent.top
         anchors.rightMargin: 10
+        anchors.topMargin: 10
         anchors.right: parent.right
-        anchors.verticalCenter: miniConnectionStatusImage.verticalCenter
-        text: sidebarViewSelector.selectedViewTitle
+        width: activeViewLabel.width
+        height: profileImage.height + profileImage.y
+
+        Text {
+            id: activeViewLabel
+            color: Theme.foreground
+            font.pixelSize: 48
+            text: sidebarViewSelector.selectedViewTitle
+        }
+
+        ColorOverlay {
+            id: profileImageColorOverlay
+            anchors.fill: profileImage
+            source: profileImage
+            color: Theme.red
+            visible: sidebarViewSelector.selectedViewIsStreaming
+        }
+
+        Image {
+            id: profileImage
+            source: "qrc:/icons/ic_play_circle_filled_white_48px.svg"
+            visible: false
+            anchors.top: activeViewLabel.bottom
+            anchors.topMargin: 4
+            anchors.right: profileLabel.left
+            anchors.rightMargin: 10
+            width: 32
+            height: width
+            sourceSize: Qt.size(48, 48)
+        }
+
+        Text {
+            id: profileLabel
+            anchors.verticalCenter: profileImage.verticalCenter
+            anchors.right: parent.right
+            font.bold: true
+            font.pixelSize: 24
+            color: Theme.foreground
+            text: sidebarViewSelector.selectedViewStreamProfile.toUpperCase()
+            visible: sidebarViewSelector.selectedViewIsStreaming
+        }
     }
 
     /*
@@ -296,7 +277,8 @@ ApplicationWindow {
     DropShadow {
         anchors.fill: sidebar
         source: sidebar
-
+        spread: Theme.shadowSpread
+        color: Theme.shadow
         radius: 32
         samples: 64
     }
@@ -353,12 +335,12 @@ ApplicationWindow {
                 PropertyAnimation {
                     properties: "anchors.leftMargin"
                     duration: 400
-                    easing: Easing.InOutQuad
+                    easing.type: Easing.OutExpo
                 }
                 PropertyAnimation {
                     properties: "opacity"
                     duration: 400
-                    easing: Easing.InOutQuad
+                    easing.type: Easing.OutExpo
                 }
             },
             Transition {
@@ -367,12 +349,12 @@ ApplicationWindow {
                 PropertyAnimation {
                     properties: "anchors.leftMargin"
                     duration: 200
-                    easing: Easing.OutInQuad
+                    easing.type: Easing.OutExpo
                 }
                 PropertyAnimation {
                     properties: "opacity"
                     duration: 300
-                    easing: Easing.OutInQuad
+                    easing.type: Easing.OutExpo
                 }
             }
         ]
@@ -465,37 +447,71 @@ ApplicationWindow {
             }
         }
 
+        Image {
+            id: audioImage
+            width: 32
+            height: width
+            anchors.top: dataRateLabel.bottom
+            anchors.horizontalCenter: connectionStatusImage.horizontalCenter
+            anchors.topMargin: 4
+            source: audioStreaming ? "qrc:/icons/ic_volume_up_white_48px.svg" : "qrc:/icons/ic_volume_off_white_48px.svg"
+            sourceSize: Qt.size(48, 48)
+        }
+
+        Label {
+            id: audioLabel
+            anchors.verticalCenter: audioImage.verticalCenter
+            anchors.left: connectionStatusLabel.left
+            text: "Audio " + (audioStreaming ? (audioProfile + (audioMuted ? " [MUTE]" : "")) : " off")
+            font.bold: true
+            font.pixelSize: 20
+            color: Theme.foreground
+        }
+
         ViewSelector {
             id: sidebarViewSelector
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.top: dataRateLabel.bottom
+            anchors.top: audioImage.bottom
             anchors.bottom: parent.bottom
-            itemMargins: parent.width / 20
-            anchors.leftMargin: itemMargins
-            anchors.rightMargin: itemMargins
+            spacing: parent.width / 20
+            anchors.leftMargin: spacing
+            anchors.rightMargin: spacing
+            aspectRatio: root.width / root.height
 
-            mapThumbnailViewSource: mainContentView.mapView
-            video0ThumbnailViewSource: mainContentView.video0Surface
-            video1ThumbnailViewSource: mainContentView.video1Surface
-            video2ThumbnailViewSource: mainContentView.video2Surface
-            video3ThumbnailViewSource: mainContentView.video3Surface
-            video4ThumbnailViewSource: mainContentView.video4Surface
-            video5ThumbnailViewSource: mainContentView.video5Surface
-            video6ThumbnailViewSource: mainContentView.video6Surface
-            video7ThumbnailViewSource: mainContentView.video7Surface
-            video8ThumbnailViewSource: mainContentView.video8Surface
-            video9ThumbnailViewSource: mainContentView.video9Surface
+            onViewClicked: {
+                selectedViewIndex = index
+            }
         }
+    }
+
+    ButtonHint {
+        id: sidebarToggleButtonHint
+        visible: sidebar.state == "visible"
+        anchors.left: sidebar.right
+        anchors.bottom: parent.bottom
+        anchors.margins: 8
+        button: "dp_left"
+        key: "left"
+        text: "Toggle sidebar"
     }
 
     NotificationHost {
         id: notificationHost
-        notificationWidth: 500
+        notificationWidth: 400
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        anchors.left: sidebar.right
+        anchors.left: parent.left
         anchors.right: parent.right
         blurSource: mainContentView
+    }
+
+    Item {
+        id: keyItem
+        focus: true
+        onFocusChanged: focus = true
+        Keys.onPressed: {
+            keyPressed(event.key)
+        }
     }
 }

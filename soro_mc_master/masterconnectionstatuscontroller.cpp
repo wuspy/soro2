@@ -95,10 +95,10 @@ MasterConnectionStatusController::MasterConnectionStatusController
         _nextPing++;
     });
 
-    connect(&_dataRateCalcTimer, &QTimer::timerId, this, [this]()
+    connect(&_dataRateCalcTimer, &QTimer::timeout, this, [this]()
     {
-        quint64 rateUp = (float)_bytesUp / ((double)_dataRateCalcInterval / 1000.0f);
-        quint64 rateDown = (double)_bytesDown / ((double)_dataRateCalcInterval / 1000.0f);
+        quint64 rateUp = (float)_bytesUp / ((float)_dataRateCalcInterval / 1000.0f);
+        quint64 rateDown = (float)_bytesDown / ((float)_dataRateCalcInterval / 1000.0f);
         _bytesDown = _bytesUp = 0;
 
         // Send data_rate message on data_rate topic
