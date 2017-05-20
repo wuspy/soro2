@@ -204,8 +204,6 @@ void MainController::init(QApplication *app)
                                                                     _self);
                 _self->_driveControlSystem->setLimit(_self->_settingsModel->getDrivePowerLimit());
                 _self->_driveControlSystem->setSkidSteerFactor(_self->_settingsModel->getDriveSkidSteerFactor());
-                connect(_self->_gamepadController, &GamepadController::axisChanged,
-                        _self->_driveControlSystem, &DriveControlSystem::onGamepadAxisUpdate);
                 _self->_driveControlSystem->enable();
                 break;
             case SettingsModel::ArmOperatorConfiguration:
@@ -312,9 +310,18 @@ void MainController::init(QApplication *app)
                 _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Video Server Stopped", "Video server #" + QString::number(computer) + " has either exited or crashed.");
             });
 
+            if (_self->_driveControlSystem)
+            {
+                connect(_self->_gamepadController, &GamepadController::axisChanged,
+                        _self->_driveControlSystem, &DriveControlSystem::onGamepadAxisUpdate);
+                connect(_self->_driveControlSystem, &DriveControlSystem::driveSystemExited, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Drive System Stopped", "Drive system on the rover has either exited or crashed.");
+                });
+            }
+
             connect(_self->_mainWindowController, &MainWindowController::keyPressed, _self, [](int key)
             {
-                // TODO temporary hardcoded key bindings
                 switch (key)
                 {
                 case Qt::Key_1:

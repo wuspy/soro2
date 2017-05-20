@@ -35,6 +35,7 @@ public:
     int getInterval() const;
 
 Q_SIGNALS:
+    void driveSystemExited();
     void mqttConnected();
     void mqttDisconnected();
 

@@ -48,8 +48,27 @@ DriveControlSystem::DriveControlSystem(QHostAddress mqttAddress, quint16 mqttPor
 
     LOG_I(LogTag, "Creating MQTT client...");
     _mqtt = new QMQTT::Client(mqttAddress, mqttPort, this);
-    connect(_mqtt, &QMQTT::Client::connected, this, &DriveControlSystem::mqttConnected);
-    connect(_mqtt, &QMQTT::Client::disconnected, this, &DriveControlSystem::mqttDisconnected);
+    connect(_mqtt, &QMQTT::Client::connected, this, [this]()
+    {
+        Logger::logInfo(LogTag, "Connected to MQTT broker");
+        _mqtt->subscribe("system_down", 2);
+        Q_EMIT mqttConnected();
+    });
+    connect(_mqtt, &QMQTT::Client::received, this, [this](const QMQTT::Message& msg)
+    {
+        if (msg.topic() == "system_down")
+        {
+            if (QString(msg.payload()) == "drive")
+            {
+                Q_EMIT driveSystemExited();
+            }
+        }
+    });
+    connect(_mqtt, &QMQTT::Client::disconnected, this, [this]()
+    {
+        Logger::logInfo(LogTag, "Disconnected from MQTT broker");
+        Q_EMIT mqttDisconnected();
+    });
     _mqtt->setClientId("drive_control_system");
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
