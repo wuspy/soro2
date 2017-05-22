@@ -117,6 +117,7 @@ QString createRtpV4L2EncodeString(QString cameraDevice, QHostAddress address, qu
     return QString("v4l2src device=/dev/%1 ! "
                    "videoconvert ! "
                    "videoscale method=0 add-borders=true ! "
+                   "videorate drop-only=true ! "
                    "%2")
             .arg(cameraDevice,
                  createRtpVideoEncodeString(address, port, profile, vaapi));
@@ -124,15 +125,20 @@ QString createRtpV4L2EncodeString(QString cameraDevice, QHostAddress address, qu
 
 QString createRtpStereoV4L2EncodeString(QString leftCameraDevice, QString rightCameraDevice, QHostAddress address, quint16 port, VideoProfile profile, bool vaapi)
 {
-    return QString("gst-launch-1.0 v4l2src device=%5 ! "
+    return QString("v4l2src device=/dev/%5 ! "
+                   "videoconvert ! "
+                   "videoscale method=0 add-borders=true ! "
+                   "videorate drop-only=true ! "
                    "video/x-raw,width=%1,height=%2,framerate=%3/1 ! "
                    "videoscale method=0 add-borders=false ! "
                    "video/x-raw,width=%4,height=%2 ! "
                    "videobox left=-%4 ! "
                    "videomixer name=mix background=black ! "
-                   "video/x-raw,width=%1,height=%2 ! "
                    "%7 "
-                   "v4l2src device=%6 ! "
+                   "v4l2src device=/dev/%6 ! "
+                   "videoconvert ! "
+                   "videoscale method=0 add-borders=true ! "
+                   "videorate drop-only=true ! "
                    "video/x-raw,width=%1,height=%2,framerate=%3/1 ! "
                    "videoscale method=0 add-borders=false ! "
                    "video/x-raw,width=%4,height=%2 ! "

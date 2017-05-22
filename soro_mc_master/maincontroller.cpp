@@ -97,7 +97,7 @@ void MainController::init(QApplication *app)
             // Create the master video controller
             //
             LOG_I(LogTag, "Initializing master video controller...");
-            _self->_masterVideoController = new MasterVideoController(_self->_settings, _self->_cameraSettings, _self);
+            _self->_masterVideoController = new MasterVideoClient(_self->_settings, _self->_cameraSettings, _self);
 
             //
             // Create the master audio controller
@@ -126,12 +126,12 @@ void MainController::init(QApplication *app)
             connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::dataRateUpdate,
                     _self->_mainWindowController, &MainWindowController::onDataRateUpdated);
 
-            connect(_self->_masterVideoController, &MasterVideoController::bytesDown,
+            connect(_self->_masterVideoController, &MasterVideoClient::bytesDown,
                     _self->_masterConnectionStatusController, &MasterConnectionStatusController::logDataDown);
             connect(_self->_masterAudioController, &MasterAudioController::bytesDown,
                     _self->_masterConnectionStatusController, &MasterConnectionStatusController::logDataDown);
 
-            connect(_self->_masterVideoController, &MasterVideoController::bounceAddressesChanged,
+            connect(_self->_masterVideoController, &MasterVideoClient::bounceAddressesChanged,
                     _self->_mainWindowController, &MainWindowController::onVideoBounceAddressesChanged);
             connect(_self->_masterAudioController, &MasterAudioController::bounceAddressesChanged,
                     _self->_mainWindowController, &MainWindowController::onAudioBounceAddressesChanged);

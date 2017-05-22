@@ -62,7 +62,7 @@ VideoServer::VideoServer(const SettingsModel *settings, QObject *parent) : QObje
                             // Address has changed, see if there is a stream running
                             for (QString device : _waitingAssignments.keys())
                             {
-                                if (_waitingAssignments[device].originalMessage.camera_index == i - SORO_NET_FIRST_VIDEO_PORT)
+                                if (_waitingAssignments[device].message.camera_index == i - SORO_NET_FIRST_VIDEO_PORT)
                                 {
                                     // Modify this waiting assignment to point torwards the new address
                                     LOG_W(LogTag, "Client has changed addresses while a stream is queued, modifying the queued stream");
@@ -73,7 +73,7 @@ VideoServer::VideoServer(const SettingsModel *settings, QObject *parent) : QObje
                             }
                             for (QString device : _currentAssignments.keys())
                             {
-                                if (_currentAssignments[device].originalMessage.camera_index == i - SORO_NET_FIRST_VIDEO_PORT)
+                                if (_currentAssignments[device].message.camera_index == i - SORO_NET_FIRST_VIDEO_PORT)
                                 {
                                     // Stop this active assignment, and start a new one
                                     LOG_W(LogTag, "Client has changed addresses while a stream is in progress, attempting to restart");
@@ -118,7 +118,7 @@ VideoServer::VideoServer(const SettingsModel *settings, QObject *parent) : QObje
     connect(_mqtt, &QMQTT::Client::received, this, &VideoServer::onMqttMessage);
     connect(_mqtt, &QMQTT::Client::connected, this, &VideoServer::onMqttConnected);
     connect(_mqtt, &QMQTT::Client::disconnected, this, &VideoServer::onMqttDisconnected);
-    _mqtt->setClientId("videoserver_" + QString::number(settings->getComputerIndex()));
+    _mqtt->setClientId("video_server_" + QString::number(settings->getComputerIndex()));
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
     _mqtt->setWillMessage(_mqtt->clientId());
@@ -131,8 +131,8 @@ VideoServer::VideoServer(const SettingsModel *settings, QObject *parent) : QObje
 void VideoServer::onMqttConnected()
 {
     LOG_I(LogTag, "Connected to MQTT broker");
-    _mqtt->subscribe("video_request", 0);
-    _mqtt->subscribe("video_state", 0);
+    _mqtt->subscribe("video_request", 2);
+    _mqtt->subscribe("system_down", 1);
     Q_EMIT mqttConnected();
 }
 
@@ -182,13 +182,10 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
 
             Assignment assignment;
             assignment.device = cameraDevice;
-            assignment.cameraName = videoMsg.camera_name;
             assignment.vaapi = _useVaapi.value(videoMsg.profile.codec);
-            assignment.profile = videoMsg.profile;
-            assignment.isStereo = videoMsg.isStereo;
             assignment.address = _clientAddresses.value(SORO_NET_FIRST_VIDEO_PORT + videoMsg.camera_index);
             assignment.port = _clientPorts.value(SORO_NET_FIRST_VIDEO_PORT + videoMsg.camera_index);
-            assignment.originalMessage = videoMsg;
+            assignment.message = videoMsg;
 
             if (videoMsg.isStereo)
             {
@@ -244,7 +241,7 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
 
                         NotificationMessage notifyMsg;
                         notifyMsg.level = NotificationMessage::Level_Error;
-                        notifyMsg.title = "Cannot stream " + assignment.cameraName;
+                        notifyMsg.title = "Cannot stream " + assignment.message.camera_name;
                         notifyMsg.message = "Unexpected error - child process died before accepting its stream assignment.";
                         _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
 
@@ -256,7 +253,7 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
 
                         NotificationMessage notifyMsg;
                         notifyMsg.level = NotificationMessage::Level_Error;
-                        notifyMsg.title = "Error streaming " + assignment.cameraName;
+                        notifyMsg.title = "Error streaming " + assignment.message.camera_name;
                         notifyMsg.message = "Unexpected error while streaming this device. Try agian.";
                         _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
 
@@ -289,20 +286,29 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
             LOG_I(LogTag, "Received video request, but it's for a different server");
         }
     }
-    else if (msg.topic() == "video_state")
+    else if (msg.topic() == "system_down")
     {
-        VideoStateMessage videoStateMsg(msg.payload());
-        _lastVideoStateMsg = videoStateMsg;
+        QString clientID(msg.payload());
+        if (clientID == "master_video_client") // Master video client is down, stop all video streams
+        {
+            Logger::logWarn(LogTag, "Master video client has disconnected, stopping all video streams");
+            _waitingAssignments.clear();
+            for (QString device : _currentAssignments.keys())
+            {
+                _currentAssignments[device].message.profile.codec = GStreamerUtil::CODEC_NULL;
+                giveChildAssignment(_currentAssignments[device]);
+            }
+
+            reportVideoState();
+        }
     }
 }
 
 VideoServer::Assignment::Assignment()
 {
     device = "";
-    cameraName = "";
     address = QHostAddress::Null;
     port = 0;
-    profile = GStreamerUtil::VideoProfile();
 }
 
 VideoServer::~VideoServer()
@@ -405,14 +411,14 @@ void VideoServer::giveChildAssignment(Assignment assignment)
 {
     if (_childInterfaces.contains(assignment.device))
     {
-        if (assignment.profile.codec == GStreamerUtil::CODEC_NULL)
+        if (assignment.message.profile.codec == GStreamerUtil::CODEC_NULL)
         {
             _childInterfaces[assignment.device]->call(
                         QDBus::NoBlock,
                         "stop");
 
         }
-        else if (assignment.isStereo)
+        else if (assignment.message.isStereo)
         {
             _childInterfaces[assignment.device]->call(
                         QDBus::NoBlock,
@@ -421,7 +427,7 @@ void VideoServer::giveChildAssignment(Assignment assignment)
                         assignment.device2,
                         assignment.address.toString(),
                         assignment.port,
-                        assignment.profile.toString(),
+                        assignment.message.profile.toString(),
                         assignment.vaapi);
         }
         else
@@ -432,7 +438,7 @@ void VideoServer::giveChildAssignment(Assignment assignment)
                         assignment.device,
                         assignment.address.toString(),
                         assignment.port,
-                        assignment.profile.toString(),
+                        assignment.message.profile.toString(),
                         assignment.vaapi);
         }
     }
@@ -468,7 +474,7 @@ void VideoServer::onChildReady(QString childName)
         {
             NotificationMessage notifyMsg;
             notifyMsg.level = NotificationMessage::Level_Error;
-            notifyMsg.title = "Cannot stream " + _waitingAssignments.value(childName).cameraName;
+            notifyMsg.title = "Cannot stream " + _waitingAssignments.value(childName).message.camera_name;
             notifyMsg.message = "Unexpected error - cannot create D-Bus connection to child stream process";
             _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
             _waitingAssignments.remove(childName);
@@ -493,29 +499,17 @@ void VideoServer::onChildReady(QString childName)
 
 void VideoServer::reportVideoState()
 {
-    VideoStateMessage msg;
     LOG_I(LogTag, "Reporting video state through MQTT...");
-
-    // Add all video state messages from other computers
-    for (VideoMessage videoMsg : _lastVideoStateMsg.videoStates)
-    {
-        if (videoMsg.camera_computerIndex != _settings->getComputerIndex())
-        {
-            msg.videoStates.append(videoMsg);
-        }
-    }
 
     // Add all video state messages from this computer
     for (Assignment videoAssignment : _currentAssignments.values())
     {
-        if (videoAssignment.profile.codec != GStreamerUtil::CODEC_NULL)
-        {
-            msg.videoStates.append(videoAssignment.originalMessage);
-            LOG_I(LogTag, " - Appending state for " + videoAssignment.cameraName);
-        }
+        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++,
+                                      "video_state_" + QString::number(videoAssignment.message.camera_index),
+                                      videoAssignment.message,
+                                      2,
+                                      true)); // <-- Retain message
     }
-
-    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "video_state", msg, 0, true)); // <-- Retain message
 }
 
 void VideoServer::onChildError(QString childName, QString message)
@@ -526,7 +520,7 @@ void VideoServer::onChildError(QString childName, QString message)
         // Send a message on the notification topic
         NotificationMessage notifyMsg;
         notifyMsg.level = NotificationMessage::Level_Error;
-        notifyMsg.title = "Error streaming " + _currentAssignments.value(childName).cameraName;
+        notifyMsg.title = "Error streaming " + _currentAssignments.value(childName).message.camera_name;
         notifyMsg.message = "Stream error: " + message;
 
         _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));

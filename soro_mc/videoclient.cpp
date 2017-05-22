@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "videocontroller.h"
+#include "videoclient.h"
 #include "soro_core/constants.h"
 #include "soro_core/logger.h"
 #include "soro_core/gstreamerutil.h"
@@ -28,17 +28,16 @@
 
 #include "maincontroller.h"
 
-#define LogTag "VideoController"
+#define LogTag "VideoClient"
 
 namespace Soro {
 
-VideoController::VideoController(const SettingsModel *settings, const CameraSettingsModel *cameraSettings, QVector<QGst::ElementPtr> sinks, QObject *parent) : QObject(parent)
+VideoClient::VideoClient(const SettingsModel *settings, const CameraSettingsModel *cameraSettings, QVector<QGst::ElementPtr> sinks, QObject *parent) : QObject(parent)
 {
     _settings = settings;
     _cameraSettings = cameraSettings;
     _sinks = sinks;
 
-    // Fill video state lists with default values
     for (int i = 0; i < cameraSettings->getCameraCount(); ++i)
     {
         _pipelines.append(QGst::PipelinePtr());
@@ -51,10 +50,10 @@ VideoController::VideoController(const SettingsModel *settings, const CameraSett
 
     LOG_I(LogTag, "Creating MQTT client...");
     _mqtt = new QMQTT::Client(settings->getMqttBrokerAddress(), SORO_NET_MQTT_BROKER_PORT, this);
-    connect(_mqtt, &QMQTT::Client::received, this, &VideoController::onMqttMessage);
-    connect(_mqtt, &QMQTT::Client::connected, this, &VideoController::onMqttConnected);
-    connect(_mqtt, &QMQTT::Client::disconnected, this, &VideoController::onMqttDisconnected);
-    _mqtt->setClientId(MainController::getId() + "_video_controller");
+    connect(_mqtt, &QMQTT::Client::received, this, &VideoClient::onMqttMessage);
+    connect(_mqtt, &QMQTT::Client::connected, this, &VideoClient::onMqttConnected);
+    connect(_mqtt, &QMQTT::Client::disconnected, this, &VideoClient::onMqttDisconnected);
+    _mqtt->setClientId("video_client_" + MainController::getId());
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
     _mqtt->setWillMessage(_mqtt->clientId());
@@ -66,7 +65,7 @@ VideoController::VideoController(const SettingsModel *settings, const CameraSett
     _announceTimerId = startTimer(1000);
 }
 
-VideoController::~VideoController()
+VideoClient::~VideoClient()
 {
     for (int i = 0; i < _cameraSettings->getCameraCount(); ++i)
     {
@@ -74,82 +73,89 @@ VideoController::~VideoController()
     }
 }
 
-void VideoController::onMqttConnected()
+void VideoClient::onMqttConnected()
 {
     LOG_I(LogTag, "Connected to MQTT broker");
-    _mqtt->subscribe("video_state", 0);
+    for (int i = 0; i < _cameraSettings->getCameraCount(); ++i)
+    {
+        _mqtt->subscribe("video_state_" + QString::number(i), 1);
+    }
     _mqtt->subscribe("system_down", 2);
     Q_EMIT mqttConnected();
 }
 
-void VideoController::onMqttDisconnected()
+void VideoClient::onMqttDisconnected()
 {
     LOG_W(LogTag, "Disconnected from MQTT broker");
+    // Fill video state lists with default values
+    for (int i = 0; i < _cameraSettings->getCameraCount(); ++i)
+    {
+        _videoStates.append(GStreamerUtil::VideoProfile());
+        stopVideoOnSink(i);
+    }
     Q_EMIT mqttDisconnected();
 }
 
-void VideoController::onMqttMessage(const QMQTT::Message &msg)
+void VideoClient::onMqttMessage(const QMQTT::Message &msg)
 {
     LOG_I(LogTag, "Receiving MQTT message");
-    if (msg.topic() == "video_state")
+    if (msg.topic().startsWith("video_state_"))
     {
-        VideoStateMessage videoStateMsg(msg.payload());
+        VideoMessage videoMsg(msg.payload());
 
-        LOG_I(LogTag, "Received video_state message");
-        for (int i = 0; i < _videoStates.size(); ++i)
+        LOG_I(LogTag, "Received video state message for camera " + QString::number(videoMsg.camera_index));
+        if (videoMsg.camera_index < _videoStates.length())
         {
-            GStreamerUtil::VideoProfile newState = GStreamerUtil::VideoProfile();
-            GStreamerUtil::VideoProfile oldState = _videoStates.value(i);
-
-            for (VideoMessage videoMsg : videoStateMsg.videoStates)
-            {
-                if (videoMsg.camera_index == i)
-                {
-                    newState = videoMsg.profile;
-                    break;
-                }
-            }
-
-            if (newState != oldState)
+            if (videoMsg.profile != _videoStates.value(videoMsg.camera_index))
             {
                 // Video state has changed
-                _videoStates[i] = newState;
-                if (newState.codec != GStreamerUtil::CODEC_NULL)
+                _videoStates[videoMsg.camera_index] = videoMsg.profile;
+                if (videoMsg.profile.codec != GStreamerUtil::CODEC_NULL)
                 {
                     // Video is streaming
-                    playVideoOnSink(i, newState);
+                    playVideoOnSink(videoMsg.camera_index, videoMsg.profile);
                 }
                 else
                 {
                     // Video is NOT streaming
-                    stopVideoOnSink(i);
+                    stopVideoOnSink(videoMsg.camera_index);
                 }
             }
+        }
+        else
+        {
+            LOG_E(LogTag, "Received video_state message for camera " + QString::number(videoMsg.camera_index) + ", but this number is too big to be a camera index that we know of");
         }
     }
     else if (msg.topic() == "system_down")
     {
         QString client = QString(msg.payload());
-        if (client.startsWith("videoserver_"))
+        if (client.startsWith("video_server_"))
         {
             bool ok;
-            int computer = client.mid(client.indexOf("_") + 1).toInt(&ok);
-            if (ok && computer >= 0)
+            int serverIndex = client.mid(client.lastIndexOf("_") + 1).toInt(&ok);
+            if (ok && serverIndex >= 0)
             {
+                LOG_W(LogTag, "Video server " + QString::number(serverIndex) + " has disconnected");
                 for (int i = 0; i < _cameraSettings->getCameraCount(); ++i)
                 {
-                    if (_cameraSettings->getCamera(i).computerIndex == computer)
+                    if (_cameraSettings->getCamera(i).computerIndex == serverIndex)
                     {
                         stopVideoOnSink(i);
                     }
                 }
-                Q_EMIT videoServerExited(computer);
+                Q_EMIT videoServerDisconnected(serverIndex);
             }
+        }
+        else if (client == "master_video_client")
+        {
+            LOG_W(LogTag, "Master video client has disconnected");
+            Q_EMIT masterVideoClientDisconnected();
         }
     }
 }
 
-void VideoController::play(uint cameraIndex, GStreamerUtil::VideoProfile profile)
+void VideoClient::play(uint cameraIndex, GStreamerUtil::VideoProfile profile)
 {
     if (cameraIndex < (uint)_cameraSettings->getCameraCount())
     {
@@ -172,7 +178,7 @@ void VideoController::play(uint cameraIndex, GStreamerUtil::VideoProfile profile
     }
 }
 
-void VideoController::constructPipelineOnSink(uint cameraIndex, QString sourceBinString)
+void VideoClient::constructPipelineOnSink(uint cameraIndex, QString sourceBinString)
 {
     if (cameraIndex < (uint)_cameraSettings->getCameraCount())
     {
@@ -205,13 +211,13 @@ void VideoController::constructPipelineOnSink(uint cameraIndex, QString sourceBi
         _bins[cameraIndex]->link(_sinks[cameraIndex]);
 
         _pipelineWatches[cameraIndex] = new GStreamerPipelineWatch(cameraIndex, _pipelines[cameraIndex], this);
-        connect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::error, this, &VideoController::gstError);
+        connect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::error, this, &VideoClient::gstError);
 
         _pipelines[cameraIndex]->setState(QGst::StatePlaying);
     }
 }
 
-void VideoController::stopVideoOnSink(uint cameraIndex)
+void VideoClient::stopVideoOnSink(uint cameraIndex)
 {
     if (cameraIndex < (uint)_cameraSettings->getCameraCount())
     {
@@ -223,7 +229,7 @@ void VideoController::stopVideoOnSink(uint cameraIndex)
     }
 }
 
-void VideoController::playVideoOnSink(uint cameraIndex, GStreamerUtil::VideoProfile profile)
+void VideoClient::playVideoOnSink(uint cameraIndex, GStreamerUtil::VideoProfile profile)
 {
     if (cameraIndex < (uint)_cameraSettings->getCameraCount())
     {
@@ -239,7 +245,7 @@ void VideoController::playVideoOnSink(uint cameraIndex, GStreamerUtil::VideoProf
     }
 }
 
-void VideoController::stop(uint cameraIndex)
+void VideoClient::stop(uint cameraIndex)
 {
     if (cameraIndex < (uint)_cameraSettings->getCameraCount())
     {
@@ -261,7 +267,7 @@ void VideoController::stop(uint cameraIndex)
     }
 }
 
-void VideoController::stopAll()
+void VideoClient::stopAll()
 {
     for (int i = 0; i < _cameraSettings->getCameraCount(); ++i)
     {
@@ -269,7 +275,7 @@ void VideoController::stopAll()
     }
 }
 
-void VideoController::clearPipeline(uint cameraIndex)
+void VideoClient::clearPipeline(uint cameraIndex)
 {
     if (!_pipelines.value(cameraIndex).isNull())
     {
@@ -279,13 +285,13 @@ void VideoController::clearPipeline(uint cameraIndex)
     }
     if (_pipelineWatches.value(cameraIndex) != nullptr)
     {
-        disconnect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::error, this, &VideoController::gstError);
+        disconnect(_pipelineWatches[cameraIndex], &GStreamerPipelineWatch::error, this, &VideoClient::gstError);
         delete _pipelineWatches[cameraIndex];
         _pipelineWatches[cameraIndex] = nullptr;
     }
 }
 
-void VideoController::timerEvent(QTimerEvent *e)
+void VideoClient::timerEvent(QTimerEvent *e)
 {
     if (e->timerId() == _announceTimerId)
     {
@@ -305,12 +311,12 @@ void VideoController::timerEvent(QTimerEvent *e)
     }
 }
 
-bool VideoController::isPlaying(uint cameraIndex) const
+bool VideoClient::isPlaying(uint cameraIndex) const
 {
     return _videoStates.value(cameraIndex).codec != GStreamerUtil::CODEC_NULL;
 }
 
-GStreamerUtil::VideoProfile VideoController::getVideoProfile(uint cameraIndex) const
+GStreamerUtil::VideoProfile VideoClient::getVideoProfile(uint cameraIndex) const
 {
     return _videoStates.value(cameraIndex);
 }

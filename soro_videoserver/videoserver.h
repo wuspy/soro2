@@ -46,12 +46,9 @@ private:
     {
         QString device;
         QString device2;
-        bool isStereo;
-        QString cameraName;
         QHostAddress address;
         quint16 port;
-        GStreamerUtil::VideoProfile profile;
-        VideoMessage originalMessage;
+        VideoMessage message;
         bool vaapi;
 
         Assignment();
@@ -66,8 +63,6 @@ private:
     const SettingsModel *_settings;
     int _heartbeatTimerId;
     quint16 _nextMqttMsgId;
-    quint16 _nextVideoStateMsgId;
-    VideoStateMessage _lastVideoStateMsg;
 
     // These key to these hash sets is the device the child is assigned
     // to stream. Each child is spawned to stream a single device (usually

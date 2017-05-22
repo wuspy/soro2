@@ -10,7 +10,7 @@
 #include "settingsmodel.h"
 #include "mainwindowcontroller.h"
 #include "masterconnectionstatuscontroller.h"
-#include "mastervideocontroller.h"
+#include "mastervideoclient.h"
 #include "masteraudiocontroller.h"
 
 namespace Soro {
@@ -31,7 +31,7 @@ private:
     SettingsModel *_settings = nullptr;
     CameraSettingsModel *_cameraSettings = nullptr;
     QQmlEngine *_qmlEngine = nullptr;
-    MasterVideoController *_masterVideoController = nullptr;
+    MasterVideoClient *_masterVideoController = nullptr;
     MasterAudioController *_masterAudioController = nullptr;
     MainWindowController *_mainWindowController = nullptr;
     MasterConnectionStatusController *_masterConnectionStatusController = nullptr;

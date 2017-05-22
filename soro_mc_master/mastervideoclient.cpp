@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-#include "mastervideocontroller.h"
+#include "mastervideoclient.h"
 #include "soro_core/logger.h"
 #include "soro_core/constants.h"
 #include "soro_core/addmediabouncemessage.h"
 
 #include "maincontroller.h"
 
-#define LogTag "MasterVideoController"
+#define LogTag "MasterVideoClient"
 
 namespace Soro {
 
-MasterVideoController::MasterVideoController(const SettingsModel *settings, const CameraSettingsModel *cameraSettings, QObject *parent) : QObject(parent)
+MasterVideoClient::MasterVideoClient(const SettingsModel *settings, const CameraSettingsModel *cameraSettings, QObject *parent) : QObject(parent)
 {
     _cameraSettings = cameraSettings;
     _settings = settings;
+    _nextMqttMsgId = 1;
 
     for (int i = 0; i < cameraSettings->getCameraCount(); i++)
     {
@@ -52,10 +53,10 @@ MasterVideoController::MasterVideoController(const SettingsModel *settings, cons
 
     LOG_I(LogTag, "Creating MQTT client...");
     _mqtt = new QMQTT::Client(settings->getMqttBrokerAddress(), SORO_NET_MQTT_BROKER_PORT, this);
-    connect(_mqtt, &QMQTT::Client::received, this, &MasterVideoController::onMqttMessage);
-    connect(_mqtt, &QMQTT::Client::connected, this, &MasterVideoController::onMqttConnected);
-    connect(_mqtt, &QMQTT::Client::disconnected, this, &MasterVideoController::onMqttDisconnected);
-    _mqtt->setClientId("master_video_controller");
+    connect(_mqtt, &QMQTT::Client::received, this, &MasterVideoClient::onMqttMessage);
+    connect(_mqtt, &QMQTT::Client::connected, this, &MasterVideoClient::onMqttConnected);
+    connect(_mqtt, &QMQTT::Client::disconnected, this, &MasterVideoClient::onMqttDisconnected);
+    _mqtt->setClientId("master_video_client");
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
     _mqtt->setWillMessage(_mqtt->clientId());
@@ -67,10 +68,13 @@ MasterVideoController::MasterVideoController(const SettingsModel *settings, cons
     _announceTimerId = startTimer(1000);
 }
 
-void MasterVideoController::onMqttMessage(const QMQTT::Message &msg)
+void MasterVideoClient::onMqttMessage(const QMQTT::Message &msg)
 {
     if (msg.topic() == "video_bounce")
     {
+        //
+        // A video client is requesting video forwarding
+        //
         AddMediaBounceMessage bounceMsg(msg.payload());
         if (bounceMsg.address == QHostAddress::Null)
         {
@@ -93,27 +97,63 @@ void MasterVideoController::onMqttMessage(const QMQTT::Message &msg)
 
         if (_bounceMap.contains(clientID))
         {
+            //
+            // A video client has exited, remove it from our forwarding list
+            //
             LOG_I(LogTag, "Removing client " + clientID + " at " + _bounceMap.value(clientID).toString() + " from video bounce list");
             _bounceMap.remove(clientID);
             _bounceAddresses = _bounceMap.values();
             Q_EMIT bounceAddressesChanged(_bounceMap);
         }
+        else if (clientID.startsWith("video_server_"))
+        {
+            bool ok;
+            int serverIndex = clientID.mid(clientID.lastIndexOf("_") + 1).toInt(&ok);
+            if (ok && serverIndex >= 0)
+            {
+                //
+                // One of the video servers has gone down
+                //
+                LOG_W(LogTag, "Video server " + QString::number(serverIndex) + " has disconnected");
+                for (int cameraIndex : _videoStateMessages.keys())
+                {
+                    if (_videoStateMessages[cameraIndex].camera_computerIndex == serverIndex)
+                    {
+                        _videoStateMessages[cameraIndex].profile.codec = GStreamerUtil::CODEC_NULL;
+                        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++,
+                                                      "video_state_" + QString::number(cameraIndex),
+                                                      _videoStateMessages[cameraIndex],
+                                                      2,
+                                                      true)); // <-- Retain message
+                    }
+                }
+            }
+        }
+    }
+    else if (msg.topic().startsWith("video_state_"))
+    {
+        VideoMessage videoMsg(msg.payload());
+        _videoStateMessages[videoMsg.camera_index] = videoMsg;
     }
 }
 
-void MasterVideoController::onMqttConnected()
+void MasterVideoClient::onMqttConnected()
 {
     LOG_I(LogTag, "Connected to MQTT broker");
     _mqtt->subscribe("video_bounce", 0);
     _mqtt->subscribe("system_down", 1);
+    for (int i = 0; i < _cameraSettings->getCameraCount(); ++i)
+    {
+        _mqtt->subscribe("video_state_" + QString::number(i), 2);
+    }
 }
 
-void MasterVideoController::onMqttDisconnected()
+void MasterVideoClient::onMqttDisconnected()
 {
     LOG_W(LogTag, "Disconnected from MQTT broker");
 }
 
-void MasterVideoController::timerEvent(QTimerEvent *e)
+void MasterVideoClient::timerEvent(QTimerEvent *e)
 {
     if (e->timerId() == _announceTimerId)
     {
@@ -124,7 +164,7 @@ void MasterVideoController::timerEvent(QTimerEvent *e)
     }
 }
 
-void MasterVideoController::onSocketReadyRead(QUdpSocket *socket, quint16 bouncePort)
+void MasterVideoClient::onSocketReadyRead(QUdpSocket *socket, quint16 bouncePort)
 {
     quint32 totalLen = 0;
     while (socket->hasPendingDatagrams())

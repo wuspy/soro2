@@ -1,5 +1,5 @@
-#ifndef MASTERVIDEOCONTROLLER_H
-#define MASTERVIDEOCONTROLLER_H
+#ifndef MASTERVIDEOCLIENT_H
+#define MASTERVIDEOCLIENT_H
 
 #include <QObject>
 #include <QUdpSocket>
@@ -11,15 +11,16 @@
 #include "qmqtt/qmqtt.h"
 
 #include "soro_core/camerasettingsmodel.h"
+#include "soro_core/videomessage.h"
 #include "settingsmodel.h"
 
 namespace Soro {
 
-class MasterVideoController : public QObject
+class MasterVideoClient : public QObject
 {
     Q_OBJECT
 public:
-    explicit MasterVideoController(const SettingsModel *settings, const CameraSettingsModel *cameraSettings, QObject *parent = 0);
+    explicit MasterVideoClient(const SettingsModel *settings, const CameraSettingsModel *cameraSettings, QObject *parent = 0);
 
 Q_SIGNALS:
     void bytesDown(quint32 bytes);
@@ -38,6 +39,7 @@ private:
 
     char _buffer[65536];
     int _announceTimerId;
+    quint16 _nextMqttMsgId;
     QMQTT::Client *_mqtt;
     const SettingsModel *_settings;
     const CameraSettingsModel *_cameraSettings;
@@ -47,8 +49,9 @@ private:
     QUdpSocket *_audioSocket;
     QHash<QString, QHostAddress> _bounceMap;
     QList<QHostAddress> _bounceAddresses;
+    QHash<uint, VideoMessage> _videoStateMessages;
 };
 
 } // namespace Soro
 
-#endif // MASTERVIDEOCONTROLLER_H
+#endif // MASTERVIDEOCLIENT_H

@@ -258,11 +258,11 @@ void MainController::init(QApplication *app)
             // Create the video controller instance
             //
             LOG_I(LogTag, "Initializing video controller...");
-            _self->_videoController = new VideoController(_self->_settingsModel, _self->_cameraSettingsModel, _self->_mainWindowController->getVideoSinks(), _self);
+            _self->_videoController = new VideoClient(_self->_settingsModel, _self->_cameraSettingsModel, _self->_mainWindowController->getVideoSinks(), _self);
 
 
             // Forward audio/video errors to the UI
-            connect(_self->_videoController, &VideoController::gstError, _self, [](QString message, uint cameraIndex)
+            connect(_self->_videoController, &VideoClient::gstError, _self, [](QString message, uint cameraIndex)
             {
                 _self->_self->_mainWindowController->notify(NotificationMessage::Level_Error,
                                               "Error playing " + _self->_cameraSettingsModel->getCamera(cameraIndex).name,
@@ -287,9 +287,9 @@ void MainController::init(QApplication *app)
             {
                 _self->_mainWindowController->onAudioProfileChanged(GStreamerUtil::AudioProfile());
             });
-            connect(_self->_videoController, &VideoController::playing,
+            connect(_self->_videoController, &VideoClient::playing,
                     _self->_mainWindowController, &MainWindowController::onVideoProfileChanged);
-            connect(_self->_videoController, &VideoController::stopped, _self, [](uint cameraIndex)
+            connect(_self->_videoController, &VideoClient::stopped, _self, [](uint cameraIndex)
             {
                 _self->_mainWindowController->onVideoProfileChanged(cameraIndex, GStreamerUtil::VideoProfile());
             });
@@ -305,9 +305,14 @@ void MainController::init(QApplication *app)
                 }
             });
 
-            connect(_self->_videoController, &VideoController::videoServerExited, _self, [](uint computer)
+            connect(_self->_videoController, &VideoClient::videoServerDisconnected, _self, [](uint computer)
             {
                 _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Video Server Stopped", "Video server #" + QString::number(computer) + " has either exited or crashed.");
+            });
+
+            connect(_self->_videoController, &VideoClient::masterVideoClientDisconnected, _self, []()
+            {
+                _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Mission Control Master Stopped", "The mission control master has either exited or crashed. Audio/Video and several other features will not work until it is restarted.");
             });
 
             if (_self->_driveControlSystem)

@@ -18,12 +18,12 @@ HEADERS += \
     connectionstatuscontroller.h \
     settingsmodel.h \
     audiocontroller.h \
-    videocontroller.h \
     gstreamerpipelinewatch.h \
     armcontrolsystem.h \
     qmlgstreamerpainteditem.h \
     qmlgstreamerglitem.h \
-    bindssettingsmodel.h
+    bindssettingsmodel.h \
+    videoclient.h
 
 SOURCES += main.cpp \
     gamepadcontroller.cpp \
@@ -33,12 +33,12 @@ SOURCES += main.cpp \
     connectionstatuscontroller.cpp \
     settingsmodel.cpp \
     audiocontroller.cpp \
-    videocontroller.cpp \
     gstreamerpipelinewatch.cpp \
     armcontrolsystem.cpp \
     qmlgstreamerpainteditem.cpp \
     qmlgstreamerglitem.cpp \
-    bindssettingsmodel.cpp
+    bindssettingsmodel.cpp \
+    videoclient.cpp
 
 RESOURCES += qml.qrc \
     assets.qrc

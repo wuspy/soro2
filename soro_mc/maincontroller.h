@@ -17,7 +17,7 @@
 #include "connectionstatuscontroller.h"
 #include "drivecontrolsystem.h"
 #include "audiocontroller.h"
-#include "videocontroller.h"
+#include "videoclient.h"
 #include "armcontrolsystem.h"
 #include "bindssettingsmodel.h"
 
@@ -44,7 +44,7 @@ private:
     GamepadController* _gamepadController = nullptr;
     SettingsModel* _settingsModel = nullptr;
     AudioController *_audioController = nullptr;
-    VideoController *_videoController = nullptr;
+    VideoClient *_videoController = nullptr;
     CameraSettingsModel *_cameraSettingsModel = nullptr;
     BindsSettingsModel *_bindsSettingsModel = nullptr;
     MediaProfileSettingsModel *_mediaProfileSettingsModel = nullptr;

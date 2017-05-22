@@ -1,5 +1,5 @@
-#ifndef VIDEOCONTROLLER_H
-#define VIDEOCONTROLLER_H
+#ifndef VIDEOCLIENT_H
+#define VIDEOCLIENT_H
 
 #include <QObject>
 #include <QUdpSocket>
@@ -36,13 +36,13 @@ namespace Soro {
  * Additionally, the signals gstError() and gstEos() may be emitted if there is an error decoding the video streamed
  * by the rover.
  */
-class VideoController : public QObject
+class VideoClient : public QObject
 {
     Q_OBJECT
 public:
-    explicit VideoController(const SettingsModel *settings, const CameraSettingsModel *cameraSettings,
+    explicit VideoClient(const SettingsModel *settings, const CameraSettingsModel *cameraSettings,
                              QVector<QGst::ElementPtr> sinks, QObject *parent = 0);
-    ~VideoController();
+    ~VideoClient();
 
     bool isPlaying(uint cameraIndex) const;
     GStreamerUtil::VideoProfile getVideoProfile(uint cameraIndex) const;
@@ -61,7 +61,8 @@ Q_SIGNALS:
     void gstError(QString message, uint cameraIndex);
     /* Emitted when a video server on the rover exits or crashes
      */
-    void videoServerExited(uint computerIndex);
+    void videoServerDisconnected(uint computerIndex);
+    void masterVideoClientDisconnected();
     void mqttConnected();
     void mqttDisconnected();
 
@@ -94,4 +95,4 @@ private:
 
 } // namespace Soro
 
-#endif // VIDEOCONTROLLER_H
+#endif // VIDEOCLIENT_H

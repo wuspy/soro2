@@ -17,16 +17,16 @@ SOURCES += main.cpp \
     maincontroller.cpp \
     masterconnectionstatuscontroller.cpp \
     settingsmodel.cpp \
-    mastervideocontroller.cpp \
-    masteraudiocontroller.cpp
+    masteraudiocontroller.cpp \
+    mastervideoclient.cpp
 
 HEADERS += \
     mainwindowcontroller.h \
     maincontroller.h \
     masterconnectionstatuscontroller.h \
     settingsmodel.h \
-    mastervideocontroller.h \
-    masteraudiocontroller.h
+    masteraudiocontroller.h \
+    mastervideoclient.h
 
 RESOURCES += \
     qml.qrc \
