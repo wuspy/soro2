@@ -24,12 +24,6 @@ const quint8 AUDIO_CODEC_AC3 = 100;
 
 const quint8 CODEC_NULL = 255;
 
-const quint16 FRAMERATE_AUTO = 0;
-const quint16 HEIGHT_AUTO = 0;
-const quint16 WIDTH_AUTO = 0;
-
-const quint32 BITRATE_AUTO = 0;
-
 struct SORO_CORE_EXPORT VideoProfile
 {
     quint8 codec;
@@ -72,21 +66,21 @@ struct SORO_CORE_EXPORT AudioProfile
 
 /* Creates a pipeline string that encodes ALSA audio into a RTP stream
  */
-QString createRtpAlsaEncodeString(QHostAddress address, quint16 port, AudioProfile profile);
+QString createRtpAlsaEncodeString(quint16 bindPort, QHostAddress address, quint16 port, AudioProfile profile);
 
 /* Creates a pipeline string that encodes video from a camera into a RTP stream
  */
-QString createRtpV4L2EncodeString(QString cameraDevice, QHostAddress address, quint16 port, VideoProfile profile, bool vaapi=false);
+QString createRtpV4L2EncodeString(QString cameraDevice, quint16 bindPort, QHostAddress address, quint16 port, VideoProfile profile, bool vaapi=false);
 
-QString createRtpStereoV4L2EncodeString(QString leftCameraDevice, QString rightCameraDevice, QHostAddress address, quint16 port, VideoProfile profile, bool vaapi=false);
+QString createRtpStereoV4L2EncodeString(QString leftCameraDevice, QString rightCameraDevice, quint16 bindPort, QHostAddress address, quint16 port, VideoProfile profile, bool vaapi=false);
 
 /* Creates a pipeline string that encodes raw video into a RTP stream
  */
-QString createRtpVideoEncodeString(QHostAddress address, quint16 port, VideoProfile profile, bool vaapi=false);
+QString createRtpVideoEncodeString(quint16 bindPort, QHostAddress address, quint16 port, VideoProfile profile, bool vaapi=false);
 
 /* Creates a pipeline string that encodes raw audio into a RTP stream
  */
-QString createRtpAudioEncodeString(QHostAddress address, quint16 port, AudioProfile profile);
+QString createRtpAudioEncodeString(quint16 bindPort, QHostAddress address, quint16 port, AudioProfile profile);
 
 /* Creates a pipeline string that accepts an RTP video stream on a UDP port, and decodes it from the specified codec to a raw video stream
  */
@@ -100,7 +94,7 @@ QString createRtpVideoFileSaveString(QHostAddress address, quint16 port, quint8 
 
 /* Creates a pipeline string that outputs a video test pattern
  */
-QString createVideoTestSrcString(QString pattern="snow", bool grayscale=false, quint16 width=640, quint16 height=480, quint16 framerate=FRAMERATE_AUTO);
+QString createVideoTestSrcString(QString pattern="snow", bool grayscale=false, quint16 width=640, quint16 height=480, quint16 framerate=30);
 
 /* Creates a pipeline string that accepts an RTP audio stream on a UDP port, and decodes it from the specified codec to a raw audio stream
  */

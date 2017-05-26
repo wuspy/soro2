@@ -427,6 +427,7 @@ void VideoServer::giveChildAssignment(Assignment assignment)
                         assignment.device2,
                         assignment.address.toString(),
                         assignment.port,
+                        SORO_NET_FIRST_VIDEO_PORT + assignment.message.camera_index,
                         assignment.message.profile.toString(),
                         assignment.vaapi);
         }
@@ -438,6 +439,7 @@ void VideoServer::giveChildAssignment(Assignment assignment)
                         assignment.device,
                         assignment.address.toString(),
                         assignment.port,
+                        SORO_NET_FIRST_VIDEO_PORT + assignment.message.camera_index,
                         assignment.message.profile.toString(),
                         assignment.vaapi);
         }

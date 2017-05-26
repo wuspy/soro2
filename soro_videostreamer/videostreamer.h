@@ -24,8 +24,8 @@ public:
 
 public Q_SLOTS:
     void stop();
-    void stream(const QString &device, const QString &address, int port, const QString &profile, bool vaapi);
-    void streamStereo(const QString &leftDevice, const QString &rightDevice, const QString &address, int port, const QString &profile, bool vaapi);
+    void stream(const QString &device, const QString &address, int port, int bindPort, const QString &profile, bool vaapi);
+    void streamStereo(const QString &leftDevice, const QString &rightDevice, const QString &address, int port, int bindPort, const QString &profile, bool vaapi);
     void heartbeat();
 
 protected:

@@ -22,10 +22,10 @@ namespace GStreamerUtil {
 VideoProfile::VideoProfile()
 {
     codec = CODEC_NULL;
-    width = WIDTH_AUTO;
-    height = HEIGHT_AUTO;
-    framerate = FRAMERATE_AUTO;
-    bitrate = BITRATE_AUTO;
+    width = 640;
+    height = 480;
+    framerate = 30;
+    bitrate = 2048000;
     mjpeg_quality = 50;
 }
 
@@ -44,10 +44,10 @@ VideoProfile::VideoProfile(QString description)
     else
     {
         codec = CODEC_NULL;
-        width = WIDTH_AUTO;
-        height = HEIGHT_AUTO;
-        framerate = FRAMERATE_AUTO;
-        bitrate = BITRATE_AUTO;
+        width = 640;
+        height = 480;
+        framerate = 30;
+        bitrate = 2048000;
         mjpeg_quality = 50;
     }
 }
@@ -63,7 +63,7 @@ AudioProfile::AudioProfile(QString description)
     else
     {
         codec = CODEC_NULL;
-        bitrate = BITRATE_AUTO;
+        bitrate = 32000;
     }
 }
 
@@ -91,7 +91,7 @@ bool VideoProfile::operator==(const VideoProfile& other) const
 AudioProfile::AudioProfile()
 {
     codec = CODEC_NULL;
-    bitrate = BITRATE_AUTO;
+    bitrate = 32000;
 }
 
 QString AudioProfile::toString() const
@@ -107,12 +107,12 @@ bool AudioProfile::operator==(const AudioProfile& other) const
             (bitrate == other.bitrate);
 }
 
-QString createRtpAlsaEncodeString(QHostAddress address, quint16 port, AudioProfile profile)
+QString createRtpAlsaEncodeString(quint16 bindPort,  QHostAddress address, quint16 port, AudioProfile profile)
 {
-    return "alsasrc ! audioconvert ! " + createRtpAudioEncodeString(address, port, profile);
+    return "alsasrc ! audioconvert ! " + createRtpAudioEncodeString(bindPort, address, port, profile);
 }
 
-QString createRtpV4L2EncodeString(QString cameraDevice, QHostAddress address, quint16 port, VideoProfile profile, bool vaapi)
+QString createRtpV4L2EncodeString(QString cameraDevice, quint16 bindPort, QHostAddress address, quint16 port, VideoProfile profile, bool vaapi)
 {
     return QString("v4l2src device=/dev/%1 ! "
                    "videoconvert ! "
@@ -120,10 +120,10 @@ QString createRtpV4L2EncodeString(QString cameraDevice, QHostAddress address, qu
                    "videorate drop-only=true ! "
                    "%2")
             .arg(cameraDevice,
-                 createRtpVideoEncodeString(address, port, profile, vaapi));
+                 createRtpVideoEncodeString(bindPort, address, port, profile, vaapi));
 }
 
-QString createRtpStereoV4L2EncodeString(QString leftCameraDevice, QString rightCameraDevice, QHostAddress address, quint16 port, VideoProfile profile, bool vaapi)
+QString createRtpStereoV4L2EncodeString(QString leftCameraDevice, QString rightCameraDevice, quint16 bindPort, QHostAddress address, quint16 port, VideoProfile profile, bool vaapi)
 {
     return QString("v4l2src device=/dev/%5 ! "
                    "videoconvert ! "
@@ -149,29 +149,31 @@ QString createRtpStereoV4L2EncodeString(QString leftCameraDevice, QString rightC
                 QString::number(profile.width / 2),
                 rightCameraDevice,
                 leftCameraDevice,
-                createRtpVideoEncodeString(address, port, profile, vaapi));
+                createRtpVideoEncodeString(bindPort, address, port, profile, vaapi));
 }
 
-QString createRtpVideoEncodeString(QHostAddress address, quint16 port, VideoProfile profile, bool vaapi)
+QString createRtpVideoEncodeString(quint16 bindPort, QHostAddress address, quint16 port, VideoProfile profile, bool vaapi)
 {
     return QString("video/x-raw,format=I420,width=%1,height=%2,framerate=%3/1 ! "
                    "%4 ! "
                    "%5 ! "
-                   "udpsink host=%6 port=%7")
+                   "udpsink bind-port=%6 host=%7 port=%8")
             .arg(QString::number(profile.width),
                  QString::number(profile.height),
                  QString::number(profile.framerate),
                  getVideoEncodeElement(profile, vaapi),
                  getRtpPayElement(profile.codec),
+                 QString::number(bindPort),
                  address.toString(),
                  QString::number(port));
 }
 
-QString createRtpAudioEncodeString(QHostAddress address, quint16 port, AudioProfile profile)
+QString createRtpAudioEncodeString(quint16 bindPort, QHostAddress address, quint16 port, AudioProfile profile)
 {
-    return QString("%1 ! %2 ! udpsink host=%3 port=%4")
+    return QString("%1 ! %2 ! udpsink bind-port=%3 host=%4 port=%5")
             .arg(getAudioEncodeElement(profile),
                  getRtpPayElement(profile.codec),
+                 QString::number(bindPort),
                  address.toString(),
                  QString::number(port));
 }

@@ -15,7 +15,7 @@
  */
 
 #include "audiostreamer.h"
-#include "gstreamerutil.h"
+#include "soro_core/gstreamerutil.h"
 #include "soro_core/logger.h"
 #include "soro_core/constants.h"
 
@@ -78,14 +78,14 @@ void AudioStreamer::stopPrivate(bool sendReady)
     }
 }
 
-void AudioStreamer::streamAudio(QString address, int port, QString profile)
+void AudioStreamer::streamAudio(QString address, int port, int bindPort, QString profile)
 {
     stopPrivate(false);
 
     _pipeline = QGst::Pipeline::create("audio");
 
     // create gstreamer command
-    QString binStr = GStreamerUtil::createRtpAlsaEncodeString(QHostAddress(address), port, GStreamerUtil::AudioProfile(profile));
+    QString binStr = GStreamerUtil::createRtpAlsaEncodeString(bindPort, QHostAddress(address), port, GStreamerUtil::AudioProfile(profile));
     QGst::BinPtr encoder = QGst::Bin::fromDescription(binStr);
 
     _pipeline->add(encoder);

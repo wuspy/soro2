@@ -30,7 +30,7 @@ VideoStateMessage::VideoStateMessage(const QByteArray &payload)
     quint32 size;
     stream >> size;
 
-    for (int i = 0; i < size; ++i)
+    for (quint32 i = 0; i < size; ++i)
     {
         QByteArray payload;
         stream >> payload;

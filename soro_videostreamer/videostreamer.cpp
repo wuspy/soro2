@@ -15,7 +15,7 @@
  */
 
 #include "videostreamer.h"
-#include "gstreamerutil.h"
+#include "soro_core/gstreamerutil.h"
 #include "soro_core/logger.h"
 #include "soro_core/constants.h"
 
@@ -86,14 +86,14 @@ void VideoStreamer::stopPrivate(bool sendReady)
     }
 }
 
-void VideoStreamer::stream(const QString &device, const QString &address, int port, const QString &profile, bool vaapi)
+void VideoStreamer::stream(const QString &device, const QString &address, int port, int bindPort, const QString &profile, bool vaapi)
 {
     stopPrivate(false);
 
     _pipeline = createPipeline();
 
     // create gstreamer command
-    QString binStr = GStreamerUtil::createRtpV4L2EncodeString(device, QHostAddress(address), port, GStreamerUtil::VideoProfile(profile), vaapi);
+    QString binStr = GStreamerUtil::createRtpV4L2EncodeString(device, bindPort, QHostAddress(address), port, GStreamerUtil::VideoProfile(profile), vaapi);
     _parentInterface->call(QDBus::NoBlock, "onChildLogInfo", _name, LogTag, "Starting GStreamer with command " + binStr);
 
     QGst::BinPtr encoder = QGst::Bin::fromDescription(binStr);
@@ -104,14 +104,14 @@ void VideoStreamer::stream(const QString &device, const QString &address, int po
     _parentInterface->call(QDBus::NoBlock, "onChildStreaming", _name);
 }
 
-void VideoStreamer::streamStereo(const QString &leftDevice, const QString &rightDevice, const QString &address, int port, const QString &profile, bool vaapi)
+void VideoStreamer::streamStereo(const QString &leftDevice, const QString &rightDevice, const QString &address, int port, int bindPort, const QString &profile, bool vaapi)
 {
     stopPrivate(false);
 
     _pipeline = createPipeline();
 
     // create gstreamer command
-    QString binStr = GStreamerUtil::createRtpStereoV4L2EncodeString(leftDevice, rightDevice, QHostAddress(address), port, GStreamerUtil::VideoProfile(profile), vaapi);
+    QString binStr = GStreamerUtil::createRtpStereoV4L2EncodeString(leftDevice, rightDevice, bindPort, QHostAddress(address), port, GStreamerUtil::VideoProfile(profile), vaapi);
     _parentInterface->call(QDBus::NoBlock, "onChildLogInfo", _name, LogTag, "Starting GStreamer with command " + binStr);
 
     QGst::BinPtr encoder = QGst::Bin::fromDescription(binStr);

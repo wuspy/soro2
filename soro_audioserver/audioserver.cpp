@@ -289,6 +289,7 @@ void AudioServer::giveChildAssignment(Assignment assignment)
                         "stream",
                         assignment.address.toString(),
                         assignment.port,
+                        SORO_NET_AUDIO_PORT,
                         assignment.profile.toString());
         }
     }

@@ -24,7 +24,7 @@ public:
 
 public Q_SLOTS:
     void stop();
-    void streamAudio(QString address, int port, QString profile);
+    void streamAudio(QString address, int port, int bindPort, QString profile);
     void heartbeat();
 
 protected:
