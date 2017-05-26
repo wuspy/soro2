@@ -113,7 +113,7 @@ void MainController::init(QApplication *app)
                 return;
             }
 
-            //
+            /*//
             // Create media settings model to load keyboard & gamepad bindings
             //
             LOG_I(LogTag, "Loading keyboard and gamepad binding profile settings...");
@@ -126,7 +126,7 @@ void MainController::init(QApplication *app)
             {
                 panic(LogTag, QString("Error loading keyboard and gamepad binding profile settings: %1").arg(err));
                 return;
-            }
+            }*/
 
             //
             // Initialize Qt5GStreamer, must be called before anything else is done with it
