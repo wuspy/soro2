@@ -28,8 +28,14 @@ SOURCES += \
     dataratemessage.cpp \
     pingmessage.cpp \
     addmediabouncemessage.cpp \
-    coresettingsmodel.cpp \
-    notificationmessage.cpp
+    notificationmessage.cpp \
+    spectrometermessage.cpp \
+    atmospheresensormessage.cpp \
+    geigermessage.cpp \
+    compassmessage.cpp \
+    gpsmessage.cpp \
+    drivepathmessage.cpp \
+    switchmessage.cpp
 
 HEADERS +=\
     soro_core_global.h \
@@ -48,9 +54,16 @@ HEADERS +=\
     dataratemessage.h \
     pingmessage.h \
     addmediabouncemessage.h \
-    coresettingsmodel.h \
     abstractmessage.h \
-    notificationmessage.h
+    notificationmessage.h \
+    spectrometermessage.h \
+    atmospheresensormessage.h \
+    geigermessage.h \
+    compassmessage.h \
+    gpsmessage.h \
+    drivepathmessage.h \
+    serialize.h \
+    switchmessage.h
 
 # Link against qmqtt
 LIBS += -L../lib -lqmqtt

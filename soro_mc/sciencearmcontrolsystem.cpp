@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-#include "armcontrolsystem.h"
+#include "sciencearmcontrolsystem.h"
 #include "maincontroller.h"
 #include "soro_core/armmessage.h"
 #include "soro_core/logger.h"
 #include "soro_core/constants.h"
 
-#define LogTag "ArmControlSystem"
+#define LogTag "ScienceArmControlSystem"
 
 namespace Soro
 {
 
-ArmControlSystem::ArmControlSystem(const SettingsModel *settings, QObject *parent) : QObject(parent)
+ScienceArmControlSystem::ScienceArmControlSystem(const SettingsModel *settings, QObject *parent) : QObject(parent)
 {
     _enabled = false;
     _masterConnected = false;
 
     LOG_I(LogTag, "Creating UDP socket...");
-    if (!_armUdpSocket.bind(SORO_NET_MASTER_ARM_PORT))
+    if (!_armUdpSocket.bind(SORO_NET_SCIENCE_MASTER_ARM_PORT))
     {
         MainController::panic(LogTag, "Unable to bind master arm UDP socket");
     }
@@ -42,7 +42,7 @@ ArmControlSystem::ArmControlSystem(const SettingsModel *settings, QObject *paren
 
     LOG_I(LogTag, "Creating MQTT client...");
     _mqtt = new QMQTT::Client(settings->getMqttBrokerAddress(), SORO_NET_MQTT_BROKER_PORT, this);
-    _mqtt->setClientId("arm_control_system");
+    _mqtt->setClientId("science_arm_control_system");
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
     _mqtt->setWillMessage(_mqtt->clientId());
@@ -51,7 +51,7 @@ ArmControlSystem::ArmControlSystem(const SettingsModel *settings, QObject *paren
     _mqtt->setWillRetain(false);
     _mqtt->connectToHost();
 
-    _watchdogTimer.setInterval(1000); // Master arm connection timeout
+    _watchdogTimer.setInterval(1000); // master arm connection timeout
 
     connect(_mqtt, &QMQTT::Client::connected, this, [this]()
     {
@@ -68,7 +68,7 @@ ArmControlSystem::ArmControlSystem(const SettingsModel *settings, QObject *paren
         while (_armUdpSocket.hasPendingDatagrams())
         {
             qint64 len = _armUdpSocket.readDatagram(_buffer, USHRT_MAX);
-            if (_buffer[0] != SORO_HEADER_MASTER_ARM_MSG)
+            if (_buffer[0] != SORO_HEADER_SCIENCE_MASTER_ARM_MSG)
             {
                 LOG_W(LogTag, "Received invalid master arm message, discarding");
                 return;
@@ -87,7 +87,7 @@ ArmControlSystem::ArmControlSystem(const SettingsModel *settings, QObject *paren
                 if (len > 1) // If this is only a heartbeat, length will be 1
                 {
                     ArmMessage msg(QByteArray(_buffer, len));
-                    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "arm", msg, 0));
+                    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "science_arm", msg, 0));
                 }
             }
         }
@@ -104,14 +104,14 @@ ArmControlSystem::ArmControlSystem(const SettingsModel *settings, QObject *paren
     });
 }
 
-void ArmControlSystem::enable()
+void ScienceArmControlSystem::enable()
 {
     _enabled = true;
 }
 
-void ArmControlSystem::disable()
+void ScienceArmControlSystem::disable()
 {
     _enabled = false;
 }
 
-} // namespace Soro
+}

@@ -49,10 +49,9 @@ void MainWindowController::onLatencyUpdated(quint32 latency)
     _window->setProperty("latency", latency);
 }
 
-void MainWindowController::onDataRateUpdated(quint64 rateUp, quint64 rateDown)
+void MainWindowController::onDataRateUpdated(quint64 rateFromRover)
 {
-    _window->setProperty("dataRateUp", rateUp);
-    _window->setProperty("dataRateDown", rateDown);
+    _window->setProperty("dataRateFromRover", rateFromRover);
 }
 
 void MainWindowController::onAudioBounceAddressesChanged(const QHash<QString, QHostAddress> &addresses)

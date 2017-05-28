@@ -181,10 +181,7 @@ void MainController::init(QApplication *app)
             // Create connection status controller
             //
             LOG_I(LogTag, "Initializing connection status controller...");
-            _self->_connectionStatusController = new ConnectionStatusController(_self->_settingsModel->getMqttBrokerAddress(),
-                                                                                SORO_NET_MQTT_BROKER_PORT,
-                                                                                2000,
-                                                                                _self);
+            _self->_connectionStatusController = new ConnectionStatusController(_self->_settingsModel, _self);
 
             //
             // Create the GamepadController instance
@@ -198,10 +195,7 @@ void MainController::init(QApplication *app)
                 // Create drive control system
                 //
                 LOG_I(LogTag, "Initializing drive control system...");
-                _self->_driveControlSystem = new DriveControlSystem(_self->_settingsModel->getMqttBrokerAddress(),
-                                                                    SORO_NET_MQTT_BROKER_PORT,
-                                                                    _self->_settingsModel->getDriveSendInterval(),
-                                                                    _self);
+                _self->_driveControlSystem = new DriveControlSystem(_self->_settingsModel, _self);
                 _self->_driveControlSystem->setLimit(_self->_settingsModel->getDrivePowerLimit());
                 _self->_driveControlSystem->setSkidSteerFactor(_self->_settingsModel->getDriveSkidSteerFactor());
                 _self->_driveControlSystem->enable();
@@ -211,10 +205,7 @@ void MainController::init(QApplication *app)
                 // Create arm control system
                 //
                 LOG_I(LogTag, "Initializing arm control system...");
-                _self->_armControlSystem = new ArmControlSystem(_self->_settingsModel->getMqttBrokerAddress(),
-                                                                SORO_NET_MQTT_BROKER_PORT,
-                                                                1000,
-                                                                _self);
+                _self->_armControlSystem = new ArmControlSystem(_self->_settingsModel, _self);
                 _self->_armControlSystem->enable();
                 break;
             case SettingsModel::CameraOperatorConfiguration:

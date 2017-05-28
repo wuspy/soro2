@@ -25,13 +25,13 @@
 
 namespace Soro {
 
-ConnectionStatusController::ConnectionStatusController(QHostAddress brokerAddress, quint16 brokerPort, int disconnectTimeout, QObject *parent) : QObject(parent)
+ConnectionStatusController::ConnectionStatusController(const SettingsModel *settings, QObject *parent) : QObject(parent)
 {
-    _connectionWatchdog.setInterval(disconnectTimeout);
+    _connectionWatchdog.setInterval(2000);
     _connected = false;
 
     LOG_I(LogTag, "Creating MQTT client...");
-    _mqtt = new QMQTT::Client(brokerAddress, brokerPort, this);
+    _mqtt = new QMQTT::Client(settings->getMqttBrokerAddress(), SORO_NET_MQTT_BROKER_PORT, this);
     _mqtt->setClientId(MainController::getId() + "_connectionstatuscontroller");
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
@@ -67,7 +67,7 @@ ConnectionStatusController::ConnectionStatusController(QHostAddress brokerAddres
         else if (msg.topic() == "data_rate")
         {
             DataRateMessage dataRateMsg(msg.payload());
-            Q_EMIT dataRateUpdate(dataRateMsg.dataRateUp, dataRateMsg.dataRateDown);
+            Q_EMIT dataRateUpdate(dataRateMsg.dataRateFromRover);
         }
     });
 

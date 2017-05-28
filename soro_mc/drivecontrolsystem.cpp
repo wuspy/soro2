@@ -37,7 +37,7 @@ inline qint16 floatToShort(float value)
     return (qint16)(value * 32767);
 }
 
-DriveControlSystem::DriveControlSystem(QHostAddress mqttAddress, quint16 mqttPort, int interval, QObject *parent) : QObject(parent)
+DriveControlSystem::DriveControlSystem(const SettingsModel *settings, QObject *parent) : QObject(parent)
 {
     _enabled = false;
     _gamepadLeftX = 0;
@@ -46,13 +46,14 @@ DriveControlSystem::DriveControlSystem(QHostAddress mqttAddress, quint16 mqttPor
     _gamepadRightY = 0;
     _mode = InputMode_TwoStick;
 
+    setLimit(settings->getDrivePowerLimit());
+
     LOG_I(LogTag, "Creating MQTT client...");
-    _mqtt = new QMQTT::Client(mqttAddress, mqttPort, this);
+    _mqtt = new QMQTT::Client(settings->getMqttBrokerAddress(), SORO_NET_MQTT_BROKER_PORT, this);
     connect(_mqtt, &QMQTT::Client::connected, this, [this]()
     {
         Logger::logInfo(LogTag, "Connected to MQTT broker");
         _mqtt->subscribe("system_down", 2);
-        Q_EMIT mqttConnected();
     });
     connect(_mqtt, &QMQTT::Client::received, this, [this](const QMQTT::Message& msg)
     {
@@ -67,7 +68,6 @@ DriveControlSystem::DriveControlSystem(QHostAddress mqttAddress, quint16 mqttPor
     connect(_mqtt, &QMQTT::Client::disconnected, this, [this]()
     {
         Logger::logInfo(LogTag, "Disconnected from MQTT broker");
-        Q_EMIT mqttDisconnected();
     });
     _mqtt->setClientId("drive_control_system");
     _mqtt->setAutoReconnect(true);
@@ -162,7 +162,7 @@ DriveControlSystem::DriveControlSystem(QHostAddress mqttAddress, quint16 mqttPor
         }
     });
 
-    _timer.start(interval);
+    _timer.start(settings->getDriveSendInterval());
 }
 
 void DriveControlSystem::setInterval(int interval)

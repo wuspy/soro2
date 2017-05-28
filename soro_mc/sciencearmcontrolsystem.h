@@ -1,5 +1,5 @@
-#ifndef ARMCONTROLSYSTEM_H
-#define ARMCONTROLSYSTEM_H
+#ifndef SCIENCEARMCONTROLSYSTEM_H
+#define SCIENCEARMCONTROLSYSTEM_H
 
 #include <QObject>
 #include <QUdpSocket>
@@ -10,12 +10,12 @@
 
 namespace Soro {
 
-class ArmControlSystem: public QObject
+class ScienceArmControlSystem: public QObject
 {
     Q_OBJECT
 
 public:
-    explicit ArmControlSystem(const SettingsModel* settings, QObject *parent=0);
+    explicit ScienceArmControlSystem(const SettingsModel* settings, QObject *parent=0);
 
 Q_SIGNALS:
     void masterArmConnectedChanged(bool connected);
@@ -34,6 +34,6 @@ private:
     char _buffer[USHRT_MAX];
 };
 
-} // namespace Soro
+}
 
-#endif // ARMCONTROLSYSTEM_H
+#endif // SCIENCEARMCONTROLSYSTEM_H

@@ -86,12 +86,7 @@ void MainController::init(QApplication *app)
             // Create master connection status controller
             //
             LOG_I(LogTag, "Initializing master connection status controller...");
-            _self->_masterConnectionStatusController = new MasterConnectionStatusController(
-                        _self->_settings->getMqttBrokerAddress(),
-                        SORO_NET_MQTT_BROKER_PORT,
-                        _self->_settings->getPingInterval(),
-                        _self->_settings->getDataRateCalcInterval(),
-                        _self);
+            _self->_masterConnectionStatusController = new MasterConnectionStatusController(_self->_settings, _self);
 
             //
             // Create the master video controller
@@ -127,9 +122,9 @@ void MainController::init(QApplication *app)
                     _self->_mainWindowController, &MainWindowController::onDataRateUpdated);
 
             connect(_self->_masterVideoController, &MasterVideoClient::bytesDown,
-                    _self->_masterConnectionStatusController, &MasterConnectionStatusController::logDataDown);
+                    _self->_masterConnectionStatusController, &MasterConnectionStatusController::logDataFromRover);
             connect(_self->_masterAudioController, &MasterAudioController::bytesDown,
-                    _self->_masterConnectionStatusController, &MasterConnectionStatusController::logDataDown);
+                    _self->_masterConnectionStatusController, &MasterConnectionStatusController::logDataFromRover);
 
             connect(_self->_masterVideoController, &MasterVideoClient::bounceAddressesChanged,
                     _self->_mainWindowController, &MainWindowController::onVideoBounceAddressesChanged);

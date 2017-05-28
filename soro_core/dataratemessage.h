@@ -13,8 +13,7 @@ struct DataRateMessage : public AbstractMessage
     DataRateMessage(const QByteArray& payload);
     operator QByteArray() const override;
 
-    quint64 dataRateUp;
-    quint64 dataRateDown;
+    quint64 dataRateFromRover;
 };
 
 } // namespace Soro

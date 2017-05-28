@@ -10,30 +10,23 @@
 
 namespace Soro {
 
-class ArmControlSystem: public QObject
+class SciencePackageController: public QObject
 {
     Q_OBJECT
 
 public:
-    explicit ArmControlSystem(const SettingsModel* settings, QObject *parent=0);
-
-Q_SIGNALS:
-    void masterArmConnectedChanged(bool connected);
-
-public Q_SLOTS:
-    void enable();
-    void disable();
+    explicit SciencePackageController(const SettingsModel* settings, QObject *parent=0);
 
 private:
+    bool _packageConnected;
     QTimer _watchdogTimer;
-    bool _enabled;
-    bool _masterConnected;
     quint16 _nextMqttMsgId;
-    QUdpSocket _armUdpSocket;
+    QUdpSocket _packageUdpSocket;
     QMQTT::Client *_mqtt;
+    float _lastCompassHeading = 0;
     char _buffer[USHRT_MAX];
 };
 
-} // namespace Soro
+}
 
 #endif // ARMCONTROLSYSTEM_H

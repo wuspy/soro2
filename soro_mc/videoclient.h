@@ -63,8 +63,6 @@ Q_SIGNALS:
      */
     void videoServerDisconnected(uint computerIndex);
     void masterVideoClientDisconnected();
-    void mqttConnected();
-    void mqttDisconnected();
 
 protected:
     void timerEvent(QTimerEvent *e);

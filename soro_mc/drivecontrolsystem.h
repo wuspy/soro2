@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <SDL2/SDL.h>
 
+#include "settingsmodel.h"
 #include "qmqtt/qmqtt.h"
 
 namespace Soro {
@@ -20,7 +21,7 @@ public:
         InputMode_SingleStick
     };
 
-    explicit DriveControlSystem(QHostAddress mqttAddress, quint16 mqttPort, int interval, QObject *parent = 0);
+    explicit DriveControlSystem(const SettingsModel *settings, QObject *parent = 0);
 
     void setSkidSteerFactor(float factor);
     float getSkidSteerFactor() const;
@@ -36,8 +37,6 @@ public:
 
 Q_SIGNALS:
     void driveSystemExited();
-    void mqttConnected();
-    void mqttDisconnected();
 
 public Q_SLOTS:
     void enable();

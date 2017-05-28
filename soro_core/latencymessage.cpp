@@ -20,7 +20,10 @@
 
 namespace Soro {
 
-LatencyMessage::LatencyMessage() { }
+LatencyMessage::LatencyMessage()
+{
+    latency = 0;
+}
 
 LatencyMessage::LatencyMessage(const QByteArray &payload)
 {

@@ -81,7 +81,6 @@ void VideoClient::onMqttConnected()
         _mqtt->subscribe("video_state_" + QString::number(i), 1);
     }
     _mqtt->subscribe("system_down", 2);
-    Q_EMIT mqttConnected();
 }
 
 void VideoClient::onMqttDisconnected()
@@ -93,7 +92,6 @@ void VideoClient::onMqttDisconnected()
         _videoStates.append(GStreamerUtil::VideoProfile());
         stopVideoOnSink(i);
     }
-    Q_EMIT mqttDisconnected();
 }
 
 void VideoClient::onMqttMessage(const QMQTT::Message &msg)

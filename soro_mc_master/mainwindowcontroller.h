@@ -15,7 +15,7 @@ public:
     explicit MainWindowController(QQmlEngine *engine, QObject *parent = 0);
 
 public Q_SLOTS:
-    void onDataRateUpdated(quint64 rateUp, quint64 rateDown);
+    void onDataRateUpdated(quint64 rateFromRover);
     void onLatencyUpdated(quint32 latency);
     void onConnected();
     void onDisconnected();

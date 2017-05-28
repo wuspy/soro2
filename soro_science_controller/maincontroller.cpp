@@ -52,40 +52,6 @@ void MainController::init(QCoreApplication *app)
         // Use a timer to wait for the event loop to start
         QTimer::singleShot(0, _self, []()
         {
-            //
-            // Connect to D-Bus
-            //
-            if (!QDBusConnection::sessionBus().isConnected()) {
-                LOG_E(LogTag, "Cannot connect to D-Bus session bus");
-                return 1;
-            }
-
-            if (!QDBusConnection::sessionBus().registerService(SORO_DBUS_VIDEO_PARENT_SERVICE_NAME)) {
-                LOG_E(LogTag, "Cannot register D-Bus service: " + QDBusConnection::sessionBus().lastError().message());
-                return 1;
-            }
-
-            //
-            // Create the settings model and load the main settings file
-            //
-            LOG_I(LogTag, "Loading settings...");
-            try
-            {
-                _self->_settingsModel = new SettingsModel;
-                _self->_settingsModel->load();
-            }
-            catch (QString err)
-            {
-                panic(LogTag, QString("Error loading settings: %1").arg(err));
-            }
-
-            _self->_id = "video_server_" + QString::number(_self->_settingsModel->getComputerIndex());
-
-            //
-            // Create video server
-            //
-            LOG_I(LogTag, "Initializing video server...");
-            _self->_videoServer = new VideoServer(_self->_settingsModel, _self);
 
             LOG_I(LogTag, "Initialization complete");
         });
@@ -98,7 +64,7 @@ void MainController::init(QCoreApplication *app)
 
 QString MainController::getId()
 {
-    return _self->_id;
+    return "science_controller";
 }
 
 } // namespace Soro

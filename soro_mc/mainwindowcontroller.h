@@ -44,7 +44,7 @@ public Q_SLOTS:
     void selectViewBelow();
     void onConnectedChanged(bool connected);
     void onLatencyUpdated(quint32 latency);
-    void onDataRateUpdated(quint64 rateUp, quint64 rateDown);
+    void onDataRateUpdated(quint64 rateFromRover);
 
 private Q_SLOTS:
     void onMqttConnected();

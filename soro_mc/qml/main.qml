@@ -41,8 +41,7 @@ ApplicationWindow {
       */
     property bool connected: false
     property int latency: 0
-    property int dataRateUp: 0
-    property int dataRateDown: 0
+    property int dataRateFromRover: 0
 
     /*
       Selected view in the UI, can be eselectedViewither 'map' or 'camera0'-'camera9'
@@ -409,40 +408,27 @@ ApplicationWindow {
             anchors.left: connectionStatusImage.left
             anchors.right: parent.horizontalCenter
             horizontalAlignment: Text.AlignHCenter
-            font.pixelSize: 24
+            font.pixelSize: 48
             color: Theme.foreground
             text: {
                 if (connected) {
-                    var upUnits, downUnits
-                    var up = dataRateUp, down = dataRateDown
-                    if (up > 1000000) {
-                        upUnits = "MB/s"
-                        up = Math.round(up / 10000) / 100
+                    var uints
+                    var rate = dataRateFromRover
+                    if (rate > 1000000) {
+                        uints = "MB/s"
+                        rate = Math.round(up / 10000.0) / 10.0
                     }
-                    else if (up > 1000) {
-                        upUnits = "KB/s"
-                        up = Math.round(up / 10) / 100
-                    }
-                    else {
-                        upUnits = "B/s"
-                    }
-                    if (down > 1000000) {
-                        downUnits = "MB/s"
-                        down = Math.round(down / 10000) / 100
-                    }
-                    else if (down > 1000) {
-                        downUnits = "KB/s"
-                        down = Math.round(down / 10) / 100
+                    else if (rate > 1000) {
+                        uints = "KB/s"
+                        rate = Math.round(up / 10.0) / 10.0
                     }
                     else {
-                        downUnits = "B/s"
+                        uints = "B/s"
                     }
-                    "▲ <b>" + up + "</b> " + upUnits +
-                            "<br>" +
-                            "▼ <b>" + down + "</b> " + downUnits
+                    "▲ <b>" + rate + "</b> " + uints
                 }
                 else {
-                    "---<br>---"
+                    "---"
                 }
             }
         }
