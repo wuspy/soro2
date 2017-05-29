@@ -62,13 +62,11 @@ void AudioClient::onMqttConnected()
     LOG_I(LogTag, "Connected to MQTT broker");
     _mqtt->subscribe("audio_state", 0);
     _mqtt->subscribe("system_down", 2);
-    Q_EMIT mqttConnected();
 }
 
 void AudioClient::onMqttDisconnected()
 {
     LOG_I(LogTag, "Disconnected from MQTT broker");
-    Q_EMIT mqttDisconnected();
 }
 
 void AudioClient::onMqttMessage(const QMQTT::Message &msg)
