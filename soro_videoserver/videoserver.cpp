@@ -214,7 +214,6 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
                 LOG_I(LogTag, "Spawning new child for " + assignment.device + "...");
                 QProcess *child = new QProcess(this);
                 _children.insert(assignment.device, child);
-                _waitingAssignments.insert(assignment.device, assignment);
 
                 // The first argument to the process, representing the child's name, is the video device
                 // it is assigned to work on
@@ -263,32 +262,30 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
                     }
                 });
             }
+
+            if(_waitingAssignments.contains(assignment.device))
+            {
+                reportInactiveVideo(assignment);
+                _waitingAssignments.remove(assignment.device);
+            }
+            if (_currentAssignments.contains(assignment.device))
+            {
+                reportInactiveVideo(assignment);
+                _currentAssignments.remove(assignment.device);
+            }
+
+            if (_childInterfaces.contains(assignment.device))
+            {
+                // Child for this device is running and can accept assignments
+                giveChildAssignment(assignment);
+                _currentAssignments.insert(assignment.device, assignment);
+                reportActiveVideoStates();
+            }
             else
             {
-                if(_waitingAssignments.contains(assignment.device))
-                {
-                    reportInactiveVideo(assignment);
-                    _waitingAssignments.remove(assignment.device);
-                }
-                if (_currentAssignments.contains(assignment.device))
-                {
-                    reportInactiveVideo(assignment);
-                    _currentAssignments.remove(assignment.device);
-                }
-
-                if (_childInterfaces.contains(assignment.device))
-                {
-                    // Child for this device is running and can accept assignments
-                    giveChildAssignment(assignment);
-                    _currentAssignments.insert(assignment.device, assignment);
-                    reportActiveVideoStates();
-                }
-                else
-                {
-                    // There exits a process for this device, however it is still starting up
-                    // and may have a previous assignment queued for it. Queue this assignment
-                    _waitingAssignments.insert(assignment.device, assignment);
-                }
+                // There exits a process for this device, however it is still starting up
+                // and may have a previous assignment queued for it. Queue this assignment
+                _waitingAssignments.insert(assignment.device, assignment);
             }
         }
         else

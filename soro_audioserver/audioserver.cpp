@@ -150,7 +150,6 @@ void AudioServer::onMqttMessage(const QMQTT::Message &msg)
             // Spawn a new child, and queue this assignment to be executed when the child is ready
             LOG_I(LogTag, "Spawning new child...");
             _child = new QProcess(this);
-            _waitingAssignment = assignment;
 
             // The first argument to the process, representing the child's name, is the video device
             // it is assigned to work on
@@ -197,27 +196,26 @@ void AudioServer::onMqttMessage(const QMQTT::Message &msg)
                 }
             });
         }
+
+        _hasWaitingAssignment = false;
+        _hasCurrentAssignment = false;
+
+        if (_childInterface && _childInterface->isValid())
+        {
+            // Child is running and can accept assignments
+            giveChildAssignment(assignment);
+            _currentAssignment = assignment;
+            _hasCurrentAssignment = true;
+        }
         else
         {
-            _hasWaitingAssignment = false;
-            _hasCurrentAssignment = false;
-
-            if (_childInterface && _childInterface->isValid())
-            {
-                // Child is running and can accept assignments
-                giveChildAssignment(assignment);
-                _currentAssignment = assignment;
-                _hasCurrentAssignment = true;
-                reportAudioState();
-            }
-            else
-            {
-                // Process exists, however it is still starting up and this assignment
-                // must be queued
-                _waitingAssignment = assignment;
-                _hasWaitingAssignment = true;
-            }
+            // Process exists, however it is still starting up and this assignment
+            // must be queued
+            _waitingAssignment = assignment;
+            _hasWaitingAssignment = true;
         }
+
+        reportAudioState();
     }
 }
 
