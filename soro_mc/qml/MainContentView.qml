@@ -22,10 +22,13 @@ Item {
     id: mainContentView
 
     property alias mapView: mapWebEngine
+    property alias spectrometerView: spectrometer
     property variant videoSurfaces: []
 
     property int videoCount: 0
-    readonly property int viewCount: videoCount + 1
+    readonly property int viewCount: videoCount + 2
+    readonly property int mapIndex: videoCount
+    readonly property int spectrometerIndex: videoCount + 1
 
     property int activeViewIndex: -1
 
@@ -34,8 +37,10 @@ Item {
             videoSurfaces[i].z = i == activeViewIndex ? 1 : 0
             videoSurfaces[i].enabled = i == activeViewIndex
         }
-        mapWebEngine.z = activeViewIndex == viewCount - 1 ? 1 : 0
-        mapWebEngine.enabled = activeViewIndex == viewCount - 1
+        mapWebEngine.z = activeViewIndex == mapIndex ? 1 : 0
+        mapWebEngine.enabled = activeViewIndex == mapIndex
+        spectrometer.z = activeViewIndex == spectrometerIndex ? 1 : 0
+        spectrometer.enabled = activeViewIndex == spectrometerIndex
     }
 
     onVideoCountChanged: {
@@ -57,6 +62,14 @@ Item {
         id: mapWebEngine
         anchors.fill: parent
         url: "qrc:/html/map.html"
+        z: 0
+        enabled: false
+        focus: false
+    }
+
+    SpectrometerView {
+        id: spectrometer
+        anchors.fill: parent
         z: 0
         enabled: false
         focus: false

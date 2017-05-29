@@ -17,7 +17,7 @@ Item {
        var minfloat = (deg-d)*60;
        var m = Math.floor(minfloat);
        var secfloat = (minfloat-m)*60;
-       var s = Math.round(secfloat);
+       var s = Math.round(secfloat * 100) / 100;
 
        if (s==60) {
          m++;
@@ -62,6 +62,8 @@ Item {
     Label
     {
         id: gpsLabel
+        width: 150
+        horizontalAlignment: Text.AlignRight
         anchors.left: gpsTitleLabel.right
         anchors.leftMargin: 8
         anchors.top: parent.top

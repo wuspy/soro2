@@ -148,6 +148,7 @@ ApplicationWindow {
             sidebarViewSelector.addItem(mainContentView.videoSurfaces[i], "Video " + i)
         }
         sidebarViewSelector.addItem(mainContentView.mapView, "Map")
+        sidebarViewSelector.addItem(mainContentView.spectrometerView, "Spectrometer")
         selectedViewIndex = 0
     }
 
@@ -181,9 +182,10 @@ ApplicationWindow {
 
         NavOverlay {
             id: navOverlay
-            anchors.bottomMargin: 10
-            anchors.bottom: parent.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.topMargin: 10
+            anchors.rightMargin: 10
+            anchors.top: parent.top
+            anchors.right: parent.right
             height: 64
         }
 
@@ -225,21 +227,20 @@ ApplicationWindow {
             anchors.left: miniConnectionStatusImage.right
         }
 
-        Item {
-            id: activeViewOverlay
-            anchors.top: parent.top
-            anchors.rightMargin: 10
-            anchors.topMargin: 10
-            anchors.right: parent.right
-            width: activeViewLabel.width
-            height: profileImage.height + profileImage.y
+        Text {
+            id: activeViewLabel
+            color: Theme.foreground
+            font.pixelSize: 48
+            text: sidebarViewSelector.selectedViewTitle
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
 
-            Text {
-                id: activeViewLabel
-                color: Theme.foreground
-                font.pixelSize: 48
-                text: sidebarViewSelector.selectedViewTitle
-            }
+        Item {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: activeViewLabel.bottom
+            anchors.topMargin: 4
+            height: 32
+            width: profileLabel.x + profileLabel.width
 
             ColorOverlay {
                 id: profileImageColorOverlay
@@ -253,19 +254,18 @@ ApplicationWindow {
                 id: profileImage
                 source: "qrc:/icons/ic_play_circle_filled_white_48px.svg"
                 visible: false
-                anchors.top: activeViewLabel.bottom
-                anchors.topMargin: 4
-                anchors.right: profileLabel.left
-                anchors.rightMargin: 10
-                width: 32
-                height: width
+                anchors.top: parent.top
+                anchors.left: parent.left
+                width: parent.height
+                height: parent.height
                 sourceSize: Qt.size(48, 48)
             }
 
             Text {
                 id: profileLabel
                 anchors.verticalCenter: profileImage.verticalCenter
-                anchors.right: parent.right
+                anchors.left: profileImage.right
+                anchors.leftMargin: 4
                 font.bold: true
                 font.pixelSize: 24
                 color: Theme.foreground

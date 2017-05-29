@@ -124,7 +124,7 @@ Item {
 
                 onSelectedChanged: {
                     if (selected) {
-                        list.contentY = listItem.y - listItem.anchors.topMargin
+                        list.positionViewAtIndex(item_index, ListView.Contain)
                         list.selectedViewTitle = text
                         list.selectedViewStreamProfile = streamProfile
                         list.selectedViewIsStreaming = streaming
