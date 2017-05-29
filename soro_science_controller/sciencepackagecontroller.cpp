@@ -50,7 +50,7 @@ SciencePackageController::SciencePackageController(const SettingsModel *settings
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
     _mqtt->setWillMessage(_mqtt->clientId());
-    _mqtt->setWillQos(1);
+    _mqtt->setWillQos(2);
     _mqtt->setWillTopic("system_down");
     _mqtt->setWillRetain(false);
     _mqtt->connectToHost();
@@ -64,7 +64,6 @@ SciencePackageController::SciencePackageController(const SettingsModel *settings
         _mqtt->subscribe("spectrometer_switch", 2);
         _mqtt->subscribe("geiger_switch", 2);
         _mqtt->subscribe("probe_switch", 2);
-        _mqtt->subscribe("drill_switch", 2);
     });
 
     connect(_mqtt, &QMQTT::Client::disconnected, this, [this]()
@@ -279,7 +278,7 @@ SciencePackageController::SciencePackageController(const SettingsModel *settings
 
            // Publish this disconnection event on the system_down topic since the science package microcontroller
            // does not have MQTT capability
-           _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "system_down", QByteArray("science_package"), 2, false));
+           _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "system_down", QByteArray("science_package"), 2));
        }
     });
 }

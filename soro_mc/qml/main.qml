@@ -421,11 +421,11 @@ ApplicationWindow {
                     var rate = dataRateFromRover
                     if (rate >= 1000000) {
                         uints = "MB/s"
-                        rate = Math.round(rate / 10000.0) / 10.0
+                        rate = Math.round(rate / 100000.0) / 10.0
                     }
                     else if (rate >= 1000) {
                         uints = "KB/s"
-                        rate = Math.round(rate / 10.0) / 10.0
+                        rate = Math.round(rate / 100.0) / 10.0
                     }
                     else {
                         uints = "B/s"

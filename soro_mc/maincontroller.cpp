@@ -571,13 +571,13 @@ void MainController::init(QApplication *app)
                     _self->_videoController->stopAll();
                     _self->_audioController->stop();
                     break;
-                case Qt::Key_Underscore:
+                case Qt::Key_Minus:
                     _self->_audioController->stop();
                     break;
-                case Qt::Key_BraceLeft:
+                case Qt::Key_BracketLeft:
                     _self->_audioController->play(_self->_mediaProfileSettingsModel->getAudioProfile(0));
                     break;
-                case Qt::Key_QuoteDbl:
+                case Qt::Key_Apostrophe:
                     _self->_audioController->play(_self->_mediaProfileSettingsModel->getAudioProfile(1));
                     break;
                 case Qt::Key_Up:
@@ -592,7 +592,7 @@ void MainController::init(QApplication *app)
                 case Qt::Key_Left:
                     _self->_mainWindowController->toggleSidebar();
                     break;
-                default: break;
+                default: qDebug() << key; break;
                 }
             });
 

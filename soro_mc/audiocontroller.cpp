@@ -42,7 +42,7 @@ AudioController::AudioController(const SettingsModel *settings, QObject *parent)
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
     _mqtt->setWillMessage(_mqtt->clientId());
-    _mqtt->setWillQos(1);
+    _mqtt->setWillQos(2);
     _mqtt->setWillTopic("system_down");
     _mqtt->setWillRetain(false);
     _mqtt->connectToHost();
@@ -141,7 +141,7 @@ void AudioController::play(GStreamerUtil::AudioProfile profile)
 
         AudioMessage msg;
         msg.profile = _profile;
-        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "audio_request", msg, 0));
+        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "audio_request", msg, 2));
     }
     else
     {
@@ -159,7 +159,7 @@ void AudioController::stop()
 
         AudioMessage msg;
         msg.profile = _profile;
-        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "audio_request", msg, 0));
+        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "audio_request", msg, 2));
     }
     else
     {

@@ -45,7 +45,7 @@ ArmController::ArmController(const SettingsModel *settings, QObject *parent) : Q
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
     _mqtt->setWillMessage(_mqtt->clientId());
-    _mqtt->setWillQos(1);
+    _mqtt->setWillQos(2);
     _mqtt->setWillTopic("system_down");
     _mqtt->setWillRetain(false);
     _mqtt->connectToHost();

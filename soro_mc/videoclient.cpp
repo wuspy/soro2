@@ -57,7 +57,7 @@ VideoClient::VideoClient(const SettingsModel *settings, const CameraSettingsMode
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
     _mqtt->setWillMessage(_mqtt->clientId());
-    _mqtt->setWillQos(1);
+    _mqtt->setWillQos(2);
     _mqtt->setWillTopic("system_down");
     _mqtt->setWillRetain(false);
     _mqtt->connectToHost();
@@ -167,7 +167,7 @@ void VideoClient::play(uint cameraIndex, GStreamerUtil::VideoProfile profile)
                                 QString::number(cameraIndex), QString::number(profile.codec), QString::number(profile.width), QString::number(profile.height),
                                 QString::number(profile.framerate), QString::number(profile.bitrate), QString::number(profile.mjpeg_quality)));
 
-            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "video_request", msg, 0));
+            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "video_request", msg, 2));
         }
         else
         {
@@ -255,7 +255,7 @@ void VideoClient::stop(uint cameraIndex)
 
             LOG_I(LogTag, QString("Sending video OFF request to the rover for camera %1").arg(cameraIndex));
 
-            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "video_request", msg, 0));
+            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "video_request", msg, 2));
         }
         else
         {

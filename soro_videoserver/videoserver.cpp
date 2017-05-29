@@ -122,7 +122,7 @@ VideoServer::VideoServer(const SettingsModel *settings, QObject *parent) : QObje
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
     _mqtt->setWillMessage(_mqtt->clientId());
-    _mqtt->setWillQos(1);
+    _mqtt->setWillQos(2);
     _mqtt->setWillTopic("system_down");
     _mqtt->setWillRetain(false);
     _mqtt->connectToHost();
@@ -132,7 +132,7 @@ void VideoServer::onMqttConnected()
 {
     LOG_I(LogTag, "Connected to MQTT broker");
     _mqtt->subscribe("video_request", 2);
-    _mqtt->subscribe("system_down", 1);
+    _mqtt->subscribe("system_down", 2);
     Q_EMIT mqttConnected();
 }
 
