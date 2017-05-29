@@ -19,6 +19,7 @@
 #include "soro_core/logger.h"
 #include "soro_core/constants.h"
 #include "soro_core/drivemessage.h"
+#include "soro_core/switchmessage.h"
 #include <QtMath>
 
 #define LogTag "DriveControlSystem"
@@ -158,11 +159,30 @@ DriveControlSystem::DriveControlSystem(const SettingsModel *settings, QObject *p
                 break;
             }
 
-            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "drive", msg, 0));
+            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "drive/controller", msg, 0));
         }
     });
 
     _timer.start(settings->getDriveSendInterval());
+}
+
+void DriveControlSystem::setDriveModeManual()
+{
+    SwitchMessage msg;
+    msg.on = false;
+    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "drive_switch", msg, 2, true));
+}
+
+void DriveControlSystem::setDriveModeAutonomous()
+{
+    SwitchMessage msg;
+    msg.on = true;
+    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "drive_switch", msg, 2, true));
+}
+
+void DriveControlSystem::setAutonomousDrivePath(DrivePathMessage path)
+{
+    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "drive/path", path, 2, true));
 }
 
 void DriveControlSystem::setSkidSteerFactor(float factor)

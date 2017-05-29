@@ -6,6 +6,8 @@
 #include <SDL2/SDL.h>
 
 #include "settingsmodel.h"
+#include "soro_core/drivepathmessage.h"
+
 #include "qmqtt/qmqtt.h"
 
 namespace Soro {
@@ -32,6 +34,9 @@ Q_SIGNALS:
 public Q_SLOTS:
     void enable();
     void disable();
+    void setDriveModeManual();
+    void setDriveModeAutonomous();
+    void setAutonomousDrivePath(DrivePathMessage path);
 
     void onGamepadAxisUpdate(SDL_GameControllerAxis axis, float value);
 
