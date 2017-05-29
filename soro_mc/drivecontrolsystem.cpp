@@ -198,6 +198,7 @@ float DriveControlSystem::getSkidSteerFactor() const
 void DriveControlSystem::setLimit(float limit)
 {
     _limit = clampF(limit, 0.0f, 1.0f);
+    LOG_I(LogTag, "Limit changed to " + QString::number(_limit));
 }
 
 float DriveControlSystem::getLimit() const

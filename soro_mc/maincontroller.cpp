@@ -444,6 +444,9 @@ void MainController::init(QApplication *app)
             {
                 switch (key)
                 {
+                case Qt::Key_F1:
+                    _self->_mainWindowController->takeMainContentViewScreenshot();
+                    break;
                 case Qt::Key_1:
                     _self->_videoController->stop(0);
                     break;
@@ -598,30 +601,27 @@ void MainController::init(QApplication *app)
             //
             connect(_self->_gamepadController, &GamepadController::buttonPressed, _self, [](SDL_GameControllerButton btn, bool isPressed)
             {
-                if (isPressed)
+                switch (btn)
                 {
-                    switch (btn)
+                case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                    if (_self->_driveControlSystem)
                     {
-                    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
-                        if (_self->_driveControlSystem)
-                        {
-                            _self->_driveControlSystem->setLimit(isPressed ? 1.0 : 0.6);
-                        }
-                        break;
-                    case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                        _self->_mainWindowController->selectViewBelow();
-                        break;
-                    case SDL_CONTROLLER_BUTTON_DPAD_UP:
-                        _self->_mainWindowController->selectViewAbove();
-                        break;
-                    case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-                        _self->_mainWindowController->toggleSidebar();
-                        break;
-                    case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
-                        _self->_mainWindowController->dismissNotification();
-                        break;
-                    default: break;
+                        _self->_driveControlSystem->setLimit(isPressed ? 1.0 : _self->_settingsModel->getDrivePowerLimit());
                     }
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                    if (isPressed) _self->_mainWindowController->selectViewBelow();
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                    if (isPressed) _self->_mainWindowController->selectViewAbove();
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+                    if (isPressed) _self->_mainWindowController->toggleSidebar();
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                    if (isPressed) _self->_mainWindowController->dismissNotification();
+                    break;
+                default: break;
                 }
             });
 

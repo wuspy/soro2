@@ -45,6 +45,13 @@ ApplicationWindow {
     property string configuration: "Observer"
 
     /*
+      Navigation properties
+      */
+    property alias compassHeading: navOverlay.compassHeading
+    property alias latitude: navOverlay.latitude
+    property alias longitude: navOverlay.longitude
+
+    /*
       Selected view in the UI, can be eselectedViewither 'map' or 'camera0'-'camera9'
       */
     property int selectedViewIndex: 0
@@ -75,9 +82,14 @@ ApplicationWindow {
         return mainContentView.videoSurfaces[index]
     }
 
+    /*
+      Audio properties
+      */
     property string audioProfile: ""
     property bool audioStreaming: false
     property bool audioMuted: false
+
+    property alias mainContentView: mainContentView
 
     /* Emitted when a key is pressed in the UI
       */
@@ -154,68 +166,9 @@ ApplicationWindow {
         activeViewIndex: sidebarViewSelector.selectedViewIndex
     }
 
-    /*
-      Drop shadow for the mini connection status image
-      */
     DropShadow {
-        source: miniConnectionStatusImageColorOverlay
-        anchors.fill: miniConnectionStatusImageColorOverlay
-        radius: 20
-        samples: 20
-        spread: Theme.shadowSpread
-        visible: miniConnectionStatusImageColorOverlay.visible
-    }
-
-    /*
-      Color overlay to colorize the mini connection status image
-      */
-    ColorOverlay {
-        id: miniConnectionStatusImageColorOverlay
-        anchors.fill: miniConnectionStatusImage
-        source: miniConnectionStatusImage
-        color: connectionStatusImageColorOverlay.color
-        visible: sidebar.state == "hidden"
-    }
-
-    /*
-      Status image that is shown when the main sidebar is hidden
-      */
-    Image {
-        id: miniConnectionStatusImage
-        width: 64
-        height: 64
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.leftMargin: 10
-        anchors.topMargin: 10
-        visible: false
-        sourceSize: Qt.size(width, height)
-        source: connectionStatusImage.source
-    }
-
-    DropShadow {
-        source: miniPingLabel
-        anchors.fill: miniPingLabel
-        radius: 10
-        samples: 20
-        spread: Theme.shadowSpread
-        color: Theme.shadow
-    }
-
-    Text {
-        id: miniPingLabel
-        visible: sidebar.state == "hidden"
-        color: Theme.foreground
-        font.pixelSize: 48
-        text: pingLabel.text
-        anchors.leftMargin: 10
-        anchors.verticalCenter: miniConnectionStatusImage.verticalCenter
-        anchors.left: miniConnectionStatusImage.right
-    }
-
-    DropShadow {
-        source: activeViewOverlay
-        anchors.fill: activeViewOverlay
+        source: hudOverlay
+        anchors.fill: hudOverlay
         radius: 10
         samples: 20
         spread: Theme.shadowSpread
@@ -223,51 +176,102 @@ ApplicationWindow {
     }
 
     Item {
-        id: activeViewOverlay
-        anchors.top: parent.top
-        anchors.rightMargin: 10
-        anchors.topMargin: 10
-        anchors.right: parent.right
-        width: activeViewLabel.width
-        height: profileImage.height + profileImage.y
+        id: hudOverlay
+        anchors.fill: parent
+
+        NavOverlay {
+            id: navOverlay
+            anchors.bottomMargin: 10
+            anchors.bottom: parent.bottom
+            anchors.horizontalCenter: parent.horizontalCenter
+            height: 64
+        }
+
+        /*
+          Color overlay to colorize the mini connection status image
+          */
+        ColorOverlay {
+            id: miniConnectionStatusImageColorOverlay
+            anchors.fill: miniConnectionStatusImage
+            source: miniConnectionStatusImage
+            color: connectionStatusImageColorOverlay.color
+            visible: sidebar.state == "hidden"
+        }
+
+        /*
+          Status image that is shown when the main sidebar is hidden
+          */
+        Image {
+            id: miniConnectionStatusImage
+            width: 64
+            height: 64
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.leftMargin: 10
+            anchors.topMargin: 10
+            visible: false
+            sourceSize: Qt.size(width, height)
+            source: connectionStatusImage.source
+        }
 
         Text {
-            id: activeViewLabel
+            id: miniPingLabel
+            visible: sidebar.state == "hidden"
             color: Theme.foreground
             font.pixelSize: 48
-            text: sidebarViewSelector.selectedViewTitle
+            text: pingLabel.text
+            anchors.leftMargin: 10
+            anchors.verticalCenter: miniConnectionStatusImage.verticalCenter
+            anchors.left: miniConnectionStatusImage.right
         }
 
-        ColorOverlay {
-            id: profileImageColorOverlay
-            anchors.fill: profileImage
-            source: profileImage
-            color: Theme.red
-            visible: sidebarViewSelector.selectedViewIsStreaming
-        }
-
-        Image {
-            id: profileImage
-            source: "qrc:/icons/ic_play_circle_filled_white_48px.svg"
-            visible: false
-            anchors.top: activeViewLabel.bottom
-            anchors.topMargin: 4
-            anchors.right: profileLabel.left
+        Item {
+            id: activeViewOverlay
+            anchors.top: parent.top
             anchors.rightMargin: 10
-            width: 32
-            height: width
-            sourceSize: Qt.size(48, 48)
-        }
-
-        Text {
-            id: profileLabel
-            anchors.verticalCenter: profileImage.verticalCenter
+            anchors.topMargin: 10
             anchors.right: parent.right
-            font.bold: true
-            font.pixelSize: 24
-            color: Theme.foreground
-            text: sidebarViewSelector.selectedViewStreamProfile.toUpperCase()
-            visible: sidebarViewSelector.selectedViewIsStreaming
+            width: activeViewLabel.width
+            height: profileImage.height + profileImage.y
+
+            Text {
+                id: activeViewLabel
+                color: Theme.foreground
+                font.pixelSize: 48
+                text: sidebarViewSelector.selectedViewTitle
+            }
+
+            ColorOverlay {
+                id: profileImageColorOverlay
+                anchors.fill: profileImage
+                source: profileImage
+                color: Theme.red
+                visible: sidebarViewSelector.selectedViewIsStreaming
+            }
+
+            Image {
+                id: profileImage
+                source: "qrc:/icons/ic_play_circle_filled_white_48px.svg"
+                visible: false
+                anchors.top: activeViewLabel.bottom
+                anchors.topMargin: 4
+                anchors.right: profileLabel.left
+                anchors.rightMargin: 10
+                width: 32
+                height: width
+                sourceSize: Qt.size(48, 48)
+            }
+
+            Text {
+                id: profileLabel
+                anchors.verticalCenter: profileImage.verticalCenter
+                anchors.right: parent.right
+                font.bold: true
+                font.pixelSize: 24
+                color: Theme.foreground
+                text: sidebarViewSelector.selectedViewStreamProfile.toUpperCase()
+                visible: sidebarViewSelector.selectedViewIsStreaming
+            }
         }
     }
 
@@ -393,12 +397,12 @@ ApplicationWindow {
 
         Label {
             id: pingLabel
-            font.pixelSize: 48
+            font.pixelSize: 36
             anchors.top: connectionStatusImage.bottom
             anchors.right: parent.right
             anchors.rightMargin: 10
             anchors.left: parent.horizontalCenter
-            text: connected && latency >= 0 ? latency + "ms" : "---"
+            text: connected && latency >= 0 ? latency + " ms" : "---"
             horizontalAlignment: Text.AlignHCenter
             color: Theme.foreground
         }
@@ -409,24 +413,24 @@ ApplicationWindow {
             anchors.left: connectionStatusImage.left
             anchors.right: parent.horizontalCenter
             horizontalAlignment: Text.AlignHCenter
-            font.pixelSize: 48
+            font.pixelSize: 36
             color: Theme.foreground
             text: {
                 if (connected) {
                     var uints
                     var rate = dataRateFromRover
-                    if (rate > 1000000) {
+                    if (rate >= 1000000) {
                         uints = "MB/s"
-                        rate = Math.round(up / 10000.0) / 10.0
+                        rate = Math.round(rate / 10000.0) / 10.0
                     }
-                    else if (rate > 1000) {
+                    else if (rate >= 1000) {
                         uints = "KB/s"
-                        rate = Math.round(up / 10.0) / 10.0
+                        rate = Math.round(rate / 10.0) / 10.0
                     }
                     else {
                         uints = "B/s"
                     }
-                    rate + uints
+                    rate + " " + uints
                 }
                 else {
                     "---"

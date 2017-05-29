@@ -59,7 +59,7 @@ QHash<QString, QVariant> SettingsModel::getDefaultValues() const
     defaults.insert(KEY_CAMERA_GIMBAL_SEND_INTERVAL, QVariant(50));
     defaults.insert(KEY_ENABLE_HWDECODING, QVariant(false));
     defaults.insert(KEY_ENABLE_HWRENDERING, QVariant(true));
-    defaults.insert(KEY_DRIVE_POWER_LIMIT, QVariant(0.5f));
+    defaults.insert(KEY_DRIVE_POWER_LIMIT, QVariant(0.6f));
     defaults.insert(KEY_DRIVE_SKIDSTEER_FACTOR, QVariant(0.2f));
     defaults.insert(KEY_DRIVE_INPUT_MODE, "twostick");
     defaults.insert(KEY_CAMERA_GIMBAL_INPUT_MODE, "leftstick");

@@ -68,7 +68,7 @@ ApplicationWindow {
 
     Label {
         id: connectionStatusLabel
-        font.pixelSize: 48
+        font.pixelSize: 36
         anchors.right: parent.right
         anchors.rightMargin: 10
         anchors.leftMargin: 10
@@ -80,12 +80,12 @@ ApplicationWindow {
 
     Label {
         id: pingLabel
-        font.pixelSize: 48
+        font.pixelSize: 36
         anchors.top: connectionStatusImage.bottom
         anchors.right: parent.right
         anchors.rightMargin: 10
         anchors.left: parent.horizontalCenter
-        text: connected && latency >= 0 ? latency + "ms" : "---"
+        text: connected && latency >= 0 ? latency + " ms" : "---"
         horizontalAlignment: Text.AlignHCenter
         color: "black"
     }
@@ -97,24 +97,24 @@ ApplicationWindow {
         anchors.right: parent.horizontalCenter
         anchors.bottom: pingLabel.bottom
         horizontalAlignment: Text.AlignHCenter
-        font.pixelSize: 48
+        font.pixelSize: 36
         color: "black"
         text: {
             if (connected) {
                 var uints
                 var rate = dataRateFromRover
-                if (rate > 1000000) {
+                if (rate >= 1000000) {
                     uints = "MB/s"
-                    rate = Math.round(up / 10000.0) / 10.0
+                    rate = Math.round(rate / 10000.0) / 10.0
                 }
-                else if (rate > 1000) {
+                else if (rate >= 1000) {
                     uints = "KB/s"
-                    rate = Math.round(up / 10.0) / 10.0
+                    rate = Math.round(rate / 10.0) / 10.0
                 }
                 else {
                     uints = "B/s"
                 }
-                rate + uints
+                rate + " " + uints
             }
             else {
                 "---"

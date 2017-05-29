@@ -45,7 +45,20 @@ MasterVideoClient::MasterVideoClient(const SettingsModel *settings, const Camera
         }
         connect(socket, &QUdpSocket::readyRead, this, [this, socket, i]()
         {
-            this->onSocketReadyRead(socket, SORO_NET_MC_FIRST_VIDEO_PORT + i);
+            quint32 totalLen = 0;
+            while (socket->hasPendingDatagrams())
+            {
+                qint64 len = socket->readDatagram(_buffer, 65536);
+                if (len > 0)
+                {
+                    for (QHostAddress bounceAddress : _bounceAddresses)
+                    {
+                        socket->writeDatagram(_buffer, len, bounceAddress, SORO_NET_MC_FIRST_VIDEO_PORT + i);
+                    }
+                    totalLen += len;
+                }
+            }
+            Q_EMIT bytesDown(totalLen);
         });
         _videoSockets.append(socket);
         LOG_I(LogTag, "Bound UDP video socket");
@@ -164,19 +177,5 @@ void MasterVideoClient::timerEvent(QTimerEvent *e)
     }
 }
 
-void MasterVideoClient::onSocketReadyRead(QUdpSocket *socket, quint16 bouncePort)
-{
-    quint32 totalLen = 0;
-    while (socket->hasPendingDatagrams())
-    {
-        qint64 len = socket->readDatagram(_buffer, 65536);
-        for (QHostAddress bounceAddress : _bounceAddresses)
-        {
-            socket->writeDatagram(_buffer, len, bounceAddress, bouncePort);
-        }
-        totalLen += len;
-    }
-    Q_EMIT bytesDown(totalLen);
-}
 
 } // namespace Soro
