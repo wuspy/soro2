@@ -138,7 +138,7 @@ void MainWindowController::takeMainContentViewScreenshot()
         QString name = NameGen::generate(1);
         if (result.data()->image().save(QCoreApplication::applicationDirPath() + "/../screenshots/" + name + ".png"))
         {
-            // Save our current position data to go along with the screenshot
+            // Save our current position and atmosphere data to go along with the screenshot
             QFile file(QCoreApplication::applicationDirPath() + "/../screenshots/" + name + ".txt");
             if (file.open(QIODevice::WriteOnly))
             {

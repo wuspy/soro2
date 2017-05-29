@@ -136,15 +136,14 @@ void AudioServer::onMqttMessage(const QMQTT::Message &msg)
             notifyMsg.level = NotificationMessage::Level_Error;
             notifyMsg.title = "Cannot stream audio";
             notifyMsg.message = "Audio client has not yet given this server an address for this stream";
-            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
             return;
         }
 
         Assignment assignment;
-        assignment.profile = audioMsg.profile;
         assignment.address = _clientAddress;
         assignment.port = _clientPort;
-        assignment.originalMessage = audioMsg;
+        assignment.message = audioMsg;
 
         if (!_child)
         {
@@ -179,7 +178,7 @@ void AudioServer::onMqttMessage(const QMQTT::Message &msg)
                     notifyMsg.level = NotificationMessage::Level_Error;
                     notifyMsg.title = "Cannot stream audio";
                     notifyMsg.message = "Unexpected error - child process died before accepting its stream assignment.";
-                    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+                    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
 
                     reportAudioState();
                 }
@@ -191,7 +190,7 @@ void AudioServer::onMqttMessage(const QMQTT::Message &msg)
                     notifyMsg.level = NotificationMessage::Level_Error;
                     notifyMsg.title = "Error streaming audio";
                     notifyMsg.message = "Unexpected error while streaming this audio. Try agian.";
-                    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+                    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
 
                     reportAudioState();
                 }
@@ -225,8 +224,7 @@ AudioServer::Assignment::Assignment()
 {
     address = QHostAddress::Null;
     port = 0;
-    profile = GStreamerUtil::AudioProfile();
-    originalMessage = AudioMessage();
+    message = AudioMessage();
 }
 
 AudioServer::~AudioServer()
@@ -275,7 +273,7 @@ void AudioServer::giveChildAssignment(Assignment assignment)
 {
     if (_childInterface && _childInterface->isValid())
     {
-        if (assignment.profile.codec == GStreamerUtil::CODEC_NULL)
+        if (assignment.message.profile.codec == GStreamerUtil::CODEC_NULL)
         {
             _childInterface->call(
                         QDBus::NoBlock,
@@ -290,7 +288,7 @@ void AudioServer::giveChildAssignment(Assignment assignment)
                         assignment.address.toString(),
                         assignment.port,
                         SORO_NET_AUDIO_PORT,
-                        assignment.profile.toString());
+                        assignment.message.profile.toString());
         }
     }
     else
@@ -331,7 +329,7 @@ void AudioServer::onChildReady()
             notifyMsg.level = NotificationMessage::Level_Error;
             notifyMsg.title = "Cannot stream audio";
             notifyMsg.message = "Unexpected error - cannot create D-Bus connection to child stream process";
-            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
             _waitingAssignment = Assignment();
             _hasWaitingAssignment = false;
         }
@@ -358,11 +356,11 @@ void AudioServer::reportAudioState()
 {
     if (_hasCurrentAssignment)
     {
-        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "audio_state", _currentAssignment.originalMessage, 0, true)); // <-- Retain message
+        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "audio_state", _currentAssignment.message, 2, true)); // <-- Retain message
     }
     else
     {
-       _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "audio_state", AudioMessage(), 0, true)); // <-- Retain message
+       _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "audio_state", AudioMessage(), 2, true)); // <-- Retain message
     }
 }
 
@@ -377,7 +375,7 @@ void AudioServer::onChildError(QString message)
         notifyMsg.title = "Error streaming audio";
         notifyMsg.message = "Stream error: " + message;
 
-        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
         _hasCurrentAssignment = false;
         reportAudioState();
     }
