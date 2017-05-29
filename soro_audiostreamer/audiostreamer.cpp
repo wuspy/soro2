@@ -91,7 +91,7 @@ void AudioStreamer::streamAudio(QString address, int port, int bindPort, QString
     _pipeline->add(encoder);
     _pipeline->setState(QGst::StatePlaying);
 
-    _parentInterface->call(QDBus::NoBlock, "onChildStreaming", address, port, profile);
+    _parentInterface->call(QDBus::NoBlock, "onChildStreaming");
 }
 
 void AudioStreamer::heartbeat()
