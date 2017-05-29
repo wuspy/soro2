@@ -56,11 +56,36 @@ ScienceArmControlSystem::ScienceArmControlSystem(const SettingsModel *settings, 
     connect(_mqtt, &QMQTT::Client::connected, this, [this]()
     {
         LOG_I(LogTag, "Connected to MQTT broker");
+        _mqtt->subscribe("system_down", 2);
     });
 
     connect(_mqtt, &QMQTT::Client::disconnected, this, [this]()
     {
        LOG_W(LogTag, "Disconnected from MQTT broker");
+    });
+
+    connect(_mqtt, &QMQTT::Client::received, this, [this](const QMQTT::Message& message)
+    {
+        if (message.topic() == "system_down")
+        {
+            QString client = QString(message.payload());
+            if (client == "science_package")
+            {
+                Q_EMIT sciencePackageDisconnected();
+            }
+            else if (client == "science_package_controller")
+            {
+                Q_EMIT sciencePackageControllerDisconnected();
+            }
+            else if (client == "flir")
+            {
+                Q_EMIT flirDisconnected();
+            }
+            else if (client == "lidar")
+            {
+                Q_EMIT lidarDisconnected();
+            }
+        }
     });
 
     connect(&_armUdpSocket, &QUdpSocket::readyRead, this,[this]()

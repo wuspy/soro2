@@ -186,7 +186,7 @@ void MainController::init(QApplication *app)
             //
             // Create the GamepadController instance
             //
-            LOG_I(LogTag, "Initializing Gamepad Controller...");
+            LOG_I(LogTag, "Initializing gamepad controller...");
             _self->_gamepadController = new GamepadController(_self);
 
             switch (_self->_settingsModel->getConfiguration()) {
@@ -196,9 +196,6 @@ void MainController::init(QApplication *app)
                 //
                 LOG_I(LogTag, "Initializing drive control system...");
                 _self->_driveControlSystem = new DriveControlSystem(_self->_settingsModel, _self);
-                _self->_driveControlSystem->setLimit(_self->_settingsModel->getDrivePowerLimit());
-                _self->_driveControlSystem->setSkidSteerFactor(_self->_settingsModel->getDriveSkidSteerFactor());
-                _self->_driveControlSystem->enable();
                 break;
             case SettingsModel::ArmOperatorConfiguration:
                 //
@@ -206,10 +203,23 @@ void MainController::init(QApplication *app)
                 //
                 LOG_I(LogTag, "Initializing arm control system...");
                 _self->_armControlSystem = new ArmControlSystem(_self->_settingsModel, _self);
-                _self->_armControlSystem->enable();
                 break;
             case SettingsModel::CameraOperatorConfiguration:
                 //TODO
+                break;
+            case SettingsModel::ScienceArmOperatorConfiguration:
+                //
+                // Create science arm control system
+                //
+                LOG_I(LogTag, "Initializing science arm control system...");
+                _self->_scienceArmControlSystem = new ScienceArmControlSystem(_self->_settingsModel, _self);
+                break;
+            case SettingsModel::ScienceCameraOperatorConfiguration:
+                //
+                // Create science camera gimbal control system
+                //
+                LOG_I(LogTag, "Initializing science camera control system...");
+                _self->_scienceCameraControlSystem = new ScienceCameraControlSystem(_self->_settingsModel, _self);
                 break;
             case SettingsModel::ObserverConfiguration:
                 break;
@@ -251,8 +261,72 @@ void MainController::init(QApplication *app)
             LOG_I(LogTag, "Initializing video controller...");
             _self->_videoController = new VideoClient(_self->_settingsModel, _self->_cameraSettingsModel, _self->_mainWindowController->getVideoSinks(), _self);
 
+            //
+            // Connect to connection status signals
+            //
+            connect(_self->_connectionStatusController, &ConnectionStatusController::dataRateUpdate,
+                    _self->_mainWindowController, &MainWindowController::onDataRateUpdated);
+            connect(_self->_connectionStatusController, &ConnectionStatusController::latencyUpdate,
+                    _self->_mainWindowController, &MainWindowController::onLatencyUpdated);
+            connect(_self->_connectionStatusController, &ConnectionStatusController::connectedChanged,
+                    _self->_mainWindowController, &MainWindowController::onConnectedChanged);
+            connect(_self->_connectionStatusController, &ConnectionStatusController::connectedChanged, _self, [](bool connected)
+            {
+                // Enable/disable control systems depending on the connection state. Although the connection status controller reports
+                // the connection is down, it is possible that the individual controls systems may still be connected. They should
+                // not be allowed to control the rover unless everything is connected for safety
+                if (connected)
+                {
+                    if (_self->_driveControlSystem) _self->_driveControlSystem->enable();
+                    if (_self->_armControlSystem) _self->_armControlSystem->enable();
+                    if (_self->_scienceArmControlSystem) _self->_scienceArmControlSystem->enable();
+                    if (_self->_scienceCameraControlSystem) _self->_scienceCameraControlSystem->enable();
+                }
+                else
+                {
+                    if (_self->_driveControlSystem) _self->_driveControlSystem->disable();
+                    if (_self->_armControlSystem) _self->_armControlSystem->disable();
+                    if (_self->_scienceArmControlSystem) _self->_scienceArmControlSystem->disable();
+                    if (_self->_scienceCameraControlSystem) _self->_scienceCameraControlSystem->disable();
+                }
+            });
 
-            // Forward audio/video errors to the UI
+            //
+            // Connect signals relating to the gamepad system
+            //
+            connect(_self->_gamepadController, &GamepadController::gamepadChanged, _self, [](bool connected, QString name)
+            {
+                if (connected)
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Info, name + " connected", "This controller is ready for use.");
+                }
+                else
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Controller disconnected", "No active controller available.");
+                }
+            });
+
+            //
+            // Connect signals relating to the audio/video system
+            //
+            connect(_self->_audioController, &AudioController::playing, _self->_mainWindowController, &MainWindowController::onAudioProfileChanged);
+            connect(_self->_audioController, &AudioController::stopped, _self, []()
+            {
+                _self->_mainWindowController->onAudioProfileChanged(GStreamerUtil::AudioProfile());
+            });
+            connect(_self->_videoController, &VideoClient::playing, _self->_mainWindowController, &MainWindowController::onVideoProfileChanged);
+            connect(_self->_videoController, &VideoClient::stopped, _self, [](uint cameraIndex)
+            {
+                _self->_mainWindowController->onVideoProfileChanged(cameraIndex, GStreamerUtil::VideoProfile());
+            });
+            connect(_self->_videoController, &VideoClient::videoServerDisconnected, _self, [](uint computer)
+            {
+                _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Video Server Stopped", "Video server #" + QString::number(computer) + " has either exited, crashed, or lost connection.");
+            });
+            connect(_self->_videoController, &VideoClient::masterVideoClientDisconnected, _self, []()
+            {
+                _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Mission Control Master Stopped", "The mission control master has either exited, crashed, or lost connection. Audio/Video and several other features will not work until it is restarted.");
+            });
             connect(_self->_videoController, &VideoClient::gstError, _self, [](QString message, uint cameraIndex)
             {
                 _self->_self->_mainWindowController->notify(NotificationMessage::Level_Error,
@@ -266,56 +340,106 @@ void MainController::init(QApplication *app)
                                               "There was an error while decoding the audio stream: " + message);
             });
 
-            connect(_self->_connectionStatusController, &ConnectionStatusController::dataRateUpdate,
-                    _self->_mainWindowController, &MainWindowController::onDataRateUpdated);
-            connect(_self->_connectionStatusController, &ConnectionStatusController::latencyUpdate,
-                    _self->_mainWindowController, &MainWindowController::onLatencyUpdated);
-            connect(_self->_connectionStatusController, &ConnectionStatusController::connectedChanged,
-                    _self->_mainWindowController, &MainWindowController::onConnectedChanged);
-            connect(_self->_audioController, &AudioController::playing,
-                    _self->_mainWindowController, &MainWindowController::onAudioProfileChanged);
-            connect(_self->_audioController, &AudioController::stopped, _self, []()
-            {
-                _self->_mainWindowController->onAudioProfileChanged(GStreamerUtil::AudioProfile());
-            });
-            connect(_self->_videoController, &VideoClient::playing,
-                    _self->_mainWindowController, &MainWindowController::onVideoProfileChanged);
-            connect(_self->_videoController, &VideoClient::stopped, _self, [](uint cameraIndex)
-            {
-                _self->_mainWindowController->onVideoProfileChanged(cameraIndex, GStreamerUtil::VideoProfile());
-            });
-            connect(_self->_gamepadController, &GamepadController::gamepadChanged, _self, [](bool connected, QString name)
-            {
-                if (connected)
-                {
-                    _self->_mainWindowController->notify(NotificationMessage::Level_Info, name + " connected", "This controller is ready for use.");
-                }
-                else
-                {
-                    _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Controller disconnected", "No active controller available.");
-                }
-            });
-
-            connect(_self->_videoController, &VideoClient::videoServerDisconnected, _self, [](uint computer)
-            {
-                _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Video Server Stopped", "Video server #" + QString::number(computer) + " has either exited or crashed.");
-            });
-
-            connect(_self->_videoController, &VideoClient::masterVideoClientDisconnected, _self, []()
-            {
-                _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Mission Control Master Stopped", "The mission control master has either exited or crashed. Audio/Video and several other features will not work until it is restarted.");
-            });
-
+            //
+            // Connect signals related to the drive system
+            //
             if (_self->_driveControlSystem)
             {
                 connect(_self->_gamepadController, &GamepadController::axisChanged,
                         _self->_driveControlSystem, &DriveControlSystem::onGamepadAxisUpdate);
                 connect(_self->_driveControlSystem, &DriveControlSystem::driveSystemExited, _self, []()
                 {
-                    _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Drive System Stopped", "Drive system on the rover has either exited or crashed.");
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Drive System Disconnected", "The drive system running on the rover computer has either exited, crashed, or lost connection.");
                 });
             }
 
+            //
+            // Connect signals related to the arm system
+            //
+            if (_self->_armControlSystem)
+            {
+                connect(_self->_armControlSystem, &ArmControlSystem::masterArmConnectedChanged, _self, [](bool connected)
+                {
+                    if (connected)
+                    {
+                        _self->_mainWindowController->notify(NotificationMessage::Level_Info, "Master Arm Connected", "The master arm is connected.");
+                    }
+                    else
+                    {
+                        _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Master Arm Disconnected", "The master arm is not connected.");
+                    }
+                });
+
+                connect(_self->_armControlSystem, &ArmControlSystem::slaveArmDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "Arm Disconnected", "The arm microcontroller on the rover has either exited, crashed, or lost connection.");
+                });
+                connect(_self->_armControlSystem, &ArmControlSystem::armControllerDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "Arm Controller Disconnected", "The arm control system running on the rover computer has either exited, crashed, or lost connection.");
+                });
+            }
+
+            //
+            // Connect signals related to the science arm system
+            //
+            if (_self->_scienceArmControlSystem)
+            {
+                connect(_self->_scienceArmControlSystem, &ScienceArmControlSystem::masterArmConnectedChanged, _self, [](bool connected)
+                {
+                    if (connected)
+                    {
+                        _self->_mainWindowController->notify(NotificationMessage::Level_Info, "Master Science Arm Connected", "The master science arm is connected.");
+                    }
+                    else
+                    {
+                        _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Master Science Arm Disconnected", "The master science arm is not connected.");
+                    }
+                });
+                connect(_self->_scienceArmControlSystem, &ScienceArmControlSystem::sciencePackageControllerDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "Science System Disconnected", "The science package control system running on the rover computer has either exited, crashed, or lost connection.");
+                });
+                connect(_self->_scienceArmControlSystem, &ScienceArmControlSystem::sciencePackageDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "Science Package Disconnected", "The science package microcontroller on the rover has either exited, crashed, or lost connection.");
+                });
+                connect(_self->_scienceArmControlSystem, &ScienceArmControlSystem::flirDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "Flir System Disconnected", "The Flir control system running on the rover has either exited, crashed, or lost connection.");
+                });
+                connect(_self->_scienceArmControlSystem, &ScienceArmControlSystem::lidarDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "LIDAR System Disconnected", "The LIDAR control system running on the rover has either exited, crashed, or lost connection.");
+                });
+            }
+
+            //
+            // Connect signals related to the science camera control system
+            //
+            if (_self->_scienceCameraControlSystem)
+            {
+                connect(_self->_scienceCameraControlSystem, &ScienceCameraControlSystem::sciencePackageControllerDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "Science System Disconnected", "The science package control system running on the rover computer has either exited, crashed, or lost connection.");
+                });
+                connect(_self->_scienceCameraControlSystem, &ScienceCameraControlSystem::sciencePackageDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "Science Package Disconnected", "The science package microcontroller on the rover has either exited, crashed, or lost connection.");
+                });
+                connect(_self->_scienceCameraControlSystem, &ScienceCameraControlSystem::flirDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "Flir System Disconnected", "The Flir control system running on the rover has either exited, crashed, or lost connection.");
+                });
+                connect(_self->_scienceCameraControlSystem, &ScienceCameraControlSystem::lidarDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "LIDAR System Disconnected", "The LIDAR control system running on the rover has either exited, crashed, or lost connection.");
+                });
+            }
+
+            //
+            // Connect to key events. This is where all the keybinding is done
+            //
             connect(_self->_mainWindowController, &MainWindowController::keyPressed, _self, [](int key)
             {
                 switch (key)
@@ -469,6 +593,9 @@ void MainController::init(QApplication *app)
                 }
             });
 
+            //
+            // Connect to gamepad button events. This is where all the gamepad button binding is done
+            //
             connect(_self->_gamepadController, &GamepadController::buttonPressed, _self, [](SDL_GameControllerButton btn, bool isPressed)
             {
                 if (isPressed)
@@ -532,6 +659,12 @@ QString MainController::genId()
         break;
     case SettingsModel::CameraOperatorConfiguration:
         id = "mc_camera";
+        break;
+    case SettingsModel::ScienceArmOperatorConfiguration:
+        id = "science_arm_operator";
+        break;
+    case SettingsModel::ScienceCameraOperatorConfiguration:
+        id = "science_camera_operator";
         break;
     case SettingsModel::ObserverConfiguration:
         id = "mc_observer_";

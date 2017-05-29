@@ -10,6 +10,9 @@
 
 namespace Soro {
 
+/* Component to read instructions from the master arm over a LAN UDP socket,
+ * and package them into MQTT messages
+ */
 class ArmControlSystem: public QObject
 {
     Q_OBJECT
@@ -19,6 +22,8 @@ public:
 
 Q_SIGNALS:
     void masterArmConnectedChanged(bool connected);
+    void slaveArmDisconnected();
+    void armControllerDisconnected();
 
 public Q_SLOTS:
     void enable();
@@ -26,8 +31,8 @@ public Q_SLOTS:
 
 private:
     QTimer _watchdogTimer;
-    bool _enabled;
     bool _masterConnected;
+    bool _enabled;
     quint16 _nextMqttMsgId;
     QUdpSocket _armUdpSocket;
     QMQTT::Client *_mqtt;

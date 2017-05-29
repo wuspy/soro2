@@ -72,6 +72,8 @@ SciencePackageController::SciencePackageController(const SettingsModel *settings
        LOG_W(LogTag, "Disconnected from MQTT broker");
     });
 
+    _watchdogTimer.setInterval(1000); // Science package connection timeout
+
     connect(_mqtt, &QMQTT::Client::received, this, [this](const QMQTT::Message& message)
     {
         if (message.topic() == "compass")
@@ -179,6 +181,15 @@ SciencePackageController::SciencePackageController(const SettingsModel *settings
 
             if (_buffer[0] != SORO_HEADER_SCIENCE_PACKAGE_MSG) return;
 
+            if (!_packageConnected)
+            {
+                LOG_I(LogTag, "Science package is connected");
+                _packageConnected = true;
+                Q_EMIT sciencePackageConnectedChanged(true);
+            }
+            _watchdogTimer.stop();
+            _watchdogTimer.start();
+
             if (_mqtt->isConnectedToHost())
             {
                 if (len > 1) // If this is only a heartbeat, length will be 1
@@ -256,6 +267,20 @@ SciencePackageController::SciencePackageController(const SettingsModel *settings
                 }
             }
         }
+    });
+
+    connect(&_watchdogTimer, &QTimer::timeout, this, [this]()
+    {
+       if (_packageConnected)
+       {
+           LOG_W(LogTag, "Science package is no longer connected");
+           _packageConnected = false;
+           Q_EMIT sciencePackageConnectedChanged(false);
+
+           // Publish this disconnection event on the system_down topic since the science package microcontroller
+           // does not have MQTT capability
+           _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "system_down", QByteArray("science_package"), 2, false));
+       }
     });
 }
 

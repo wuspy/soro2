@@ -14,35 +14,34 @@
  * limitations under the License.
  */
 
-#include "armcontrolsystem.h"
+#include "armcontroller.h"
 #include "maincontroller.h"
-#include "soro_core/armmessage.h"
+#include "soro_core/serialize.h"
 #include "soro_core/logger.h"
 #include "soro_core/constants.h"
 
-#define LogTag "ArmControlSystem"
+#define LogTag "ArmController"
 
 namespace Soro
 {
 
-ArmControlSystem::ArmControlSystem(const SettingsModel *settings, QObject *parent) : QObject(parent)
+ArmController::ArmController(const SettingsModel *settings, QObject *parent) : QObject(parent)
 {
-    _enabled = false;
-    _masterConnected = false;
+    _armConnected = false;
 
     LOG_I(LogTag, "Creating UDP socket...");
-    if (!_armUdpSocket.bind(SORO_NET_MASTER_ARM_PORT))
+    if (!_armUdpSocket.bind(SORO_NET_SLAVE_ARM_PORT))
     {
-        MainController::panic(LogTag, "Unable to bind master arm UDP socket");
+        MainController::panic(LogTag, "Unable to bind arm UDP socket");
     }
     if (!_armUdpSocket.open(QIODevice::ReadWrite))
     {
-        MainController::panic(LogTag, "Unable to open master arm UDP socket");
+        MainController::panic(LogTag, "Unable to open arm UDP socket");
     }
 
     LOG_I(LogTag, "Creating MQTT client...");
     _mqtt = new QMQTT::Client(settings->getMqttBrokerAddress(), SORO_NET_MQTT_BROKER_PORT, this);
-    _mqtt->setClientId("arm_control_system");
+    _mqtt->setClientId("arm_controller");
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
     _mqtt->setWillMessage(_mqtt->clientId());
@@ -51,12 +50,12 @@ ArmControlSystem::ArmControlSystem(const SettingsModel *settings, QObject *paren
     _mqtt->setWillRetain(false);
     _mqtt->connectToHost();
 
-    _watchdogTimer.setInterval(1000); // Master arm connection timeout
+    _watchdogTimer.setInterval(1000); // Arm connection timeout
 
     connect(_mqtt, &QMQTT::Client::connected, this, [this]()
     {
         LOG_I(LogTag, "Connected to MQTT broker");
-        _mqtt->subscribe("system_down", 2);
+        _mqtt->subscribe("arm", 0);
     });
 
     connect(_mqtt, &QMQTT::Client::disconnected, this, [this]()
@@ -66,17 +65,15 @@ ArmControlSystem::ArmControlSystem(const SettingsModel *settings, QObject *paren
 
     connect(_mqtt, &QMQTT::Client::received, this, [this](const QMQTT::Message& message)
     {
-        if (message.topic() == "system_down")
+        if (message.topic() == "arm")
         {
-            QString client = QString(message.payload());
-            if (client == "arm")
+            // Retransmit this message over UDP to the science package microcontroller
+            if (message.payload().at(0) != SORO_HEADER_MASTER_ARM_MSG)
             {
-                Q_EMIT slaveArmDisconnected();
+                LOG_W(LogTag, "Received invalid MQTT master arm message, discarding");
+                return;
             }
-            else if (client == "arm_controller")
-            {
-                Q_EMIT armControllerDisconnected();
-            }
+            _armUdpSocket.writeDatagram(message.payload(), QHostAddress::Broadcast, SORO_NET_SLAVE_ARM_PORT);
         }
     });
 
@@ -85,50 +82,33 @@ ArmControlSystem::ArmControlSystem(const SettingsModel *settings, QObject *paren
         while (_armUdpSocket.hasPendingDatagrams())
         {
             qint64 len = _armUdpSocket.readDatagram(_buffer, USHRT_MAX);
-            if (_buffer[0] != SORO_HEADER_MASTER_ARM_MSG)
+
+            if (_buffer[0] != SORO_HEADER_SLAVE_ARM_MSG) return;
+
+            if (!_armConnected)
             {
-                LOG_W(LogTag, "Received invalid master arm message, discarding");
-                return;
-            }
-            if (!_masterConnected)
-            {
-                LOG_I(LogTag, "Master arm is connected");
-                _masterConnected = true;
-                Q_EMIT masterArmConnectedChanged(true);
+                LOG_I(LogTag, "Arm is connected");
+                _armConnected = true;
+                Q_EMIT armConnectedChanged(true);
             }
             _watchdogTimer.stop();
             _watchdogTimer.start();
-
-            if (_enabled && _mqtt->isConnectedToHost())
-            {
-                if (len > 1) // If this is only a heartbeat, length will be 1
-                {
-                    ArmMessage msg(QByteArray(_buffer, len));
-                    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "arm", msg, 0));
-                }
-            }
         }
     });
 
     connect(&_watchdogTimer, &QTimer::timeout, this, [this]()
     {
-       if (_masterConnected)
+       if (_armConnected)
        {
-           LOG_W(LogTag, "Master arm is no longer connected");
-           _masterConnected = false;
-           Q_EMIT masterArmConnectedChanged(false);
+           LOG_W(LogTag, "Arm is no longer connected");
+           _armConnected = false;
+           Q_EMIT armConnectedChanged(false);
+
+           // Publish this disconnection event on the system_down topic since the arm microcontroller
+           // does not have MQTT capability
+           _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "system_down", QByteArray("arm"), 2, false));
        }
     });
-}
-
-void ArmControlSystem::enable()
-{
-    _enabled = true;
-}
-
-void ArmControlSystem::disable()
-{
-    _enabled = false;
 }
 
 } // namespace Soro

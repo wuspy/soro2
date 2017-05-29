@@ -5,8 +5,6 @@
 #include <QCoreApplication>
 #include <QTimerEvent>
 
-#include "audioserver.h"
-
 namespace Soro {
 
 class MainController : public QObject
@@ -21,9 +19,6 @@ public:
 private:
     explicit MainController(QObject *parent=0);
     static MainController *_self;
-
-    AudioServer *_audioServer = nullptr;
-    SettingsModel *_settingsModel = nullptr;
 };
 
 } // namespace Soro

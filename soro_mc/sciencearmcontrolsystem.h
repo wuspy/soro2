@@ -10,6 +10,9 @@
 
 namespace Soro {
 
+/* Component to read instructions from the science master arm over a LAN UDP socket, and
+ * package them as messages over MQTT.
+ */
 class ScienceArmControlSystem: public QObject
 {
     Q_OBJECT
@@ -19,6 +22,10 @@ public:
 
 Q_SIGNALS:
     void masterArmConnectedChanged(bool connected);
+    void sciencePackageControllerDisconnected();
+    void sciencePackageDisconnected();
+    void flirDisconnected();
+    void lidarDisconnected();
 
 public Q_SLOTS:
     void enable();
@@ -34,6 +41,6 @@ private:
     char _buffer[USHRT_MAX];
 };
 
-}
+} // namespace Soro
 
 #endif // SCIENCEARMCONTROLSYSTEM_H

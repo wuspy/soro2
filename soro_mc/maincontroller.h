@@ -20,6 +20,8 @@
 #include "videoclient.h"
 #include "armcontrolsystem.h"
 #include "bindssettingsmodel.h"
+#include "sciencecameracontrolsystem.h"
+#include "sciencearmcontrolsystem.h"
 
 namespace Soro {
 
@@ -49,6 +51,8 @@ private:
     BindsSettingsModel *_bindsSettingsModel = nullptr;
     MediaProfileSettingsModel *_mediaProfileSettingsModel = nullptr;
     MainWindowController *_mainWindowController = nullptr;
+    ScienceArmControlSystem *_scienceArmControlSystem = nullptr;
+    ScienceCameraControlSystem *_scienceCameraControlSystem = nullptr;
     DriveControlSystem *_driveControlSystem = nullptr;
     ConnectionStatusController *_connectionStatusController = nullptr;
     ArmControlSystem * _armControlSystem = nullptr;

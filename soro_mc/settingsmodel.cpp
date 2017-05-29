@@ -23,8 +23,11 @@
 #define KEY_CONFIGURATION "SORO_MC_CONFIGURATION"
 #define KEY_MQTT_BROKER_IP "SORO_MQTT_BROKER_IP"
 #define KEY_DRIVE_SEND_INTERVAL "SORO_DRIVE_SEND_INTERVAL"
+#define KEY_CAMERA_GIMBAL_SEND_INTERVAL "SORO_CAMERA_GIMBAL_SEND_INTERVAL"
 #define KEY_ENABLE_HWDECODING "SORO_ENABLE_HW_DECODING"
 #define KEY_ENABLE_HWRENDERING "SORO_ENABLE_HW_RENDERING"
+#define KEY_DRIVE_INPUT_MODE "SORO_DRIVE_INPUT_MODE"
+#define KEY_CAMERA_GIMBAL_INPUT_MODE "SORO_CAMERA_GIMBAL_INPUT_MODE"
 #define KEY_DRIVE_SKIDSTEER_FACTOR "SORO_DRIVE_SKIDSTEER_FACTOR"
 #define KEY_DRIVE_POWER_LIMIT "SORO_DRIVE_POWER_LIMIT"
 
@@ -37,9 +40,12 @@ QHash<QString, int> SettingsModel::getKeys() const
     QHash<QString, int> keys;
     keys.insert(KEY_CONFIGURATION, QMetaType::QString);
     keys.insert(KEY_DRIVE_SEND_INTERVAL, QMetaType::UInt);
+    keys.insert(KEY_CAMERA_GIMBAL_SEND_INTERVAL, QMetaType::UInt);
     keys.insert(KEY_ENABLE_HWDECODING, QMetaType::Bool);
     keys.insert(KEY_ENABLE_HWRENDERING, QMetaType::Bool);
     keys.insert(KEY_DRIVE_POWER_LIMIT, QMetaType::Float);
+    keys.insert(KEY_DRIVE_INPUT_MODE, QMetaType::QString);
+    keys.insert(KEY_CAMERA_GIMBAL_INPUT_MODE, QMetaType::QString);
     keys.insert(KEY_DRIVE_SKIDSTEER_FACTOR, QMetaType::Float);
     keys.insert(KEY_MQTT_BROKER_IP, QMetaType::QString);
     return keys;
@@ -50,10 +56,13 @@ QHash<QString, QVariant> SettingsModel::getDefaultValues() const
     QHash<QString, QVariant> defaults;
     defaults.insert(KEY_CONFIGURATION, QVariant("observer"));
     defaults.insert(KEY_DRIVE_SEND_INTERVAL, QVariant(50));
+    defaults.insert(KEY_CAMERA_GIMBAL_SEND_INTERVAL, QVariant(50));
     defaults.insert(KEY_ENABLE_HWDECODING, QVariant(false));
     defaults.insert(KEY_ENABLE_HWRENDERING, QVariant(true));
     defaults.insert(KEY_DRIVE_POWER_LIMIT, QVariant(0.5f));
     defaults.insert(KEY_DRIVE_SKIDSTEER_FACTOR, QVariant(0.2f));
+    defaults.insert(KEY_DRIVE_INPUT_MODE, "twostick");
+    defaults.insert(KEY_CAMERA_GIMBAL_INPUT_MODE, "leftstick");
     defaults.insert(KEY_MQTT_BROKER_IP, QVariant("127.0.0.1"));
     return defaults;
 }
@@ -64,10 +73,35 @@ SettingsModel::Configuration SettingsModel::getConfiguration() const
     if (value == "driver") return DriverConfiguration;
     if (value == "armoperator") return ArmOperatorConfiguration;
     if (value == "cameraoperator") return CameraOperatorConfiguration;
+    if (value == "sciencearmoperator") return ScienceArmOperatorConfiguration;
+    if (value == "sciencecameraoperator") return ScienceCameraOperatorConfiguration;
     if (value == "observer") return ObserverConfiguration;
 
-    Logger::logError(LogTag, QString("Invalid value for '%1' for setting '%2', returning 'observer'").arg(value, KEY_CONFIGURATION));
+    LOG_W(LogTag, QString("Invalid value for '%1' for setting '%2', returning 'observer'").arg(value, KEY_CONFIGURATION));
     return ObserverConfiguration;
+}
+
+SettingsModel::DriveInputMode SettingsModel::getDriveInputMode() const
+{
+    QString value = _values.value(KEY_DRIVE_INPUT_MODE).toString().toLower();
+    if (value == "twostick") return DriveInputMode_TwoStick;
+    if (value == "singlestick") return DriveInputMode_SingleStick;
+
+    LOG_W(LogTag, QString("Invalid value for '%1' for setting '%2', returning 'twostick'").arg(value, KEY_DRIVE_INPUT_MODE));
+    return DriveInputMode_TwoStick;
+}
+
+SettingsModel::CameraGimbalInputMode SettingsModel::getCameraGimbalInputMode() const
+{
+    QString value = _values.value(KEY_CAMERA_GIMBAL_INPUT_MODE).toString().toLower();
+    if (value == "leftstick") return CameraGimbalInputMode_LeftStick;
+    if (value == "leftstickinverted") return CameraGimbalInputMode_LeftStickYInverted;
+    if (value == "rightstick") return CameraGimbalInputMode_RightStick;
+    if (value == "rightstickinverted") return CameraGimbalInputMode_RightStickYInverted;
+    if (value == "bill") return CameraGimbalInputMode_BillsWay;
+
+    LOG_W(LogTag, QString("Invalid value for '%1' for setting '%2', returning 'leftstick'").arg(value, KEY_CAMERA_GIMBAL_INPUT_MODE));
+    return CameraGimbalInputMode_LeftStick;
 }
 
 float SettingsModel::getDriveSkidSteerFactor() const
@@ -83,6 +117,11 @@ float SettingsModel::getDrivePowerLimit() const
 uint SettingsModel::getDriveSendInterval() const
 {
     return _values.value(KEY_DRIVE_SEND_INTERVAL).toUInt();
+}
+
+uint SettingsModel::getCameraGimbalSendInterval() const
+{
+    return _values.value(KEY_CAMERA_GIMBAL_SEND_INTERVAL).toUInt();
 }
 
 bool SettingsModel::getEnableHwDecoding() const

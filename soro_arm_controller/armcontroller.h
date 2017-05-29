@@ -10,23 +10,25 @@
 
 namespace Soro {
 
-class SciencePackageController: public QObject
+/* Class to control the rover's physical arm through a LAN UDP socket
+ * from instructions sent over MQTT
+ */
+class ArmController: public QObject
 {
     Q_OBJECT
 
 public:
-    explicit SciencePackageController(const SettingsModel* settings, QObject *parent=0);
+    explicit ArmController(const SettingsModel* settings, QObject *parent=0);
 
 Q_SIGNALS:
-    void sciencePackageConnectedChanged(bool connected);
+    void armConnectedChanged(bool connected);
 
 private:
-    bool _packageConnected;
+    bool _armConnected;
     QTimer _watchdogTimer;
     quint16 _nextMqttMsgId;
-    QUdpSocket _packageUdpSocket;
+    QUdpSocket _armUdpSocket;
     QMQTT::Client *_mqtt;
-    float _lastCompassHeading = 0;
     char _buffer[USHRT_MAX];
 };
 

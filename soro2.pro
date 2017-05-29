@@ -9,7 +9,8 @@ SUBDIRS =\
     soro_audioserver \
     soro_videoserver \
     qmqtt \
-    soro_science_controller
+    soro_science_controller \
+    soro_arm_controller
 
 soro_core.depends = qmqtt
 soro_mc.depends = soro_core qmqtt

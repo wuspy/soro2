@@ -44,7 +44,7 @@ DriveControlSystem::DriveControlSystem(const SettingsModel *settings, QObject *p
     _gamepadLeftY = 0;
     _gamepadRightX = 0;
     _gamepadRightY = 0;
-    _mode = InputMode_TwoStick;
+    _mode = settings->getDriveInputMode();
 
     setLimit(settings->getDrivePowerLimit());
 
@@ -86,7 +86,7 @@ DriveControlSystem::DriveControlSystem(const SettingsModel *settings, QObject *p
 
             switch (_mode)
             {
-            case InputMode_SingleStick: {
+            case SettingsModel::DriveInputMode_SingleStick: {
                 float x = _gamepadLeftX * _limit;
                 float y = _gamepadLeftY * _limit;
                 float midScale = _skidSteerFactor * (qAbs(x)/1.0f);
@@ -140,7 +140,7 @@ DriveControlSystem::DriveControlSystem(const SettingsModel *settings, QObject *p
                 msg.wheelBR = rightS;
             }
                 break;
-            case InputMode_TwoStick: {
+            case SettingsModel::DriveInputMode_TwoStick: {
                 float left = _gamepadLeftY * _limit;
                 float right = _gamepadRightY * _limit;
                 float midScale = _skidSteerFactor * (qAbs(left - right) / 1.0f);
@@ -163,16 +163,6 @@ DriveControlSystem::DriveControlSystem(const SettingsModel *settings, QObject *p
     });
 
     _timer.start(settings->getDriveSendInterval());
-}
-
-void DriveControlSystem::setInterval(int interval)
-{
-    _timer.setInterval(interval);
-}
-
-int DriveControlSystem::getInterval() const
-{
-    return _timer.interval();
 }
 
 void DriveControlSystem::setSkidSteerFactor(float factor)
@@ -205,12 +195,12 @@ void DriveControlSystem::disable()
     _enabled = false;
 }
 
-void DriveControlSystem::setInputMode(InputMode mode)
+void DriveControlSystem::setInputMode(SettingsModel::DriveInputMode mode)
 {
     _mode = mode;
 }
 
-DriveControlSystem::InputMode DriveControlSystem::getInputMode() const
+SettingsModel::DriveInputMode DriveControlSystem::getInputMode() const
 {
     return _mode;
 }

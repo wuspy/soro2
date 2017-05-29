@@ -35,7 +35,8 @@ SOURCES += \
     compassmessage.cpp \
     gpsmessage.cpp \
     drivepathmessage.cpp \
-    switchmessage.cpp
+    switchmessage.cpp \
+    sciencecameragimbalmessage.cpp
 
 HEADERS +=\
     soro_core_global.h \
@@ -63,7 +64,8 @@ HEADERS +=\
     gpsmessage.h \
     drivepathmessage.h \
     serialize.h \
-    switchmessage.h
+    switchmessage.h \
+    sciencecameragimbalmessage.h
 
 # Link against qmqtt
 LIBS += -L../lib -lqmqtt
