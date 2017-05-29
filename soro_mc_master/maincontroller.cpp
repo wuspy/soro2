@@ -112,10 +112,17 @@ void MainController::init(QApplication *app)
             LOG_I(LogTag, "Creating main window...");
             _self->_mainWindowController = new MainWindowController(_self->_qmlEngine, _self);
 
-            connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::mqttConnected,
-                    _self->_mainWindowController, &MainWindowController::onConnected);
-            connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::mqttDisconnected,
-                    _self->_mainWindowController, &MainWindowController::onDisconnected);
+            connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::connectedChanged, _self, [](bool connected)
+            {
+                if (connected)
+                {
+                    _self->_mainWindowController->onConnected();
+                }
+                else
+                {
+                    _self->_mainWindowController->onDisconnected();
+                }
+            });
             connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::latencyUpdate,
                     _self->_mainWindowController, &MainWindowController::onLatencyUpdated);
             connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::dataRateUpdate,

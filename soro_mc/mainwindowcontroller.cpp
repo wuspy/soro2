@@ -82,7 +82,7 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
 void MainWindowController::onMqttConnected()
 {
     LOG_I(LogTag, "Connected to MQTT broker");
-    _mqtt->subscribe("notification", 0);
+    _mqtt->subscribe("notification", 2);
     Q_EMIT mqttConnected();
 }
 
@@ -166,7 +166,7 @@ void MainWindowController::notifyAll(NotificationMessage::Level level, QString t
 
     // Publish this notification on the notification topic. We will get this message back,
     // since we are also subscribed to it, and that's when we'll show it from the onNewNotification() function
-    _mqtt->publish(QMQTT::Message(_notificationMsgId++, "notification", msg, 0));
+    _mqtt->publish(QMQTT::Message(_notificationMsgId++, "notification", msg, 2));
 }
 
 void MainWindowController::onConnectedChanged(bool connected)

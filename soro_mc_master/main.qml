@@ -114,7 +114,7 @@ ApplicationWindow {
                 else {
                     uints = "B/s"
                 }
-                "▲ <b>" + rate + "</b> " + uints
+                rate + uints
             }
             else {
                 "---"

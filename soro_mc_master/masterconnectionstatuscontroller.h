@@ -25,8 +25,7 @@ public:
 Q_SIGNALS:
     void latencyUpdate(quint32 latency);
     void dataRateUpdate(quint64 rateFromRover);
-    void mqttConnected();
-    void mqttDisconnected();
+    void connectedChanged(bool connected);
 
 public Q_SLOTS:
     void logDataFromRover(quint32 bytes);

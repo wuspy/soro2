@@ -160,7 +160,7 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
                 notifyMsg.level = NotificationMessage::Level_Error;
                 notifyMsg.title = "Cannot stream " + videoMsg.camera_name;
                 notifyMsg.message = "Video client has not yet given this server an address for this stream";
-                _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+                _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
                 return;
             }
 
@@ -176,7 +176,7 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
                 notifyMsg.level = NotificationMessage::Level_Error;
                 notifyMsg.title = "Cannot stream " + videoMsg.camera_name;
                 notifyMsg.message = "The definition for this camera does not match any cameras connected to this server.";
-                _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+                _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
                 return;
             }
 
@@ -201,7 +201,7 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
                     notifyMsg.level = NotificationMessage::Level_Error;
                     notifyMsg.title = "Cannot stream " + videoMsg.camera_name;
                     notifyMsg.message = "The definition for this camera (right channel) does not match any cameras connected to this server.";
-                    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+                    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
                     return;
                 }
 
@@ -244,7 +244,7 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
                         notifyMsg.level = NotificationMessage::Level_Error;
                         notifyMsg.title = "Cannot stream " + assignment.message.camera_name;
                         notifyMsg.message = "Unexpected error - child process died before accepting its stream assignment.";
-                        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+                        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
 
                         reportActiveVideoStates();
                     }
@@ -257,7 +257,7 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
                         notifyMsg.level = NotificationMessage::Level_Error;
                         notifyMsg.title = "Error streaming " + assignment.message.camera_name;
                         notifyMsg.message = "Unexpected error while streaming this device. Try agian.";
-                        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+                        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
 
                         reportActiveVideoStates();
                     }
@@ -488,7 +488,7 @@ void VideoServer::onChildReady(QString childName)
             notifyMsg.level = NotificationMessage::Level_Error;
             notifyMsg.title = "Cannot stream " + _waitingAssignments.value(childName).message.camera_name;
             notifyMsg.message = "Unexpected error - cannot create D-Bus connection to child stream process";
-            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
             _waitingAssignments.remove(childName);
         }
 
@@ -551,7 +551,7 @@ void VideoServer::onChildError(QString childName, QString message)
         notifyMsg.title = "Error streaming " + _currentAssignments.value(childName).message.camera_name;
         notifyMsg.message = "Stream error: " + message;
 
-        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
         reportInactiveVideo(_currentAssignments.value(childName));
         _currentAssignments.remove(childName);
     }

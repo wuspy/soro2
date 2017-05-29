@@ -50,8 +50,15 @@ MasterConnectionStatusController::MasterConnectionStatusController
 
     connect(_mqtt, &QMQTT::Client::connected, this, [this]()
     {
+        LOG_I(LogTag, "Connected to MQTT broker");
         _mqtt->subscribe("ping", 0);
-        Q_EMIT mqttConnected();
+        Q_EMIT connectedChanged(true);
+    });
+
+    connect(_mqtt, &QMQTT::Client::disconnected, this, [this]()
+    {
+       LOG_W(LogTag, "Disconnected from MQTT broker");
+       Q_EMIT connectedChanged(false);
     });
 
     connect(_mqtt, &QMQTT::Client::received, this, [this](const QMQTT::Message &msg)
