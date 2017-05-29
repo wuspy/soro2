@@ -16,7 +16,7 @@
 #include "mainwindowcontroller.h"
 #include "connectionstatuscontroller.h"
 #include "drivecontrolsystem.h"
-#include "audiocontroller.h"
+#include "audioclient.h"
 #include "videoclient.h"
 #include "armcontrolsystem.h"
 #include "bindssettingsmodel.h"
@@ -45,8 +45,8 @@ private:
     QQmlEngine *_qmlEngine = nullptr;
     GamepadController* _gamepadController = nullptr;
     SettingsModel* _settingsModel = nullptr;
-    AudioController *_audioController = nullptr;
-    VideoClient *_videoController = nullptr;
+    AudioClient *_audioClient = nullptr;
+    VideoClient *_videoClient = nullptr;
     CameraSettingsModel *_cameraSettingsModel = nullptr;
     BindsSettingsModel *_bindsSettingsModel = nullptr;
     MediaProfileSettingsModel *_mediaProfileSettingsModel = nullptr;

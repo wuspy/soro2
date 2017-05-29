@@ -22,12 +22,12 @@ namespace Soro {
  * Additionally, the gstError() and gstEsos() signals may be emitted if there is an error decoding
  * the audio stream.
  */
-class AudioController : public QObject
+class AudioClient : public QObject
 {
     Q_OBJECT
 public:
-    explicit AudioController(const SettingsModel *settings, QObject *parent = 0);
-    ~AudioController();
+    explicit AudioClient(const SettingsModel *settings, QObject *parent = 0);
+    ~AudioClient();
 
     bool isPlaying() const;
     /* Gets the profile of the audio currently playing
@@ -46,8 +46,8 @@ Q_SIGNALS:
      */
     void gstError(QString message);
 
-    void mqttConnected();
-    void mqttDisconnected();
+    void audioServerDisconnected();
+    void masterAudioClientDisconnected();
 
 public Q_SLOTS:
     void play(GStreamerUtil::AudioProfile profile);

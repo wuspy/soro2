@@ -17,7 +17,6 @@ HEADERS += \
     mainwindowcontroller.h \
     connectionstatuscontroller.h \
     settingsmodel.h \
-    audiocontroller.h \
     gstreamerpipelinewatch.h \
     qmlgstreamerpainteditem.h \
     qmlgstreamerglitem.h \
@@ -25,7 +24,8 @@ HEADERS += \
     videoclient.h \
     sciencearmcontrolsystem.h \
     armcontrolsystem.h \
-    sciencecameracontrolsystem.h
+    sciencecameracontrolsystem.h \
+    audioclient.h
 
 SOURCES += main.cpp \
     gamepadcontroller.cpp \
@@ -34,7 +34,6 @@ SOURCES += main.cpp \
     drivecontrolsystem.cpp \
     connectionstatuscontroller.cpp \
     settingsmodel.cpp \
-    audiocontroller.cpp \
     gstreamerpipelinewatch.cpp \
     qmlgstreamerpainteditem.cpp \
     qmlgstreamerglitem.cpp \
@@ -42,7 +41,8 @@ SOURCES += main.cpp \
     videoclient.cpp \
     sciencearmcontrolsystem.cpp \
     armcontrolsystem.cpp \
-    sciencecameracontrolsystem.cpp
+    sciencecameracontrolsystem.cpp \
+    audioclient.cpp
 
 RESOURCES += qml.qrc \
     assets.qrc

@@ -229,7 +229,7 @@ void MainController::init(QApplication *app)
             // Create the audio controller instance
             //
             LOG_I(LogTag, "Initializing audio controller...");
-            _self->_audioController = new AudioController(_self->_settingsModel, _self);
+            _self->_audioClient = new AudioClient(_self->_settingsModel, _self);
 
             //
             // Create the QML application engine and setup the GStreamer surface
@@ -259,7 +259,7 @@ void MainController::init(QApplication *app)
             // Create the video controller instance
             //
             LOG_I(LogTag, "Initializing video controller...");
-            _self->_videoController = new VideoClient(_self->_settingsModel, _self->_cameraSettingsModel, _self->_mainWindowController->getVideoSinks(), _self);
+            _self->_videoClient = new VideoClient(_self->_settingsModel, _self->_cameraSettingsModel, _self->_mainWindowController->getVideoSinks(), _self);
 
             //
             // Connect to connection status signals
@@ -309,31 +309,35 @@ void MainController::init(QApplication *app)
             //
             // Connect signals relating to the audio/video system
             //
-            connect(_self->_audioController, &AudioController::playing, _self->_mainWindowController, &MainWindowController::onAudioProfileChanged);
-            connect(_self->_audioController, &AudioController::stopped, _self, []()
+            connect(_self->_audioClient, &AudioClient::playing, _self->_mainWindowController, &MainWindowController::onAudioProfileChanged);
+            connect(_self->_audioClient, &AudioClient::stopped, _self, []()
             {
                 _self->_mainWindowController->onAudioProfileChanged(GStreamerUtil::AudioProfile());
             });
-            connect(_self->_videoController, &VideoClient::playing, _self->_mainWindowController, &MainWindowController::onVideoProfileChanged);
-            connect(_self->_videoController, &VideoClient::stopped, _self, [](uint cameraIndex)
+            connect(_self->_videoClient, &VideoClient::playing, _self->_mainWindowController, &MainWindowController::onVideoProfileChanged);
+            connect(_self->_videoClient, &VideoClient::stopped, _self, [](uint cameraIndex)
             {
                 _self->_mainWindowController->onVideoProfileChanged(cameraIndex, GStreamerUtil::VideoProfile());
             });
-            connect(_self->_videoController, &VideoClient::videoServerDisconnected, _self, [](uint computer)
+            connect(_self->_videoClient, &VideoClient::videoServerDisconnected, _self, [](uint computer)
             {
                 _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Video Server Stopped", "Video server #" + QString::number(computer) + " has either exited, crashed, or lost connection.");
             });
-            connect(_self->_videoController, &VideoClient::masterVideoClientDisconnected, _self, []()
+            connect(_self->_videoClient, &VideoClient::masterVideoClientDisconnected, _self, []()
             {
                 _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Mission Control Master Stopped", "The mission control master has either exited, crashed, or lost connection. Audio/Video and several other features will not work until it is restarted.");
             });
-            connect(_self->_videoController, &VideoClient::gstError, _self, [](QString message, uint cameraIndex)
+            connect(_self->_audioClient, &AudioClient::audioServerDisconnected, _self, []()
+            {
+                _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Audio Server Stopped", "Audio server has either exited, crashed, or lost connection.");
+            });
+            connect(_self->_videoClient, &VideoClient::gstError, _self, [](QString message, uint cameraIndex)
             {
                 _self->_self->_mainWindowController->notify(NotificationMessage::Level_Error,
                                               "Error playing " + _self->_cameraSettingsModel->getCamera(cameraIndex).name,
                                               "There was an error while decoding the video stream: " + message);
             });
-            connect(_self->_audioController, &AudioController::gstError, _self, [](QString message)
+            connect(_self->_audioClient, &AudioClient::gstError, _self, [](QString message)
             {
                 _self->_mainWindowController->notify(NotificationMessage::Level_Error,
                                               "Error playing audio",
@@ -448,137 +452,137 @@ void MainController::init(QApplication *app)
                     _self->_mainWindowController->takeMainContentViewScreenshot();
                     break;
                 case Qt::Key_1:
-                    _self->_videoController->stop(0);
+                    _self->_videoClient->stop(0);
                     break;
                 case Qt::Key_Q:
-                    _self->_videoController->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_A:
-                    _self->_videoController->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_Z:
-                    _self->_videoController->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_2:
-                    _self->_videoController->stop(1);
+                    _self->_videoClient->stop(1);
                     break;
                 case Qt::Key_W:
-                    _self->_videoController->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_S:
-                    _self->_videoController->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_X:
-                    _self->_videoController->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_3:
-                    _self->_videoController->stop(2);
+                    _self->_videoClient->stop(2);
                     break;
                 case Qt::Key_E:
-                    _self->_videoController->play(2, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(2, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_D:
-                    _self->_videoController->play(2, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(2, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_C:
-                    _self->_videoController->play(2, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(2, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_4:
-                    _self->_videoController->stop(3);
+                    _self->_videoClient->stop(3);
                     break;
                 case Qt::Key_R:
-                    _self->_videoController->play(3, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(3, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_F:
-                    _self->_videoController->play(3, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(3, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_V:
-                    _self->_videoController->play(3, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(3, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_5:
-                    _self->_videoController->stop(4);
+                    _self->_videoClient->stop(4);
                     break;
                 case Qt::Key_T:
-                    _self->_videoController->play(4, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(4, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_G:
-                    _self->_videoController->play(4, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(4, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_B:
-                    _self->_videoController->play(4, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(4, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_6:
-                    _self->_videoController->stop(5);
+                    _self->_videoClient->stop(5);
                     break;
                 case Qt::Key_Y:
-                    _self->_videoController->play(5, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(5, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_H:
-                    _self->_videoController->play(5, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(5, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_N:
-                    _self->_videoController->play(5, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(5, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_7:
-                    _self->_videoController->stop(6);
+                    _self->_videoClient->stop(6);
                     break;
                 case Qt::Key_U:
-                    _self->_videoController->play(6, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(6, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_J:
-                    _self->_videoController->play(6, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(6, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_M:
-                    _self->_videoController->play(6, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(6, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_8:
-                    _self->_videoController->stop(7);
+                    _self->_videoClient->stop(7);
                     break;
                 case Qt::Key_I:
-                    _self->_videoController->play(7, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(7, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_K:
-                    _self->_videoController->play(7, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(7, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_Comma:
-                    _self->_videoController->play(7, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(7, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_9:
-                    _self->_videoController->stop(8);
+                    _self->_videoClient->stop(8);
                     break;
                 case Qt::Key_O:
-                    _self->_videoController->play(8, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(8, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_L:
-                    _self->_videoController->play(8, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(8, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_Period:
-                    _self->_videoController->play(8, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(8, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_0:
-                    _self->_videoController->stop(9);
+                    _self->_videoClient->stop(9);
                     break;
                 case Qt::Key_P:
-                    _self->_videoController->play(9, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(9, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_Semicolon:
-                    _self->_videoController->play(9, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(9, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_Slash:
-                    _self->_videoController->play(9, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(9, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_Escape:
-                    _self->_videoController->stopAll();
-                    _self->_audioController->stop();
+                    _self->_videoClient->stopAll();
+                    _self->_audioClient->stop();
                     break;
                 case Qt::Key_Minus:
-                    _self->_audioController->stop();
+                    _self->_audioClient->stop();
                     break;
                 case Qt::Key_BracketLeft:
-                    _self->_audioController->play(_self->_mediaProfileSettingsModel->getAudioProfile(0));
+                    _self->_audioClient->play(_self->_mediaProfileSettingsModel->getAudioProfile(0));
                     break;
                 case Qt::Key_Apostrophe:
-                    _self->_audioController->play(_self->_mediaProfileSettingsModel->getAudioProfile(1));
+                    _self->_audioClient->play(_self->_mediaProfileSettingsModel->getAudioProfile(1));
                     break;
                 case Qt::Key_Up:
                     _self->_mainWindowController->selectViewAbove();

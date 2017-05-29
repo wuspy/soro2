@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "audiocontroller.h"
+#include "audioclient.h"
 #include "maincontroller.h"
 #include "soro_core/gstreamerutil.h"
 #include "soro_core/constants.h"
@@ -29,16 +29,16 @@
 
 namespace Soro {
 
-AudioController::AudioController(const SettingsModel *settings, QObject *parent) : QObject(parent)
+AudioClient::AudioClient(const SettingsModel *settings, QObject *parent) : QObject(parent)
 {
     _settings = settings;
 
     LOG_I(LogTag, "Creating MQTT client...");
     _mqtt = new QMQTT::Client(settings->getMqttBrokerAddress(), SORO_NET_MQTT_BROKER_PORT, this);
-    connect(_mqtt, &QMQTT::Client::received, this, &AudioController::onMqttMessage);
-    connect(_mqtt, &QMQTT::Client::connected, this, &AudioController::onMqttConnected);
-    connect(_mqtt, &QMQTT::Client::disconnected, this, &AudioController::onMqttDisconnected);
-    _mqtt->setClientId(MainController::getId() + "_audio_controller");
+    connect(_mqtt, &QMQTT::Client::received, this, &AudioClient::onMqttMessage);
+    connect(_mqtt, &QMQTT::Client::connected, this, &AudioClient::onMqttConnected);
+    connect(_mqtt, &QMQTT::Client::disconnected, this, &AudioClient::onMqttDisconnected);
+    _mqtt->setClientId("audio_client_" + MainController::getId());
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
     _mqtt->setWillMessage(_mqtt->clientId());
@@ -52,25 +52,26 @@ AudioController::AudioController(const SettingsModel *settings, QObject *parent)
     _announceTimerId = startTimer(1000);
 }
 
-AudioController::~AudioController()
+AudioClient::~AudioClient()
 {
     clearPipeline();
 }
 
-void AudioController::onMqttConnected()
+void AudioClient::onMqttConnected()
 {
     LOG_I(LogTag, "Connected to MQTT broker");
     _mqtt->subscribe("audio_state", 0);
+    _mqtt->subscribe("system_down", 2);
     Q_EMIT mqttConnected();
 }
 
-void AudioController::onMqttDisconnected()
+void AudioClient::onMqttDisconnected()
 {
     LOG_I(LogTag, "Disconnected from MQTT broker");
     Q_EMIT mqttDisconnected();
 }
 
-void AudioController::onMqttMessage(const QMQTT::Message &msg)
+void AudioClient::onMqttMessage(const QMQTT::Message &msg)
 {
     if (msg.topic() == "audio_state")
     {
@@ -89,7 +90,7 @@ void AudioController::onMqttMessage(const QMQTT::Message &msg)
 
             // Add signal watch to subscribe to bus events, like errors
             _pipelineWatch = new GStreamerPipelineWatch(0, _pipeline, this);
-            connect(_pipelineWatch, &GStreamerPipelineWatch::error, this, &AudioController::gstError);
+            connect(_pipelineWatch, &GStreamerPipelineWatch::error, this, &AudioClient::gstError);
 
             // Play
             _pipeline->setState(QGst::StatePlaying);
@@ -101,19 +102,33 @@ void AudioController::onMqttMessage(const QMQTT::Message &msg)
             Q_EMIT stopped();
         }
     }
+    else if (msg.topic() == "system_down")
+    {
+        QString client = QString(msg.payload());
+        if (client == "audio_server")
+        {
+            LOG_W(LogTag, "Audio server has disconnected");
+            Q_EMIT audioServerDisconnected();
+        }
+        else if (client == "master_audio_client")
+        {
+            LOG_W(LogTag, "Master audio client has disconnected");
+            Q_EMIT masterAudioClientDisconnected();
+        }
+    }
 }
 
-bool AudioController::isPlaying() const
+bool AudioClient::isPlaying() const
 {
     return _profile.codec != GStreamerUtil::CODEC_NULL;
 }
 
-GStreamerUtil::AudioProfile AudioController::getProfile() const
+GStreamerUtil::AudioProfile AudioClient::getProfile() const
 {
     return _profile;
 }
 
-void AudioController::clearPipeline()
+void AudioClient::clearPipeline()
 {
     if (!_pipeline.isNull())
     {
@@ -124,13 +139,13 @@ void AudioController::clearPipeline()
     }
     if (_pipelineWatch)
     {
-        disconnect(_pipelineWatch, &GStreamerPipelineWatch::error, this, &AudioController::gstError);
+        disconnect(_pipelineWatch, &GStreamerPipelineWatch::error, this, &AudioClient::gstError);
         delete _pipelineWatch;
         _pipelineWatch = nullptr;
     }
 }
 
-void AudioController::play(GStreamerUtil::AudioProfile profile)
+void AudioClient::play(GStreamerUtil::AudioProfile profile)
 {
     // Send a request to the rover to start/change the audio stream
 
@@ -149,7 +164,7 @@ void AudioController::play(GStreamerUtil::AudioProfile profile)
     }
 }
 
-void AudioController::stop()
+void AudioClient::stop()
 {
     // Send a request to the rover to STOP the audio stream
     if (_mqtt->isConnectedToHost())
@@ -167,7 +182,7 @@ void AudioController::stop()
     }
 }
 
-void AudioController::timerEvent(QTimerEvent *e)
+void AudioClient::timerEvent(QTimerEvent *e)
 {
     if (e->timerId() == _announceTimerId)
     {
