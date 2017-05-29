@@ -50,7 +50,7 @@ AudioStreamer::AudioStreamer(QObject *parent) : QObject(parent)
         exit(14);
     }
 
-    _watchdogTimerId = -1;
+    _watchdogTimerId = startTimer(3000);
     _parentInterface->call(QDBus::NoBlock, "onChildReady");
 }
 
@@ -78,7 +78,7 @@ void AudioStreamer::stopPrivate(bool sendReady)
     }
 }
 
-void AudioStreamer::streamAudio(QString address, int port, int bindPort, QString profile)
+void AudioStreamer::stream(const QString& address, int port, int bindPort, const QString& profile)
 {
     stopPrivate(false);
 
