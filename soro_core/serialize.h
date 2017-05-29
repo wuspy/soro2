@@ -18,7 +18,7 @@ inline void serialize(char *arr, T data) {
  */
 template <typename T>
 inline T deserialize(const char *arr) {
-  T result;
+  T result = 0;
   for (unsigned int i = 0; i < sizeof(T); i++) {
     result = (result << 8) + reinterpret_cast<const unsigned char&>(arr[i]);
   }
