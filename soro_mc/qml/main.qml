@@ -29,7 +29,7 @@ ApplicationWindow {
     visible: true
     width: 800
     height: 600
-    title: "Mission Control"
+    title: "Mission Control - " + configuration
 
     /*
       State of the sidebar, can be either 'hidden' or 'visible'
@@ -42,6 +42,7 @@ ApplicationWindow {
     property bool connected: false
     property int latency: 0
     property int dataRateFromRover: 0
+    property string configuration: "Observer"
 
     /*
       Selected view in the UI, can be eselectedViewither 'map' or 'camera0'-'camera9'

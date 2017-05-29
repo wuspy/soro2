@@ -63,6 +63,25 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
 
     _window->setProperty("selectedView", "video0");
 
+    switch (settings->getConfiguration())
+    {
+    case SettingsModel::ArmOperatorConfiguration:
+        _window->setProperty("configuration", "Arm Operator");
+        break;
+    case SettingsModel::DriverConfiguration:
+        _window->setProperty("configuration", "Driver");
+        break;
+    case SettingsModel::ScienceArmOperatorConfiguration:
+        _window->setProperty("configuration", "Science Arm Operator");
+        break;
+    case SettingsModel::ScienceCameraOperatorConfiguration:
+        _window->setProperty("configuration", "Science Camera Operator");
+        break;
+    case SettingsModel::CameraOperatorConfiguration:
+        _window->setProperty("configuration", "Camera Operator");
+        break;
+    }
+
     connect(_window, SIGNAL(keyPressed(int)), this, SIGNAL(keyPressed(int)));
 
     //
