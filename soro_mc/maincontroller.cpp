@@ -27,6 +27,7 @@
 
 #include "qmlgstreamerglitem.h"
 #include "qmlgstreamerpainteditem.h"
+#include "pitchrollview.h"
 #include "soro_core/constants.h"
 #include "soro_core/logger.h"
 #include "soro_core/notificationmessage.h"
@@ -234,6 +235,7 @@ void MainController::init(QApplication *app)
             //
             // Create the QML application engine and setup the GStreamer surface
             //
+            qmlRegisterType<PitchRollView>("Soro", 1, 0, "PitchRollView");
             if (_self->_settingsModel->getEnableHwRendering())
             {
                 // Use the hardware opengl rendering surface, doesn't work on some hardware

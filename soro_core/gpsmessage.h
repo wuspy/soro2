@@ -17,6 +17,7 @@ struct SORO_CORE_EXPORT GpsMessage : public AbstractMessage
     double latitude;
     double longitude;
     double elevation;
+    quint8 satellites;
 };
 
 } // namespace Soro

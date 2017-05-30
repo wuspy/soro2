@@ -189,6 +189,14 @@ ApplicationWindow {
             height: 64
         }
 
+        /*PitchRollView {
+            width: 300
+            height: width
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 10
+        }*/
+
         /*
           Color overlay to colorize the mini connection status image
           */

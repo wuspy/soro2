@@ -25,7 +25,8 @@ HEADERS += \
     sciencearmcontrolsystem.h \
     armcontrolsystem.h \
     sciencecameracontrolsystem.h \
-    audioclient.h
+    audioclient.h \
+    pitchrollview.h
 
 SOURCES += main.cpp \
     gamepadcontroller.cpp \
@@ -42,7 +43,8 @@ SOURCES += main.cpp \
     sciencearmcontrolsystem.cpp \
     armcontrolsystem.cpp \
     sciencecameracontrolsystem.cpp \
-    audioclient.cpp
+    audioclient.cpp \
+    pitchrollview.cpp
 
 RESOURCES += qml.qrc \
     assets.qrc

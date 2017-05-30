@@ -11,6 +11,7 @@ Item {
     property real compassHeading: 0
     property real latitude: 0
     property real longitude: 0
+    property int satellites: 0
 
     function degToDms (deg) {
        var d = Math.floor (deg);
@@ -53,8 +54,7 @@ Item {
         anchors.left: navDirectionImage.right
         anchors.leftMargin: 8
         anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        font.pixelSize: height / 2.8
+        font.pixelSize: parent.height / 4.2
         color: Theme.foreground
         text: "Lat:<br>Lng:"
     }
@@ -62,14 +62,38 @@ Item {
     Label
     {
         id: gpsLabel
-        width: 150
+        width: 100
         horizontalAlignment: Text.AlignRight
         anchors.left: gpsTitleLabel.right
         anchors.leftMargin: 8
         anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        font.pixelSize: height / 2.8
+        font.pixelSize: parent.height / 4.2
         color: Theme.foreground
         text: degToDms(latitude) + "<br>" + degToDms(longitude)
     }
+
+    Label
+    {
+        id: satellitesTitleLabel
+        anchors.left: navDirectionImage.right
+        anchors.leftMargin: 8
+        anchors.top: gpsTitleLabel.bottom
+        font.pixelSize: parent.height / 4.2
+        color: Theme.foreground
+        text: "Satellites:"
+    }
+
+    Label
+    {
+        id: satellitesLabel
+        horizontalAlignment: Text.AlignRight
+        anchors.left: satellitesTitleLabel.right
+        anchors.leftMargin: 8
+        anchors.top: gpsTitleLabel.bottom
+        anchors.right: parent.right
+        font.pixelSize: parent.height / 4.2
+        color: Theme.foreground
+        text: satellites
+    }
+
 }

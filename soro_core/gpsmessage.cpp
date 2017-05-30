@@ -19,6 +19,7 @@ GpsMessage::GpsMessage(const QByteArray &payload)
     stream >> latitude;
     stream >> longitude;
     stream >> elevation;
+    stream >> satellites;
 }
 
 GpsMessage::operator QByteArray() const
@@ -29,7 +30,8 @@ GpsMessage::operator QByteArray() const
 
     stream << latitude
            << longitude
-           << elevation;
+           << elevation
+           << satellites;
 
     return payload;
 }

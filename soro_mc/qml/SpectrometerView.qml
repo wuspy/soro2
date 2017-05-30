@@ -32,7 +32,9 @@ Rectangle {
         backgroundRoundness: 0
         backgroundColor: "#263238"
         anchors.fill: parent
+        antialiasing: true
         anchors.topMargin: 48
+
         id: chart
         theme: ChartView.ChartThemeDark
 
