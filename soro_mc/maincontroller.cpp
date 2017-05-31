@@ -26,6 +26,7 @@
 #include <Qt5GStreamer/QGlib/Error>
 
 #include "qmlgstreamerglitem.h"
+#include "mapviewimpl.h"
 #include "qmlgstreamerpainteditem.h"
 #include "soro_core/constants.h"
 #include "soro_core/logger.h"
@@ -233,6 +234,7 @@ void MainController::init(QApplication *app)
             //
             // Create the QML application engine and setup the GStreamer surface
             //
+            qmlRegisterType<MapViewImpl>("Soro", 1, 0, "MapViewImpl");
             if (_self->_settingsModel->getEnableHwRendering())
             {
                 // Use the hardware opengl rendering surface, doesn't work on some hardware

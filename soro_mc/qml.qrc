@@ -8,5 +8,6 @@
         <file>qml/NotificationHost.qml</file>
         <file>qml/ViewSelector.qml</file>
         <file>qml/MainContentView.qml</file>
+        <file>qml/MapView.qml</file>
     </qresource>
 </RCC>

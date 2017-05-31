@@ -23,7 +23,8 @@ HEADERS += \
     qmlgstreamerpainteditem.h \
     qmlgstreamerglitem.h \
     bindssettingsmodel.h \
-    videoclient.h
+    videoclient.h \
+    mapviewimpl.h
 
 SOURCES += main.cpp \
     gamepadcontroller.cpp \
@@ -38,7 +39,8 @@ SOURCES += main.cpp \
     qmlgstreamerpainteditem.cpp \
     qmlgstreamerglitem.cpp \
     bindssettingsmodel.cpp \
-    videoclient.cpp
+    videoclient.cpp \
+    mapviewimpl.cpp
 
 RESOURCES += qml.qrc \
     assets.qrc

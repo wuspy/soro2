@@ -19,7 +19,7 @@
 #include "audiocontroller.h"
 #include "videoclient.h"
 #include "armcontrolsystem.h"
-#include "bindssettingsmodel.h"
+//#include "bindssettingsmodel.h"
 
 namespace Soro {
 
@@ -46,7 +46,7 @@ private:
     AudioController *_audioController = nullptr;
     VideoClient *_videoController = nullptr;
     CameraSettingsModel *_cameraSettingsModel = nullptr;
-    BindsSettingsModel *_bindsSettingsModel = nullptr;
+    //BindsSettingsModel *_bindsSettingsModel = nullptr;
     MediaProfileSettingsModel *_mediaProfileSettingsModel = nullptr;
     MainWindowController *_mainWindowController = nullptr;
     DriveControlSystem *_driveControlSystem = nullptr;
