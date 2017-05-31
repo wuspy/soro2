@@ -117,7 +117,6 @@ QString createRtpV4L2EncodeString(QString cameraDevice, quint16 bindPort, QHostA
     return QString("v4l2src device=/dev/%1 ! "
                    "videoconvert ! "
                    "videoscale method=0 add-borders=true ! "
-                   "videorate drop-only=true ! "
                    "%2")
             .arg(cameraDevice,
                  createRtpVideoEncodeString(bindPort, address, port, profile, vaapi));
@@ -128,7 +127,6 @@ QString createRtpStereoV4L2EncodeString(QString leftCameraDevice, QString rightC
     return QString("v4l2src device=/dev/%5 ! "
                    "videoconvert ! "
                    "videoscale method=0 add-borders=true ! "
-                   "videorate drop-only=true ! "
                    "video/x-raw,width=%1,height=%2,framerate=%3/1 ! "
                    "videoscale method=0 add-borders=false ! "
                    "video/x-raw,width=%4,height=%2 ! "
@@ -138,7 +136,6 @@ QString createRtpStereoV4L2EncodeString(QString leftCameraDevice, QString rightC
                    "v4l2src device=/dev/%6 ! "
                    "videoconvert ! "
                    "videoscale method=0 add-borders=true ! "
-                   "videorate drop-only=true ! "
                    "video/x-raw,width=%1,height=%2,framerate=%3/1 ! "
                    "videoscale method=0 add-borders=false ! "
                    "video/x-raw,width=%4,height=%2 ! "
@@ -311,7 +308,7 @@ QString getVideoEncodeElement(VideoProfile profile, bool vaapi)
             // No VAAPI encoder for these formats
             return getVideoEncodeElement(profile, false);
         case VIDEO_CODEC_H264:
-            return QString("vaapih264ency bitrate=%1")
+            return QString("vaapih264enc bitrate=%1")
                     .arg(QString::number(profile.bitrate / 1000)); // Bitrate wanted in kbit/sec
         case VIDEO_CODEC_MJPEG:
             return QString("vaapijpegenc bitrate=%1 quality=%2")

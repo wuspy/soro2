@@ -122,7 +122,7 @@ VideoServer::VideoServer(const SettingsModel *settings, QObject *parent) : QObje
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
     _mqtt->setWillMessage(_mqtt->clientId());
-    _mqtt->setWillQos(1);
+    _mqtt->setWillQos(2);
     _mqtt->setWillTopic("system_down");
     _mqtt->setWillRetain(false);
     _mqtt->connectToHost();
@@ -132,7 +132,7 @@ void VideoServer::onMqttConnected()
 {
     LOG_I(LogTag, "Connected to MQTT broker");
     _mqtt->subscribe("video_request", 2);
-    _mqtt->subscribe("system_down", 1);
+    _mqtt->subscribe("system_down", 2);
     Q_EMIT mqttConnected();
 }
 
@@ -160,7 +160,7 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
                 notifyMsg.level = NotificationMessage::Level_Error;
                 notifyMsg.title = "Cannot stream " + videoMsg.camera_name;
                 notifyMsg.message = "Video client has not yet given this server an address for this stream";
-                _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+                _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
                 return;
             }
 
@@ -176,7 +176,7 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
                 notifyMsg.level = NotificationMessage::Level_Error;
                 notifyMsg.title = "Cannot stream " + videoMsg.camera_name;
                 notifyMsg.message = "The definition for this camera does not match any cameras connected to this server.";
-                _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+                _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
                 return;
             }
 
@@ -201,7 +201,7 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
                     notifyMsg.level = NotificationMessage::Level_Error;
                     notifyMsg.title = "Cannot stream " + videoMsg.camera_name;
                     notifyMsg.message = "The definition for this camera (right channel) does not match any cameras connected to this server.";
-                    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+                    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
                     return;
                 }
 
@@ -214,7 +214,6 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
                 LOG_I(LogTag, "Spawning new child for " + assignment.device + "...");
                 QProcess *child = new QProcess(this);
                 _children.insert(assignment.device, child);
-                _waitingAssignments.insert(assignment.device, assignment);
 
                 // The first argument to the process, representing the child's name, is the video device
                 // it is assigned to work on
@@ -237,48 +236,56 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
 
                     if (_waitingAssignments.contains(assignment.device))
                     {
+                        reportInactiveVideo(assignment);
                         _waitingAssignments.remove(assignment.device);
 
                         NotificationMessage notifyMsg;
                         notifyMsg.level = NotificationMessage::Level_Error;
                         notifyMsg.title = "Cannot stream " + assignment.message.camera_name;
                         notifyMsg.message = "Unexpected error - child process died before accepting its stream assignment.";
-                        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+                        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
 
-                        reportVideoState();
+                        reportActiveVideoStates();
                     }
                     if (_currentAssignments.contains(assignment.device))
                     {
+                        reportInactiveVideo(assignment);
                         _currentAssignments.remove(assignment.device);
 
                         NotificationMessage notifyMsg;
                         notifyMsg.level = NotificationMessage::Level_Error;
                         notifyMsg.title = "Error streaming " + assignment.message.camera_name;
                         notifyMsg.message = "Unexpected error while streaming this device. Try agian.";
-                        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+                        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
 
-                        reportVideoState();
+                        reportActiveVideoStates();
                     }
                 });
             }
+
+            if(_waitingAssignments.contains(assignment.device))
+            {
+                reportInactiveVideo(assignment);
+                _waitingAssignments.remove(assignment.device);
+            }
+            if (_currentAssignments.contains(assignment.device))
+            {
+                reportInactiveVideo(assignment);
+                _currentAssignments.remove(assignment.device);
+            }
+
+            if (_childInterfaces.contains(assignment.device))
+            {
+                // Child for this device is running and can accept assignments
+                giveChildAssignment(assignment);
+                _currentAssignments.insert(assignment.device, assignment);
+                reportActiveVideoStates();
+            }
             else
             {
-                _waitingAssignments.remove(assignment.device);
-                _currentAssignments.remove(assignment.device);
-
-                if (_childInterfaces.contains(assignment.device))
-                {
-                    // Child for this device is running and can accept assignments
-                    giveChildAssignment(assignment);
-                    _currentAssignments.insert(assignment.device, assignment);
-                    reportVideoState();
-                }
-                else
-                {
-                    // There exits a process for this device, however it is still starting up
-                    // and may have a previous assignment queued for it. Queue this assignment
-                    _waitingAssignments.insert(assignment.device, assignment);
-                }
+                // There exits a process for this device, however it is still starting up
+                // and may have a previous assignment queued for it. Queue this assignment
+                _waitingAssignments.insert(assignment.device, assignment);
             }
         }
         else
@@ -299,7 +306,7 @@ void VideoServer::onMqttMessage(const QMQTT::Message &msg)
                 giveChildAssignment(_currentAssignments[device]);
             }
 
-            reportVideoState();
+            reportActiveVideoStates();
         }
     }
 }
@@ -478,15 +485,19 @@ void VideoServer::onChildReady(QString childName)
             notifyMsg.level = NotificationMessage::Level_Error;
             notifyMsg.title = "Cannot stream " + _waitingAssignments.value(childName).message.camera_name;
             notifyMsg.message = "Unexpected error - cannot create D-Bus connection to child stream process";
-            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
             _waitingAssignments.remove(childName);
         }
 
-        reportVideoState();
+        reportActiveVideoStates();
         return;
     }
 
-    _currentAssignments.remove(childName);
+    if (_currentAssignments.contains(childName))
+    {
+        reportInactiveVideo(_currentAssignments.value(childName));
+        _currentAssignments.remove(childName);
+    }
 
     // Check if there is a stream assignment waiting for this child
     if (_waitingAssignments.contains(childName))
@@ -496,10 +507,10 @@ void VideoServer::onChildReady(QString childName)
         _waitingAssignments.remove(childName);
     }
 
-    reportVideoState();
+    reportActiveVideoStates();
 }
 
-void VideoServer::reportVideoState()
+void VideoServer::reportActiveVideoStates()
 {
     LOG_I(LogTag, "Reporting video state through MQTT...");
 
@@ -514,6 +525,18 @@ void VideoServer::reportVideoState()
     }
 }
 
+void VideoServer::reportInactiveVideo(Assignment oldAssignment)
+{
+    // Signifies this camera is not streaming
+    oldAssignment.message.profile.codec = GStreamerUtil::CODEC_NULL;
+
+    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++,
+                                  "video_state_" + QString::number(oldAssignment.message.camera_index),
+                                  oldAssignment.message,
+                                  2,
+                                  true)); // <-- Retain message
+}
+
 void VideoServer::onChildError(QString childName, QString message)
 {
     LOG_E(LogTag, "Child " + childName + " reports an error: " + message);
@@ -525,7 +548,8 @@ void VideoServer::onChildError(QString childName, QString message)
         notifyMsg.title = "Error streaming " + _currentAssignments.value(childName).message.camera_name;
         notifyMsg.message = "Stream error: " + message;
 
-        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 0));
+        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "notification", notifyMsg, 2));
+        reportInactiveVideo(_currentAssignments.value(childName));
         _currentAssignments.remove(childName);
     }
 }

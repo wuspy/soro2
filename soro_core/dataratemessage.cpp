@@ -27,8 +27,7 @@ DataRateMessage::DataRateMessage(const QByteArray &payload)
     QDataStream stream(payload);
     stream.setByteOrder(QDataStream::BigEndian);
 
-    stream >> dataRateUp;
-    stream >> dataRateDown;
+    stream >> dataRateFromRover;
 }
 
 DataRateMessage::operator QByteArray() const
@@ -37,8 +36,7 @@ DataRateMessage::operator QByteArray() const
     QDataStream stream(&payload, QIODevice::WriteOnly);
     stream.setByteOrder(QDataStream::BigEndian);
 
-    stream << dataRateUp
-           << dataRateDown;
+    stream << dataRateFromRover;
 
     return payload;
 }

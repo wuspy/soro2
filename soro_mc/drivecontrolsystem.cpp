@@ -19,6 +19,7 @@
 #include "soro_core/logger.h"
 #include "soro_core/constants.h"
 #include "soro_core/drivemessage.h"
+#include "soro_core/switchmessage.h"
 #include <QtMath>
 
 #define LogTag "DriveControlSystem"
@@ -34,25 +35,26 @@ inline float clampF(float value, float min, float max)
 
 inline qint16 floatToShort(float value)
 {
-    return (qint16)(value * 32767);
+    return (qint16)(value * 32766);
 }
 
-DriveControlSystem::DriveControlSystem(QHostAddress mqttAddress, quint16 mqttPort, int interval, QObject *parent) : QObject(parent)
+DriveControlSystem::DriveControlSystem(const SettingsModel *settings, QObject *parent) : QObject(parent)
 {
     _enabled = false;
     _gamepadLeftX = 0;
     _gamepadLeftY = 0;
     _gamepadRightX = 0;
     _gamepadRightY = 0;
-    _mode = InputMode_TwoStick;
+    _mode = settings->getDriveInputMode();
+
+    setLimit(settings->getDrivePowerLimit());
 
     LOG_I(LogTag, "Creating MQTT client...");
-    _mqtt = new QMQTT::Client(mqttAddress, mqttPort, this);
+    _mqtt = new QMQTT::Client(settings->getMqttBrokerAddress(), SORO_NET_MQTT_BROKER_PORT, this);
     connect(_mqtt, &QMQTT::Client::connected, this, [this]()
     {
         Logger::logInfo(LogTag, "Connected to MQTT broker");
         _mqtt->subscribe("system_down", 2);
-        Q_EMIT mqttConnected();
     });
     connect(_mqtt, &QMQTT::Client::received, this, [this](const QMQTT::Message& msg)
     {
@@ -67,13 +69,12 @@ DriveControlSystem::DriveControlSystem(QHostAddress mqttAddress, quint16 mqttPor
     connect(_mqtt, &QMQTT::Client::disconnected, this, [this]()
     {
         Logger::logInfo(LogTag, "Disconnected from MQTT broker");
-        Q_EMIT mqttDisconnected();
     });
     _mqtt->setClientId("drive_control_system");
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
     _mqtt->setWillMessage(_mqtt->clientId());
-    _mqtt->setWillQos(1);
+    _mqtt->setWillQos(2);
     _mqtt->setWillTopic("system_down");
     _mqtt->setWillRetain(false);
     _mqtt->connectToHost();
@@ -86,7 +87,7 @@ DriveControlSystem::DriveControlSystem(QHostAddress mqttAddress, quint16 mqttPor
 
             switch (_mode)
             {
-            case InputMode_SingleStick: {
+            case SettingsModel::DriveInputMode_SingleStick: {
                 float x = _gamepadLeftX * _limit;
                 float y = _gamepadLeftY * _limit;
                 float midScale = _skidSteerFactor * (qAbs(x)/1.0f);
@@ -140,7 +141,7 @@ DriveControlSystem::DriveControlSystem(QHostAddress mqttAddress, quint16 mqttPor
                 msg.wheelBR = rightS;
             }
                 break;
-            case InputMode_TwoStick: {
+            case SettingsModel::DriveInputMode_TwoStick: {
                 float left = _gamepadLeftY * _limit;
                 float right = _gamepadRightY * _limit;
                 float midScale = _skidSteerFactor * (qAbs(left - right) / 1.0f);
@@ -158,21 +159,30 @@ DriveControlSystem::DriveControlSystem(QHostAddress mqttAddress, quint16 mqttPor
                 break;
             }
 
-            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "drive", msg, 0));
+            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "drive/controller", msg, 0));
         }
     });
 
-    _timer.start(interval);
+    _timer.start(settings->getDriveSendInterval());
 }
 
-void DriveControlSystem::setInterval(int interval)
+void DriveControlSystem::setDriveModeManual()
 {
-    _timer.setInterval(interval);
+    SwitchMessage msg;
+    msg.on = false;
+    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "drive_switch", msg, 2, true));
 }
 
-int DriveControlSystem::getInterval() const
+void DriveControlSystem::setDriveModeAutonomous()
 {
-    return _timer.interval();
+    SwitchMessage msg;
+    msg.on = true;
+    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "drive_switch", msg, 2, true));
+}
+
+void DriveControlSystem::setAutonomousDrivePath(DrivePathMessage path)
+{
+    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "drive/path", path, 2, true));
 }
 
 void DriveControlSystem::setSkidSteerFactor(float factor)
@@ -188,6 +198,7 @@ float DriveControlSystem::getSkidSteerFactor() const
 void DriveControlSystem::setLimit(float limit)
 {
     _limit = clampF(limit, 0.0f, 1.0f);
+    LOG_I(LogTag, "Limit changed to " + QString::number(_limit));
 }
 
 float DriveControlSystem::getLimit() const
@@ -205,12 +216,12 @@ void DriveControlSystem::disable()
     _enabled = false;
 }
 
-void DriveControlSystem::setInputMode(InputMode mode)
+void DriveControlSystem::setInputMode(SettingsModel::DriveInputMode mode)
 {
     _mode = mode;
 }
 
-DriveControlSystem::InputMode DriveControlSystem::getInputMode() const
+SettingsModel::DriveInputMode DriveControlSystem::getInputMode() const
 {
     return _mode;
 }

@@ -20,9 +20,17 @@
 #include "qmlgstreamerpainteditem.h"
 #include "soro_core/constants.h"
 #include "soro_core/logger.h"
+#include "soro_core/namegen.h"
+#include "soro_core/compassmessage.h"
+#include "soro_core/atmospheresensormessage.h"
+#include "soro_core/gpsmessage.h"
+#include "soro_core/switchmessage.h"
 #include "soro_core/gstreamerutil.h"
 
+#include <QPixmap>
 #include <QQmlComponent>
+#include <QQuickItem>
+#include <QQuickItemGrabResult>
 
 #include <Qt5GStreamer/QGst/ElementFactory>
 
@@ -36,6 +44,9 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
     _cameraSettings = cameraSettings;
     _mediaProfileSettings = mediaProfileSettings;
     _settings = settings;
+    _lastLat = _lastLng = _lastCompass = _lastElevation = 0.0;
+    _lastTemperature = _lastHumidity = _lastWindSpeed = _lastWindDirection = 0.0;
+    _logAtmosphere = false;
 
     QQmlComponent qmlComponent(engine, QUrl("qrc:/qml/main.qml"));
     _window = qobject_cast<QQuickWindow*>(qmlComponent.create());
@@ -63,6 +74,28 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
 
     _window->setProperty("selectedView", "video0");
 
+    switch (settings->getConfiguration())
+    {
+    case SettingsModel::ArmOperatorConfiguration:
+        _window->setProperty("configuration", "Arm Operator");
+        break;
+    case SettingsModel::DriverConfiguration:
+        _window->setProperty("configuration", "Driver");
+        break;
+    case SettingsModel::ScienceArmOperatorConfiguration:
+        _window->setProperty("configuration", "Science Arm Operator");
+        break;
+    case SettingsModel::ScienceCameraOperatorConfiguration:
+        _window->setProperty("configuration", "Science Camera Operator");
+        break;
+    case SettingsModel::CameraOperatorConfiguration:
+        _window->setProperty("configuration", "Camera Operator");
+        break;
+    case SettingsModel::ObserverConfiguration:
+        _window->setProperty("configuration", "Observer");
+        break;
+    }
+
     connect(_window, SIGNAL(keyPressed(int)), this, SIGNAL(keyPressed(int)));
 
     //
@@ -82,7 +115,11 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
 void MainWindowController::onMqttConnected()
 {
     LOG_I(LogTag, "Connected to MQTT broker");
-    _mqtt->subscribe("notification", 0);
+    _mqtt->subscribe("notification", 2);
+    _mqtt->subscribe("compass", 0);
+    _mqtt->subscribe("gps", 0);
+    _mqtt->subscribe("atmosphere", 0);
+    _mqtt->subscribe("atmosphere_switch", 2);
     Q_EMIT mqttConnected();
 }
 
@@ -90,6 +127,54 @@ void MainWindowController::onMqttDisconnected()
 {
     LOG_W(LogTag, "Disconnected from MQTT broker");
     Q_EMIT mqttDisconnected();
+}
+
+void MainWindowController::takeMainContentViewScreenshot()
+{
+    QSharedPointer<QQuickItemGrabResult> result = qvariant_cast<QQuickItem*>(_window->property("mainContentView"))->grabToImage();
+
+    connect(result.data(), &QQuickItemGrabResult::ready, this, [this, result]()
+    {
+        QString name = NameGen::generate(1);
+        if (result.data()->image().save(QCoreApplication::applicationDirPath() + "/../screenshots/" + name + ".png"))
+        {
+            // Save our current position and atmosphere data to go along with the screenshot
+            QFile file(QCoreApplication::applicationDirPath() + "/../screenshots/" + name + ".txt");
+            if (file.open(QIODevice::WriteOnly))
+            {
+                QTextStream stream(&file);
+                stream << "Time:\t\t" << QDateTime::currentDateTime().toString(Qt::SystemLocaleLongDate) << "\n\n"
+                       << "Heading:\t" << QString::number(_lastCompass, 'f', 2) << "\n"
+                       << "Latitude:\t" << QString::number(_lastLat, 'f', 7) << "\n"
+                       << "Longitude:\t" << QString::number(_lastLng, 'f', 7) << "\n"
+                       << "Elevation:\t" << QString::number(_lastElevation, 'f', 3) << "\n\n";
+                if (_logAtmosphere)
+                {
+                    stream << "Temperature:\t" << QString::number(_lastTemperature, 'f', 2) << "\n"
+                           << "Humidity:\t" << QString::number(_lastHumidity, 'f', 2) << "\n"
+                           << "Wind Direction:\t" << QString::number(_lastWindDirection, 'f', 2) << "\n"
+                           << "Wind Speed:\t" << QString::number(_lastWindSpeed, 'f', 2);
+                }
+                else
+                {
+                    stream << "Atmospheric data was not available when this screenshot was taken.";
+                }
+                file.close();
+            }
+            else
+            {
+                LOG_E(LogTag, "Cannot open file to log position data of screenshot");
+            }
+
+            LOG_I(LogTag, "Screenshot saved");
+            notify(NotificationMessage::Level_Info, "Screenshot Saved", "A screenshot has been saved to \"" + name + ".png\" in the screenshots folder.");
+        }
+        else
+        {
+            LOG_E(LogTag, "Error saving screenshot");
+            notify(NotificationMessage::Level_Error, "Screenshot Error", "Could not take a screenshot of the active view. Something is very wrong.");
+        }
+    });
 }
 
 void MainWindowController::onMqttMessage(const QMQTT::Message &msg)
@@ -111,6 +196,39 @@ void MainWindowController::onMqttMessage(const QMQTT::Message &msg)
             break;
         }
     }
+    else if (msg.topic() == "gps")
+    {
+        GpsMessage gpsMsg(msg.payload());
+        _window->setProperty("latitude", gpsMsg.latitude);
+        _window->setProperty("longitude", gpsMsg.longitude);
+        _lastLat = gpsMsg.latitude;
+        _lastLat = gpsMsg.longitude;
+        _lastElevation = gpsMsg.elevation;
+    }
+    else if (msg.topic() == "compass")
+    {
+        CompassMessage compassMsg(msg.payload());
+        _window->setProperty("compassHeading", compassMsg.heading);
+        _lastCompass = compassMsg.heading;
+    }
+    else if (msg.topic() == "atmosphere")
+    {
+        AtmosphereSensorMessage atmosphereMsg(msg.payload());
+        _lastTemperature = atmosphereMsg.temperature;
+        _lastHumidity = atmosphereMsg.humidity;
+        _lastWindDirection = atmosphereMsg.windDirection;
+        _lastWindSpeed = atmosphereMsg.windSpeed;
+    }
+    else if (msg.topic() == "atmosphere_switch")
+    {
+        SwitchMessage switchMsg(msg.payload());
+        if (!switchMsg.on)
+        {
+            // This is needed so we don't log stale data for screenshots if atmosphere
+            // sensors are off
+            _logAtmosphere = switchMsg.on;
+        }
+    }
 }
 
 QVector<QGst::ElementPtr> MainWindowController::getVideoSinks()
@@ -123,7 +241,6 @@ QVector<QGst::ElementPtr> MainWindowController::getVideoSinks()
             // Item should be of the class QmlGStreamerGlItem
             QVariant returnValue;
             QMetaObject::invokeMethod(_window, "getVideoSurface", Q_RETURN_ARG(QVariant, returnValue), Q_ARG(QVariant, i));
-            //sinks.append(qvariant_cast<QmlGStreamerGlItem*>(_window->property(QString("video%1Surface").arg(i).toLatin1().constData()))->videoSink());
             sinks.append(qvariant_cast<QmlGStreamerGlItem*>(returnValue)->videoSink());
         }
         else
@@ -131,7 +248,6 @@ QVector<QGst::ElementPtr> MainWindowController::getVideoSinks()
             // Item should be of the class QmlGStreamerPaintedItem
             QVariant returnValue;
             QMetaObject::invokeMethod(_window, "getVideoSurface", Q_RETURN_ARG(QVariant, returnValue), Q_ARG(QVariant, i));
-            //sinks.append(qvariant_cast<QmlGStreamerPaintedItem*>(_window->property(QString("video%1Surface").arg(i).toLatin1().constData()))->videoSink());
             sinks.append(qvariant_cast<QmlGStreamerPaintedItem*>(returnValue)->videoSink());
         }
     }
@@ -166,7 +282,7 @@ void MainWindowController::notifyAll(NotificationMessage::Level level, QString t
 
     // Publish this notification on the notification topic. We will get this message back,
     // since we are also subscribed to it, and that's when we'll show it from the onNewNotification() function
-    _mqtt->publish(QMQTT::Message(_notificationMsgId++, "notification", msg, 0));
+    _mqtt->publish(QMQTT::Message(_notificationMsgId++, "notification", msg, 2));
 }
 
 void MainWindowController::onConnectedChanged(bool connected)
@@ -179,10 +295,9 @@ void MainWindowController::onLatencyUpdated(quint32 latency)
     _window->setProperty("latency", latency);
 }
 
-void MainWindowController::onDataRateUpdated(quint64 rateUp, quint64 rateDown)
+void MainWindowController::onDataRateUpdated(quint64 rateFromRover)
 {
-    _window->setProperty("dataRateUp", rateUp);
-    _window->setProperty("dataRateDown", rateDown);
+    _window->setProperty("dataRateFromRover", rateFromRover);
 }
 
 void MainWindowController::toggleSidebar()

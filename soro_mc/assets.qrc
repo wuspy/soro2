@@ -128,5 +128,6 @@
         <file>btn_icons/KB/y.png</file>
         <file>btn_icons/KB/z.png</file>
         <file>icons/ic_play_circle_filled_white_48px.svg</file>
+        <file>icons/ic_navigation_white_48px.svg</file>
     </qresource>
 </RCC>

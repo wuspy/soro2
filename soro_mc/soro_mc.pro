@@ -17,14 +17,17 @@ HEADERS += \
     mainwindowcontroller.h \
     connectionstatuscontroller.h \
     settingsmodel.h \
-    audiocontroller.h \
     gstreamerpipelinewatch.h \
-    armcontrolsystem.h \
     qmlgstreamerpainteditem.h \
     qmlgstreamerglitem.h \
     bindssettingsmodel.h \
     videoclient.h \
-    mapviewimpl.h
+    mapviewimpl.h \
+    sciencearmcontrolsystem.h \
+    armcontrolsystem.h \
+    sciencecameracontrolsystem.h \
+    audioclient.h \
+    pitchrollview.h
 
 SOURCES += main.cpp \
     gamepadcontroller.cpp \
@@ -33,14 +36,20 @@ SOURCES += main.cpp \
     drivecontrolsystem.cpp \
     connectionstatuscontroller.cpp \
     settingsmodel.cpp \
-    audiocontroller.cpp \
     gstreamerpipelinewatch.cpp \
-    armcontrolsystem.cpp \
     qmlgstreamerpainteditem.cpp \
     qmlgstreamerglitem.cpp \
     bindssettingsmodel.cpp \
     videoclient.cpp \
+<<<<<<< HEAD
     mapviewimpl.cpp
+=======
+    sciencearmcontrolsystem.cpp \
+    armcontrolsystem.cpp \
+    sciencecameracontrolsystem.cpp \
+    audioclient.cpp \
+    pitchrollview.cpp
+>>>>>>> 6bb7c64db6f8dd79386f2e386eba9639054d1332
 
 RESOURCES += qml.qrc \
     assets.qrc

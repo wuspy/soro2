@@ -18,8 +18,6 @@
 
 #include <QTimer>
 
-#include <ros/ros.h>
-
 #include "soro_core/constants.h"
 #include "soro_core/logger.h"
 

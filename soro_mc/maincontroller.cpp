@@ -28,6 +28,7 @@
 #include "qmlgstreamerglitem.h"
 #include "mapviewimpl.h"
 #include "qmlgstreamerpainteditem.h"
+#include "pitchrollview.h"
 #include "soro_core/constants.h"
 #include "soro_core/logger.h"
 #include "soro_core/notificationmessage.h"
@@ -182,15 +183,12 @@ void MainController::init(QApplication *app)
             // Create connection status controller
             //
             LOG_I(LogTag, "Initializing connection status controller...");
-            _self->_connectionStatusController = new ConnectionStatusController(_self->_settingsModel->getMqttBrokerAddress(),
-                                                                                SORO_NET_MQTT_BROKER_PORT,
-                                                                                2000,
-                                                                                _self);
+            _self->_connectionStatusController = new ConnectionStatusController(_self->_settingsModel, _self);
 
             //
             // Create the GamepadController instance
             //
-            LOG_I(LogTag, "Initializing Gamepad Controller...");
+            LOG_I(LogTag, "Initializing gamepad controller...");
             _self->_gamepadController = new GamepadController(_self);
 
             switch (_self->_settingsModel->getConfiguration()) {
@@ -199,27 +197,31 @@ void MainController::init(QApplication *app)
                 // Create drive control system
                 //
                 LOG_I(LogTag, "Initializing drive control system...");
-                _self->_driveControlSystem = new DriveControlSystem(_self->_settingsModel->getMqttBrokerAddress(),
-                                                                    SORO_NET_MQTT_BROKER_PORT,
-                                                                    _self->_settingsModel->getDriveSendInterval(),
-                                                                    _self);
-                _self->_driveControlSystem->setLimit(_self->_settingsModel->getDrivePowerLimit());
-                _self->_driveControlSystem->setSkidSteerFactor(_self->_settingsModel->getDriveSkidSteerFactor());
-                _self->_driveControlSystem->enable();
+                _self->_driveControlSystem = new DriveControlSystem(_self->_settingsModel, _self);
                 break;
             case SettingsModel::ArmOperatorConfiguration:
                 //
                 // Create arm control system
                 //
                 LOG_I(LogTag, "Initializing arm control system...");
-                _self->_armControlSystem = new ArmControlSystem(_self->_settingsModel->getMqttBrokerAddress(),
-                                                                SORO_NET_MQTT_BROKER_PORT,
-                                                                1000,
-                                                                _self);
-                _self->_armControlSystem->enable();
+                _self->_armControlSystem = new ArmControlSystem(_self->_settingsModel, _self);
                 break;
             case SettingsModel::CameraOperatorConfiguration:
                 //TODO
+                break;
+            case SettingsModel::ScienceArmOperatorConfiguration:
+                //
+                // Create science arm control system
+                //
+                LOG_I(LogTag, "Initializing science arm control system...");
+                _self->_scienceArmControlSystem = new ScienceArmControlSystem(_self->_settingsModel, _self);
+                break;
+            case SettingsModel::ScienceCameraOperatorConfiguration:
+                //
+                // Create science camera gimbal control system
+                //
+                LOG_I(LogTag, "Initializing science camera control system...");
+                _self->_scienceCameraControlSystem = new ScienceCameraControlSystem(_self->_settingsModel, _self);
                 break;
             case SettingsModel::ObserverConfiguration:
                 break;
@@ -229,12 +231,13 @@ void MainController::init(QApplication *app)
             // Create the audio controller instance
             //
             LOG_I(LogTag, "Initializing audio controller...");
-            _self->_audioController = new AudioController(_self->_settingsModel, _self);
+            _self->_audioClient = new AudioClient(_self->_settingsModel, _self);
 
             //
             // Create the QML application engine and setup the GStreamer surface
             //
             qmlRegisterType<MapViewImpl>("Soro", 1, 0, "MapViewImpl");
+            qmlRegisterType<PitchRollView>("Soro", 1, 0, "PitchRollView");
             if (_self->_settingsModel->getEnableHwRendering())
             {
                 // Use the hardware opengl rendering surface, doesn't work on some hardware
@@ -260,41 +263,41 @@ void MainController::init(QApplication *app)
             // Create the video controller instance
             //
             LOG_I(LogTag, "Initializing video controller...");
-            _self->_videoController = new VideoClient(_self->_settingsModel, _self->_cameraSettingsModel, _self->_mainWindowController->getVideoSinks(), _self);
+            _self->_videoClient = new VideoClient(_self->_settingsModel, _self->_cameraSettingsModel, _self->_mainWindowController->getVideoSinks(), _self);
 
-
-            // Forward audio/video errors to the UI
-            connect(_self->_videoController, &VideoClient::gstError, _self, [](QString message, uint cameraIndex)
-            {
-                _self->_self->_mainWindowController->notify(NotificationMessage::Level_Error,
-                                              "Error playing " + _self->_cameraSettingsModel->getCamera(cameraIndex).name,
-                                              "There was an error while decoding the video stream: " + message);
-            });
-            connect(_self->_audioController, &AudioController::gstError, _self, [](QString message)
-            {
-                _self->_mainWindowController->notify(NotificationMessage::Level_Error,
-                                              "Error playing audio",
-                                              "There was an error while decoding the audio stream: " + message);
-            });
-
+            //
+            // Connect to connection status signals
+            //
             connect(_self->_connectionStatusController, &ConnectionStatusController::dataRateUpdate,
                     _self->_mainWindowController, &MainWindowController::onDataRateUpdated);
             connect(_self->_connectionStatusController, &ConnectionStatusController::latencyUpdate,
                     _self->_mainWindowController, &MainWindowController::onLatencyUpdated);
             connect(_self->_connectionStatusController, &ConnectionStatusController::connectedChanged,
                     _self->_mainWindowController, &MainWindowController::onConnectedChanged);
-            connect(_self->_audioController, &AudioController::playing,
-                    _self->_mainWindowController, &MainWindowController::onAudioProfileChanged);
-            connect(_self->_audioController, &AudioController::stopped, _self, []()
+            connect(_self->_connectionStatusController, &ConnectionStatusController::connectedChanged, _self, [](bool connected)
             {
-                _self->_mainWindowController->onAudioProfileChanged(GStreamerUtil::AudioProfile());
+                // Enable/disable control systems depending on the connection state. Although the connection status controller reports
+                // the connection is down, it is possible that the individual controls systems may still be connected. They should
+                // not be allowed to control the rover unless everything is connected for safety
+                if (connected)
+                {
+                    if (_self->_driveControlSystem) _self->_driveControlSystem->enable();
+                    if (_self->_armControlSystem) _self->_armControlSystem->enable();
+                    if (_self->_scienceArmControlSystem) _self->_scienceArmControlSystem->enable();
+                    if (_self->_scienceCameraControlSystem) _self->_scienceCameraControlSystem->enable();
+                }
+                else
+                {
+                    if (_self->_driveControlSystem) _self->_driveControlSystem->disable();
+                    if (_self->_armControlSystem) _self->_armControlSystem->disable();
+                    if (_self->_scienceArmControlSystem) _self->_scienceArmControlSystem->disable();
+                    if (_self->_scienceCameraControlSystem) _self->_scienceCameraControlSystem->disable();
+                }
             });
-            connect(_self->_videoController, &VideoClient::playing,
-                    _self->_mainWindowController, &MainWindowController::onVideoProfileChanged);
-            connect(_self->_videoController, &VideoClient::stopped, _self, [](uint cameraIndex)
-            {
-                _self->_mainWindowController->onVideoProfileChanged(cameraIndex, GStreamerUtil::VideoProfile());
-            });
+
+            //
+            // Connect signals relating to the gamepad system
+            //
             connect(_self->_gamepadController, &GamepadController::gamepadChanged, _self, [](bool connected, QString name)
             {
                 if (connected)
@@ -307,162 +310,283 @@ void MainController::init(QApplication *app)
                 }
             });
 
-            connect(_self->_videoController, &VideoClient::videoServerDisconnected, _self, [](uint computer)
+            //
+            // Connect signals relating to the audio/video system
+            //
+            connect(_self->_audioClient, &AudioClient::playing, _self->_mainWindowController, &MainWindowController::onAudioProfileChanged);
+            connect(_self->_audioClient, &AudioClient::stopped, _self, []()
             {
-                _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Video Server Stopped", "Video server #" + QString::number(computer) + " has either exited or crashed.");
+                _self->_mainWindowController->onAudioProfileChanged(GStreamerUtil::AudioProfile());
+            });
+            connect(_self->_videoClient, &VideoClient::playing, _self->_mainWindowController, &MainWindowController::onVideoProfileChanged);
+            connect(_self->_videoClient, &VideoClient::stopped, _self, [](uint cameraIndex)
+            {
+                _self->_mainWindowController->onVideoProfileChanged(cameraIndex, GStreamerUtil::VideoProfile());
+            });
+            connect(_self->_videoClient, &VideoClient::videoServerDisconnected, _self, [](uint computer)
+            {
+                _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Video Server Stopped", "Video server #" + QString::number(computer) + " has either exited, crashed, or lost connection.");
+            });
+            connect(_self->_videoClient, &VideoClient::masterVideoClientDisconnected, _self, []()
+            {
+                _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Mission Control Master Stopped", "The mission control master has either exited, crashed, or lost connection. Audio/Video and several other features will not work until it is restarted.");
+            });
+            connect(_self->_audioClient, &AudioClient::audioServerDisconnected, _self, []()
+            {
+                _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Audio Server Stopped", "Audio server has either exited, crashed, or lost connection.");
+            });
+            connect(_self->_videoClient, &VideoClient::gstError, _self, [](QString message, uint cameraIndex)
+            {
+                _self->_self->_mainWindowController->notify(NotificationMessage::Level_Error,
+                                              "Error playing " + _self->_cameraSettingsModel->getCamera(cameraIndex).name,
+                                              "There was an error while decoding the video stream: " + message);
+            });
+            connect(_self->_audioClient, &AudioClient::gstError, _self, [](QString message)
+            {
+                _self->_mainWindowController->notify(NotificationMessage::Level_Error,
+                                              "Error playing audio",
+                                              "There was an error while decoding the audio stream: " + message);
             });
 
-            connect(_self->_videoController, &VideoClient::masterVideoClientDisconnected, _self, []()
-            {
-                _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Mission Control Master Stopped", "The mission control master has either exited or crashed. Audio/Video and several other features will not work until it is restarted.");
-            });
-
+            //
+            // Connect signals related to the drive system
+            //
             if (_self->_driveControlSystem)
             {
                 connect(_self->_gamepadController, &GamepadController::axisChanged,
                         _self->_driveControlSystem, &DriveControlSystem::onGamepadAxisUpdate);
                 connect(_self->_driveControlSystem, &DriveControlSystem::driveSystemExited, _self, []()
                 {
-                    _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Drive System Stopped", "Drive system on the rover has either exited or crashed.");
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Drive System Disconnected", "The drive system running on the rover computer has either exited, crashed, or lost connection.");
                 });
             }
 
+            //
+            // Connect signals related to the arm system
+            //
+            if (_self->_armControlSystem)
+            {
+                connect(_self->_armControlSystem, &ArmControlSystem::masterArmConnectedChanged, _self, [](bool connected)
+                {
+                    if (connected)
+                    {
+                        _self->_mainWindowController->notify(NotificationMessage::Level_Info, "Master Arm Connected", "The master arm is connected.");
+                    }
+                    else
+                    {
+                        _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Master Arm Disconnected", "The master arm is not connected.");
+                    }
+                });
+
+                connect(_self->_armControlSystem, &ArmControlSystem::slaveArmDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "Arm Disconnected", "The arm microcontroller on the rover has either exited, crashed, or lost connection.");
+                });
+                connect(_self->_armControlSystem, &ArmControlSystem::armControllerDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "Arm Controller Disconnected", "The arm control system running on the rover computer has either exited, crashed, or lost connection.");
+                });
+            }
+
+            //
+            // Connect signals related to the science arm system
+            //
+            if (_self->_scienceArmControlSystem)
+            {
+                connect(_self->_scienceArmControlSystem, &ScienceArmControlSystem::masterArmConnectedChanged, _self, [](bool connected)
+                {
+                    if (connected)
+                    {
+                        _self->_mainWindowController->notify(NotificationMessage::Level_Info, "Master Science Arm Connected", "The master science arm is connected.");
+                    }
+                    else
+                    {
+                        _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Master Science Arm Disconnected", "The master science arm is not connected.");
+                    }
+                });
+                connect(_self->_scienceArmControlSystem, &ScienceArmControlSystem::sciencePackageControllerDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "Science System Disconnected", "The science package control system running on the rover computer has either exited, crashed, or lost connection.");
+                });
+                connect(_self->_scienceArmControlSystem, &ScienceArmControlSystem::sciencePackageDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "Science Package Disconnected", "The science package microcontroller on the rover has either exited, crashed, or lost connection.");
+                });
+                connect(_self->_scienceArmControlSystem, &ScienceArmControlSystem::flirDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "Flir System Disconnected", "The Flir control system running on the rover has either exited, crashed, or lost connection.");
+                });
+                connect(_self->_scienceArmControlSystem, &ScienceArmControlSystem::lidarDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "LIDAR System Disconnected", "The LIDAR control system running on the rover has either exited, crashed, or lost connection.");
+                });
+            }
+
+            //
+            // Connect signals related to the science camera control system
+            //
+            if (_self->_scienceCameraControlSystem)
+            {
+                connect(_self->_scienceCameraControlSystem, &ScienceCameraControlSystem::sciencePackageControllerDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "Science System Disconnected", "The science package control system running on the rover computer has either exited, crashed, or lost connection.");
+                });
+                connect(_self->_scienceCameraControlSystem, &ScienceCameraControlSystem::sciencePackageDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "Science Package Disconnected", "The science package microcontroller on the rover has either exited, crashed, or lost connection.");
+                });
+                connect(_self->_scienceCameraControlSystem, &ScienceCameraControlSystem::flirDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "Flir System Disconnected", "The Flir control system running on the rover has either exited, crashed, or lost connection.");
+                });
+                connect(_self->_scienceCameraControlSystem, &ScienceCameraControlSystem::lidarDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Error, "LIDAR System Disconnected", "The LIDAR control system running on the rover has either exited, crashed, or lost connection.");
+                });
+            }
+
+            //
+            // Connect to key events. This is where all the keybinding is done
+            //
             connect(_self->_mainWindowController, &MainWindowController::keyPressed, _self, [](int key)
             {
                 switch (key)
                 {
+                case Qt::Key_F1:
+                    _self->_mainWindowController->takeMainContentViewScreenshot();
+                    break;
                 case Qt::Key_1:
-                    _self->_videoController->stop(0);
+                    _self->_videoClient->stop(0);
                     break;
                 case Qt::Key_Q:
-                    _self->_videoController->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_A:
-                    _self->_videoController->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_Z:
-                    _self->_videoController->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(0, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_2:
-                    _self->_videoController->stop(1);
+                    _self->_videoClient->stop(1);
                     break;
                 case Qt::Key_W:
-                    _self->_videoController->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_S:
-                    _self->_videoController->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_X:
-                    _self->_videoController->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(1, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_3:
-                    _self->_videoController->stop(2);
+                    _self->_videoClient->stop(2);
                     break;
                 case Qt::Key_E:
-                    _self->_videoController->play(2, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(2, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_D:
-                    _self->_videoController->play(2, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(2, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_C:
-                    _self->_videoController->play(2, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(2, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_4:
-                    _self->_videoController->stop(3);
+                    _self->_videoClient->stop(3);
                     break;
                 case Qt::Key_R:
-                    _self->_videoController->play(3, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(3, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_F:
-                    _self->_videoController->play(3, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(3, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_V:
-                    _self->_videoController->play(3, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(3, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_5:
-                    _self->_videoController->stop(4);
+                    _self->_videoClient->stop(4);
                     break;
                 case Qt::Key_T:
-                    _self->_videoController->play(4, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(4, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_G:
-                    _self->_videoController->play(4, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(4, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_B:
-                    _self->_videoController->play(4, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(4, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_6:
-                    _self->_videoController->stop(5);
+                    _self->_videoClient->stop(5);
                     break;
                 case Qt::Key_Y:
-                    _self->_videoController->play(5, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(5, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_H:
-                    _self->_videoController->play(5, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(5, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_N:
-                    _self->_videoController->play(5, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(5, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_7:
-                    _self->_videoController->stop(6);
+                    _self->_videoClient->stop(6);
                     break;
                 case Qt::Key_U:
-                    _self->_videoController->play(6, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(6, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_J:
-                    _self->_videoController->play(6, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(6, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_M:
-                    _self->_videoController->play(6, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(6, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_8:
-                    _self->_videoController->stop(7);
+                    _self->_videoClient->stop(7);
                     break;
                 case Qt::Key_I:
-                    _self->_videoController->play(7, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(7, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_K:
-                    _self->_videoController->play(7, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(7, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_Comma:
-                    _self->_videoController->play(7, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(7, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_9:
-                    _self->_videoController->stop(8);
+                    _self->_videoClient->stop(8);
                     break;
                 case Qt::Key_O:
-                    _self->_videoController->play(8, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(8, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_L:
-                    _self->_videoController->play(8, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(8, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_Period:
-                    _self->_videoController->play(8, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(8, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_0:
-                    _self->_videoController->stop(9);
+                    _self->_videoClient->stop(9);
                     break;
                 case Qt::Key_P:
-                    _self->_videoController->play(9, _self->_mediaProfileSettingsModel->getVideoProfile(0));
+                    _self->_videoClient->play(9, _self->_mediaProfileSettingsModel->getVideoProfile(0));
                     break;
                 case Qt::Key_Semicolon:
-                    _self->_videoController->play(9, _self->_mediaProfileSettingsModel->getVideoProfile(1));
+                    _self->_videoClient->play(9, _self->_mediaProfileSettingsModel->getVideoProfile(1));
                     break;
                 case Qt::Key_Slash:
-                    _self->_videoController->play(9, _self->_mediaProfileSettingsModel->getVideoProfile(2));
+                    _self->_videoClient->play(9, _self->_mediaProfileSettingsModel->getVideoProfile(2));
                     break;
                 case Qt::Key_Escape:
-                    _self->_videoController->stopAll();
-                    _self->_audioController->stop();
+                    _self->_videoClient->stopAll();
+                    _self->_audioClient->stop();
                     break;
-                case Qt::Key_Underscore:
-                    _self->_audioController->stop();
+                case Qt::Key_Minus:
+                    _self->_audioClient->stop();
                     break;
-                case Qt::Key_BraceLeft:
-                    _self->_audioController->play(_self->_mediaProfileSettingsModel->getAudioProfile(0));
+                case Qt::Key_BracketLeft:
+                    _self->_audioClient->play(_self->_mediaProfileSettingsModel->getAudioProfile(0));
                     break;
-                case Qt::Key_QuoteDbl:
-                    _self->_audioController->play(_self->_mediaProfileSettingsModel->getAudioProfile(1));
+                case Qt::Key_Apostrophe:
+                    _self->_audioClient->play(_self->_mediaProfileSettingsModel->getAudioProfile(1));
                     break;
                 case Qt::Key_Up:
                     _self->_mainWindowController->selectViewAbove();
@@ -476,36 +600,36 @@ void MainController::init(QApplication *app)
                 case Qt::Key_Left:
                     _self->_mainWindowController->toggleSidebar();
                     break;
-                default: break;
+                default: qDebug() << key; break;
                 }
             });
 
+            //
+            // Connect to gamepad button events. This is where all the gamepad button binding is done
+            //
             connect(_self->_gamepadController, &GamepadController::buttonPressed, _self, [](SDL_GameControllerButton btn, bool isPressed)
             {
-                if (isPressed)
+                switch (btn)
                 {
-                    switch (btn)
+                case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                    if (_self->_driveControlSystem)
                     {
-                    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
-                        if (_self->_driveControlSystem)
-                        {
-                            _self->_driveControlSystem->setLimit(isPressed ? 1.0 : 0.6);
-                        }
-                        break;
-                    case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                        _self->_mainWindowController->selectViewBelow();
-                        break;
-                    case SDL_CONTROLLER_BUTTON_DPAD_UP:
-                        _self->_mainWindowController->selectViewAbove();
-                        break;
-                    case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-                        _self->_mainWindowController->toggleSidebar();
-                        break;
-                    case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
-                        _self->_mainWindowController->dismissNotification();
-                        break;
-                    default: break;
+                        _self->_driveControlSystem->setLimit(isPressed ? 1.0 : _self->_settingsModel->getDrivePowerLimit());
                     }
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                    if (isPressed) _self->_mainWindowController->selectViewBelow();
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                    if (isPressed) _self->_mainWindowController->selectViewAbove();
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+                    if (isPressed) _self->_mainWindowController->toggleSidebar();
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                    if (isPressed) _self->_mainWindowController->dismissNotification();
+                    break;
+                default: break;
                 }
             });
 
@@ -543,6 +667,12 @@ QString MainController::genId()
         break;
     case SettingsModel::CameraOperatorConfiguration:
         id = "mc_camera";
+        break;
+    case SettingsModel::ScienceArmOperatorConfiguration:
+        id = "science_arm_operator";
+        break;
+    case SettingsModel::ScienceCameraOperatorConfiguration:
+        id = "science_camera_operator";
         break;
     case SettingsModel::ObserverConfiguration:
         id = "mc_observer_";

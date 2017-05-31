@@ -73,7 +73,7 @@ Item {
 
     Item {
         id: messageItem
-        anchors.top: parent.top
+        anchors.verticalCenter: parent.verticalCenter
         anchors.horizontalCenter: parent.horizontalCenter
         height: buttonHint.y + buttonHint.height
         state: "hidden"

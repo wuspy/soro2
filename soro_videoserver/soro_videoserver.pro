@@ -31,10 +31,6 @@ HEADERS += \
 # Include headers from other subprojects
 INCLUDEPATH += $$PWD/..
 
-# Include ROS headers
-INCLUDEPATH += /opt/ros/kinetic/include/
-DEPENDPATH += /opt/ros/kinetic/include/
-
 # Link against soro_core
 LIBS += -L../lib -lsoro_core
 

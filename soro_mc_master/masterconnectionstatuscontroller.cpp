@@ -29,30 +29,36 @@
 namespace Soro {
 
 MasterConnectionStatusController::MasterConnectionStatusController
-            (QHostAddress brokerAddress, quint16 brokerPort, int pingInterval, int dataRateCalcInterval, QObject *parent) : QObject(parent)
+            (const SettingsModel *settings, QObject *parent) : QObject(parent)
 {
-    _pingInterval = pingInterval;
-    _dataRateCalcInterval = dataRateCalcInterval;
-    _bytesDown = _bytesUp = 0;
+    _settings = settings;
+    _bytesFromRover = 0;
     _nextPing = 1;
-    _dataRateCalcTimer.start(dataRateCalcInterval);
-    _pingTimer.start(pingInterval);
+    _dataRateCalcTimer.start(settings->getDataRateCalcInterval());
+    _pingTimer.start(settings->getPingInterval());
 
     LOG_I(LogTag, "Creating MQTT client...");
-    _mqtt = new QMQTT::Client(brokerAddress, brokerPort, this);
+    _mqtt = new QMQTT::Client(settings->getMqttBrokerAddress(), SORO_NET_MQTT_BROKER_PORT, this);
     _mqtt->setClientId("master_connection_status_controller");
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
     _mqtt->setWillMessage(_mqtt->clientId());
-    _mqtt->setWillQos(1);
+    _mqtt->setWillQos(2);
     _mqtt->setWillTopic("system_down");
     _mqtt->setWillRetain(false);
     _mqtt->connectToHost();
 
     connect(_mqtt, &QMQTT::Client::connected, this, [this]()
     {
+        LOG_I(LogTag, "Connected to MQTT broker");
         _mqtt->subscribe("ping", 0);
-        Q_EMIT mqttConnected();
+        Q_EMIT connectedChanged(true);
+    });
+
+    connect(_mqtt, &QMQTT::Client::disconnected, this, [this]()
+    {
+       LOG_W(LogTag, "Disconnected from MQTT broker");
+       Q_EMIT connectedChanged(false);
     });
 
     connect(_mqtt, &QMQTT::Client::received, this, [this](const QMQTT::Message &msg)
@@ -97,28 +103,21 @@ MasterConnectionStatusController::MasterConnectionStatusController
 
     connect(&_dataRateCalcTimer, &QTimer::timeout, this, [this]()
     {
-        quint64 rateUp = (float)_bytesUp / ((float)_dataRateCalcInterval / 1000.0f);
-        quint64 rateDown = (float)_bytesDown / ((float)_dataRateCalcInterval / 1000.0f);
-        _bytesDown = _bytesUp = 0;
+        quint64 rate = (float)_bytesFromRover / ((float)_settings->getDataRateCalcInterval() / 1000.0f);
+        _bytesFromRover = 0;
 
         // Send data_rate message on data_rate topic
         DataRateMessage msg;
-        msg.dataRateDown = rateDown;
-        msg.dataRateUp = rateUp;
+        msg.dataRateFromRover = rate;
         _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "data_rate", msg, 0));
 
-        Q_EMIT dataRateUpdate(rateUp, rateDown);
+        Q_EMIT dataRateUpdate(rate);
     });
 }
 
-void MasterConnectionStatusController::logDataDown(quint32 bytes)
+void MasterConnectionStatusController::logDataFromRover(quint32 bytes)
 {
-    _bytesDown += bytes;
-}
-
-void MasterConnectionStatusController::logDataUp(quint32 bytes)
-{
-    _bytesUp += bytes;
+    _bytesFromRover += bytes;
 }
 
 bool MasterConnectionStatusController::isConnected() const

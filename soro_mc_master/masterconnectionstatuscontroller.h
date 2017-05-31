@@ -18,21 +18,20 @@ class MasterConnectionStatusController : public QObject
 {
     Q_OBJECT
 public:
-    explicit MasterConnectionStatusController(QHostAddress brokerAddress, quint16 brokerPort, int pingInterval, int dataRateCalcInterval, QObject *parent = 0);
+    explicit MasterConnectionStatusController(const SettingsModel *settings, QObject *parent = 0);
 
     bool isConnected() const;
 
 Q_SIGNALS:
     void latencyUpdate(quint32 latency);
-    void dataRateUpdate(quint64 rateUp, quint64 rateDown);
-    void mqttConnected();
-    void mqttDisconnected();
+    void dataRateUpdate(quint64 rateFromRover);
+    void connectedChanged(bool connected);
 
 public Q_SLOTS:
-    void logDataUp(quint32 bytes);
-    void logDataDown(quint32 bytes);
+    void logDataFromRover(quint32 bytes);
 
 private:
+    const SettingsModel *_settings;
     QTimer _pingTimer;
     QTimer _dataRateCalcTimer;
     QQueue<quint64> _pingIdQueue;
@@ -40,10 +39,7 @@ private:
     quint64 _nextPing;
     quint16 _nextMqttMsgId;
     QMQTT::Client *_mqtt;
-    quint64 _bytesDown;
-    quint64 _bytesUp;
-    int _dataRateCalcInterval;
-    int _pingInterval;
+    quint64 _bytesFromRover;
 };
 
 } // namespace Soro

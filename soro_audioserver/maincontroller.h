@@ -22,7 +22,6 @@ private:
     explicit MainController(QObject *parent=0);
     static MainController *_self;
 
-    QString _id;
     AudioServer *_audioServer = nullptr;
     SettingsModel *_settingsModel = nullptr;
 };

@@ -45,8 +45,7 @@ private:
     {
         QHostAddress address;
         quint16 port;
-        GStreamerUtil::AudioProfile profile;
-        AudioMessage originalMessage;
+        AudioMessage message;
 
         Assignment();
     };

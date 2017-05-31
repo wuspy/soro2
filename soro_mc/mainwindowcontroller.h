@@ -44,7 +44,8 @@ public Q_SLOTS:
     void selectViewBelow();
     void onConnectedChanged(bool connected);
     void onLatencyUpdated(quint32 latency);
-    void onDataRateUpdated(quint64 rateUp, quint64 rateDown);
+    void onDataRateUpdated(quint64 rateFromRover);
+    void takeMainContentViewScreenshot();
 
 private Q_SLOTS:
     void onMqttConnected();
@@ -58,6 +59,9 @@ private:
     const SettingsModel *_settings;
     const MediaProfileSettingsModel *_mediaProfileSettings;
     const CameraSettingsModel *_cameraSettings;
+    double _lastLat, _lastLng, _lastCompass, _lastElevation;
+    bool _logAtmosphere;
+    double _lastTemperature, _lastHumidity, _lastWindSpeed, _lastWindDirection;
 
     QMQTT::Client *_mqtt;
 };

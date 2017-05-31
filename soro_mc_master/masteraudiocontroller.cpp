@@ -54,7 +54,7 @@ MasterAudioController::MasterAudioController(const SettingsModel *settings, QObj
     _mqtt->setAutoReconnect(true);
     _mqtt->setAutoReconnectInterval(1000);
     _mqtt->setWillMessage(_mqtt->clientId());
-    _mqtt->setWillQos(1);
+    _mqtt->setWillQos(2);
     _mqtt->setWillTopic("system_down");
     _mqtt->setWillRetain(false);
     _mqtt->connectToHost();
@@ -100,7 +100,7 @@ void MasterAudioController::onMqttConnected()
 {
     LOG_I(LogTag, "Connected to MQTT broker");
     _mqtt->subscribe("audio_bounce", 0);
-    _mqtt->subscribe("system_down", 1);
+    _mqtt->subscribe("system_down", 2);
 }
 
 void MasterAudioController::onMqttDisconnected()

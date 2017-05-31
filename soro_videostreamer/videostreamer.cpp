@@ -52,7 +52,6 @@ VideoStreamer::VideoStreamer(QString streamName, QObject *parent) : QObject(pare
     }
 
     _name = streamName;
-    _watchdogTimerId = -1;
     _watchdogTimerId = startTimer(3000);
     _parentInterface->call(QDBus::NoBlock, "onChildReady", _name);
 }

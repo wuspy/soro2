@@ -35,8 +35,6 @@ private Q_SLOTS:
     void onMqttDisconnected();
 
 private:
-    void onSocketReadyRead(QUdpSocket *socket, quint16 bouncePort);
-
     char _buffer[65536];
     int _announceTimerId;
     quint16 _nextMqttMsgId;

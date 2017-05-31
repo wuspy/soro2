@@ -86,12 +86,7 @@ void MainController::init(QApplication *app)
             // Create master connection status controller
             //
             LOG_I(LogTag, "Initializing master connection status controller...");
-            _self->_masterConnectionStatusController = new MasterConnectionStatusController(
-                        _self->_settings->getMqttBrokerAddress(),
-                        SORO_NET_MQTT_BROKER_PORT,
-                        _self->_settings->getPingInterval(),
-                        _self->_settings->getDataRateCalcInterval(),
-                        _self);
+            _self->_masterConnectionStatusController = new MasterConnectionStatusController(_self->_settings, _self);
 
             //
             // Create the master video controller
@@ -117,19 +112,26 @@ void MainController::init(QApplication *app)
             LOG_I(LogTag, "Creating main window...");
             _self->_mainWindowController = new MainWindowController(_self->_qmlEngine, _self);
 
-            connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::mqttConnected,
-                    _self->_mainWindowController, &MainWindowController::onConnected);
-            connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::mqttDisconnected,
-                    _self->_mainWindowController, &MainWindowController::onDisconnected);
+            connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::connectedChanged, _self, [](bool connected)
+            {
+                if (connected)
+                {
+                    _self->_mainWindowController->onConnected();
+                }
+                else
+                {
+                    _self->_mainWindowController->onDisconnected();
+                }
+            });
             connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::latencyUpdate,
                     _self->_mainWindowController, &MainWindowController::onLatencyUpdated);
             connect(_self->_masterConnectionStatusController, &MasterConnectionStatusController::dataRateUpdate,
                     _self->_mainWindowController, &MainWindowController::onDataRateUpdated);
 
             connect(_self->_masterVideoController, &MasterVideoClient::bytesDown,
-                    _self->_masterConnectionStatusController, &MasterConnectionStatusController::logDataDown);
+                    _self->_masterConnectionStatusController, &MasterConnectionStatusController::logDataFromRover);
             connect(_self->_masterAudioController, &MasterAudioController::bytesDown,
-                    _self->_masterConnectionStatusController, &MasterConnectionStatusController::logDataDown);
+                    _self->_masterConnectionStatusController, &MasterConnectionStatusController::logDataFromRover);
 
             connect(_self->_masterVideoController, &MasterVideoClient::bounceAddressesChanged,
                     _self->_mainWindowController, &MainWindowController::onVideoBounceAddressesChanged);

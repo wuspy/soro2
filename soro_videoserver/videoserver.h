@@ -56,7 +56,8 @@ private:
 
     void giveChildAssignment(Assignment assignment);
     void terminateChild(QString childName);
-    void reportVideoState();
+    void reportActiveVideoStates();
+    void reportInactiveVideo(Assignment oldAssignment);
 
     QString findUsbCamera(QString serial, QString productId, QString vendorId, int offset);
 

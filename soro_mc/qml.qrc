@@ -9,5 +9,7 @@
         <file>qml/ViewSelector.qml</file>
         <file>qml/MainContentView.qml</file>
         <file>qml/MapView.qml</file>
+        <file>qml/NavOverlay.qml</file>
+        <file>qml/SpectrometerView.qml</file>
     </qresource>
 </RCC>
