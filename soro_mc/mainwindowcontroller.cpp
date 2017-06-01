@@ -66,8 +66,10 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
     _window->setProperty("videoCount", videoCount);
 
     // Set map image
-    _window->setProperty("mapImage", QCoreApplication::applicationDirPath() + "/../maps/" + _settings->getMapImage());
     _mapView = qvariant_cast<MapViewImpl*>(_window->property("mapViewImpl"));
+    _mapView->setImage(QCoreApplication::applicationDirPath() + "/../maps/" + _settings->getMapImage());
+    _mapView->setStartCoordinate(_settings->getMapStartCoordinates());
+    _mapView->setEndCoordinate(_settings->getMapEndCoordinates());
 
     for (int i = 0; i < videoCount; i++)
     {
@@ -205,6 +207,7 @@ void MainWindowController::onMqttMessage(const QMQTT::Message &msg)
         GpsMessage gpsMsg(msg.payload());
         _window->setProperty("latitude", gpsMsg.location.latitude);
         _window->setProperty("longitude", gpsMsg.location.longitude);
+        _mapView->updateLocation(gpsMsg.location);
         _lastLat = gpsMsg.location.latitude;
         _lastLat = gpsMsg.location.longitude;
         _lastElevation = gpsMsg.elevation;

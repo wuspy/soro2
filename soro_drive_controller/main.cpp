@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication::setOrganizationName("Sooner Rover");
     QCoreApplication::setOrganizationDomain("ou.edu/soonerrover");
-    QCoreApplication::setApplicationName("Arm Controller");
+    QCoreApplication::setApplicationName("Drive Controller");
     QCoreApplication app(argc, argv);
 
     MainController::init(&app);

@@ -355,13 +355,17 @@ void MainController::init(QApplication *app)
             {
                 connect(_self->_gamepadController, &GamepadController::axisChanged,
                         _self->_driveControlSystem, &DriveControlSystem::onGamepadAxisUpdate);
-                connect(_self->_driveControlSystem, &DriveControlSystem::driveControllerDisconnected, _self, []()
+                connect(_self->_driveControlSystem, &DriveControlSystem::driveMultiplexerDisconnected, _self, []()
                 {
-                    _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Drive Controller Disconnected", "The drive control system running on the rover computer has either exited, crashed, or lost connection.");
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Drive Multiplexer Disconnected", "The drive multiplexer system running on the rover computer has either exited, crashed, or lost connection.");
                 });
                 connect(_self->_driveControlSystem, &DriveControlSystem::driveMicrocontrollerDisconnected, _self, []()
                 {
                     _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Drive Microcontroller Disconnected", "The drive microcontroller on the rover has either exited, crashed, or lost connection.");
+                });
+                connect(_self->_driveControlSystem, &DriveControlSystem::driveControllerDisconnected, _self, []()
+                {
+                    _self->_mainWindowController->notify(NotificationMessage::Level_Warning, "Drive Controller Disconnected", "The drive controller running on the rover computer has either exited, crashed, or lost connection.");
                 });
             }
 

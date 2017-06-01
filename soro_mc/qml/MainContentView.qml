@@ -64,6 +64,7 @@ Item {
         id: mapView
         anchors.fill: parent
         z: 0
+        enabled: false
     }
 
     SpectrometerView {

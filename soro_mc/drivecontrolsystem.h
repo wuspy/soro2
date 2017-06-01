@@ -29,8 +29,9 @@ public:
     float getLimit() const;
 
 Q_SIGNALS:
-    void driveControllerDisconnected();
+    void driveMultiplexerDisconnected();
     void driveMicrocontrollerDisconnected();
+    void driveControllerDisconnected();
 
 public Q_SLOTS:
     void enable();

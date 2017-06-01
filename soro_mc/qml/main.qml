@@ -166,7 +166,7 @@ ApplicationWindow {
     MainContentView {
         id: mainContentView
         anchors.fill: parent
-        activeViewIndex: sidebarViewSelector.selectedViewIndex
+        //activeViewIndex: sidebarViewSelector.selectedViewIndex
     }
 
     DropShadow {
@@ -481,7 +481,7 @@ ApplicationWindow {
             aspectRatio: root.width / root.height
 
             onViewClicked: {
-                selectedViewIndex = index
+                root.selectedViewIndex = index
             }
         }
     }

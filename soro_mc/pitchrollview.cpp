@@ -16,7 +16,7 @@ void PitchRollView::paint(QPainter *painter)
     painter->resetTransform();
     painter->translate(width() / 2, height() / 2);
     painter->rotate(_roll);
-    painter->setBrush(QBrush(QColor("#ff0000")));
+    painter->setBrush(QBrush(QColor("#00ff00")));
 
     painter->drawChord(QRectF(0, height() / 2, width(), height() / 2), 30 * 16, 120 * 16);
 }

@@ -65,6 +65,10 @@ DriveControlSystem::DriveControlSystem(const SettingsModel *settings, QObject *p
             {
                 Q_EMIT driveMicrocontrollerDisconnected();
             }
+            else if (client == "drive_multiplexer")
+            {
+                Q_EMIT driveMultiplexerDisconnected();
+            }
             else if (client == "drive_controller")
             {
                 Q_EMIT driveControllerDisconnected();
@@ -187,7 +191,7 @@ void DriveControlSystem::setDriveModeAutonomous()
 
 void DriveControlSystem::setAutonomousDrivePath(DrivePathMessage path)
 {
-    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "drive/path", path, 2, true));
+    _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "drive_path", path, 2, true));
 }
 
 void DriveControlSystem::setSkidSteerFactor(float factor)
