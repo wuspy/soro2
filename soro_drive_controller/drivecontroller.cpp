@@ -68,7 +68,7 @@ DriveController::DriveController(const SettingsModel *settings, QObject *parent)
         if (message.topic() == "drive")
         {
             // Retransmit this message over UDP to the science package microcontroller
-            _driveUdpSocket.writeDatagram(message.payload(), QHostAddress::Broadcast, SORO_NET_DRIVE_SYSTEM_PORT);
+            _driveUdpSocket.writeDatagram(message.payload(), QHostAddress("192.168.0.103"), SORO_NET_DRIVE_SYSTEM_PORT);
         }
     });
 
@@ -78,7 +78,7 @@ DriveController::DriveController(const SettingsModel *settings, QObject *parent)
         {
             qint64 len = _driveUdpSocket.readDatagram(_buffer, USHRT_MAX);
 
-            if (_buffer[0] != SORO_HEADER_DRIVE_HEARTBEAT_MSG) return;
+            if (_buffer[0] != SORO_HEADER_DRIVE_HEARTBEAT_MSG || len != 1) return;
 
             if (!_driveConnected)
             {
