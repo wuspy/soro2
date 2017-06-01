@@ -8,21 +8,12 @@ CompassMessage::CompassMessage() { }
 
 CompassMessage::CompassMessage(const QByteArray &payload)
 {
-    QDataStream stream(payload);
-    stream.setByteOrder(QDataStream::BigEndian);
-
-    stream >> heading;
+    heading = QString(payload).toDouble();
 }
 
 CompassMessage::operator QByteArray() const
 {
-    QByteArray payload;
-    QDataStream stream(&payload, QIODevice::WriteOnly);
-    stream.setByteOrder(QDataStream::BigEndian);
-
-    stream << heading;
-
-    return payload;
+    return QByteArray(QString::number(heading, 'f', 4).toLatin1().constData());
 }
 
 } // namespace Soro

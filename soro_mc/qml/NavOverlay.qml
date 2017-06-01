@@ -35,6 +35,7 @@ Item {
         anchors.fill: navDirectionImage
         source: navDirectionImage
         color: Theme.foreground
+        rotation: compassHeading
     }
 
     Image {
@@ -42,7 +43,7 @@ Item {
         anchors.top: parent.top
         anchors.left: parent.left
         source: "qrc:/icons/ic_navigation_white_48px.svg"
-        rotation: compassHeading
+        visible: false
         sourceSize: Qt.size(width, height)
         height: parent.height
         width: height

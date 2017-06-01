@@ -30,7 +30,7 @@ ArmController::ArmController(const SettingsModel *settings, QObject *parent) : Q
     _armConnected = false;
 
     LOG_I(LogTag, "Creating UDP socket...");
-    if (!_armUdpSocket.bind(SORO_NET_SLAVE_ARM_PORT))
+    if (!_armUdpSocket.bind(5555))
     {
         MainController::panic(LogTag, "Unable to bind arm UDP socket");
     }
@@ -73,7 +73,7 @@ ArmController::ArmController(const SettingsModel *settings, QObject *parent) : Q
                 LOG_W(LogTag, "Received invalid MQTT master arm message, discarding");
                 return;
             }
-            _armUdpSocket.writeDatagram(message.payload(), QHostAddress::Broadcast, SORO_NET_SLAVE_ARM_PORT);
+            _armUdpSocket.writeDatagram(message.payload(), QHostAddress::Broadcast, 5555);
         }
     });
 

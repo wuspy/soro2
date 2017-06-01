@@ -44,6 +44,7 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
     _cameraSettings = cameraSettings;
     _mediaProfileSettings = mediaProfileSettings;
     _settings = settings;
+    _lastSatellites = 0;
     _lastLat = _lastLng = _lastCompass = _lastElevation = 0.0;
     _lastTemperature = _lastHumidity = _lastWindSpeed = _lastWindDirection = 0.0;
     _logAtmosphere = false;
@@ -153,7 +154,8 @@ void MainWindowController::takeMainContentViewScreenshot()
                        << "Heading:\t" << QString::number(_lastCompass, 'f', 2) << "\n"
                        << "Latitude:\t" << QString::number(_lastLat, 'f', 7) << "\n"
                        << "Longitude:\t" << QString::number(_lastLng, 'f', 7) << "\n"
-                       << "Elevation:\t" << QString::number(_lastElevation, 'f', 3) << "\n\n";
+                       << "Elevation:\t" << QString::number(_lastElevation, 'f', 3) << "\n"
+                       << "Satellites:\t" << QString::number(_lastSatellites) << "\n\n";
                 if (_logAtmosphere)
                 {
                     stream << "Temperature:\t" << QString::number(_lastTemperature, 'f', 2) << "\n"
@@ -207,16 +209,19 @@ void MainWindowController::onMqttMessage(const QMQTT::Message &msg)
         GpsMessage gpsMsg(msg.payload());
         _window->setProperty("latitude", gpsMsg.location.latitude);
         _window->setProperty("longitude", gpsMsg.location.longitude);
+        _window->setProperty("gpsSatellites", gpsMsg.satellites);
         _mapView->updateLocation(gpsMsg.location);
         _lastLat = gpsMsg.location.latitude;
-        _lastLat = gpsMsg.location.longitude;
+        _lastLng = gpsMsg.location.longitude;
         _lastElevation = gpsMsg.elevation;
+        _lastSatellites = gpsMsg.satellites;
     }
     else if (msg.topic() == "compass")
     {
         CompassMessage compassMsg(msg.payload());
         _window->setProperty("compassHeading", compassMsg.heading);
         _lastCompass = compassMsg.heading;
+        qDebug() << "Compass " << compassMsg.heading;
     }
     else if (msg.topic() == "atmosphere")
     {

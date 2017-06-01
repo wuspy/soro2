@@ -121,8 +121,19 @@ void MapViewImpl::markPoint(float x, float y)
 
 void MapViewImpl::updateLocation(LatLng location)
 {
-    _locations.append(location);
-    update();
+    float diff = 1000;
+    if (_locations.size() > 0)
+    {
+        // Only add this point if it is 20 screen pixels away from our last point
+        QPointF pixelNew = gpsPointToPixelPoint(location, _startCoordinate, _endCoordinate, width(), height());
+        QPointF pixelOld = gpsPointToPixelPoint(_locations.last(), _startCoordinate, _endCoordinate, width(), height());
+        diff = qAbs(sqrt(pow(pixelNew.x() - pixelOld.x(), 2) + pow(pixelNew.y() - pixelOld.y(), 2)));
+    }
+    if (diff > 20)
+    {
+        _locations.append(location);
+        update();
+    }
 }
 
 void MapViewImpl::updateHeading(double heading)

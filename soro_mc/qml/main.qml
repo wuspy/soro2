@@ -50,6 +50,7 @@ ApplicationWindow {
     property alias compassHeading: navOverlay.compassHeading
     property alias latitude: navOverlay.latitude
     property alias longitude: navOverlay.longitude
+    property alias gpsSatellites: navOverlay.satellites
 
     /*
       Selected view in the UI, can be eselectedViewither 'map' or 'camera0'-'camera9'

@@ -31,7 +31,7 @@ ArmControlSystem::ArmControlSystem(const SettingsModel *settings, QObject *paren
     _masterConnected = false;
 
     LOG_I(LogTag, "Creating UDP socket...");
-    if (!_armUdpSocket.bind(SORO_NET_MASTER_ARM_PORT))
+    if (!_armUdpSocket.bind(5555))
     {
         MainController::panic(LogTag, "Unable to bind master arm UDP socket");
     }

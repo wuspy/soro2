@@ -64,6 +64,7 @@ private:
     double _lastLat, _lastLng, _lastCompass, _lastElevation;
     bool _logAtmosphere;
     double _lastTemperature, _lastHumidity, _lastWindSpeed, _lastWindDirection;
+    int _lastSatellites;
 
     QMQTT::Client *_mqtt;
 };
