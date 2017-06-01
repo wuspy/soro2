@@ -60,9 +60,14 @@ DriveControlSystem::DriveControlSystem(const SettingsModel *settings, QObject *p
     {
         if (msg.topic() == "system_down")
         {
-            if (QString(msg.payload()) == "drive")
+            QString client = QString(msg.payload());
+            if (client == "drive")
             {
-                Q_EMIT driveSystemExited();
+                Q_EMIT driveMicrocontrollerDisconnected();
+            }
+            else if (client == "drive_controller")
+            {
+                Q_EMIT driveControllerDisconnected();
             }
         }
     });
@@ -159,7 +164,7 @@ DriveControlSystem::DriveControlSystem(const SettingsModel *settings, QObject *p
                 break;
             }
 
-            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "drive/controller", msg, 0));
+            _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "drive_controller", msg, 0));
         }
     });
 

@@ -90,6 +90,8 @@ ApplicationWindow {
     property bool audioMuted: false
 
     property alias mainContentView: mainContentView
+    property alias mapImage: mainContentView.mapImage
+    property alias mapViewImpl: mainContentView.mapViewImpl
 
     /* Emitted when a key is pressed in the UI
       */

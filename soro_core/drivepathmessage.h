@@ -4,6 +4,7 @@
 #include <QByteArray>
 #include <QVector>
 
+#include "latlng.h"
 #include "abstractmessage.h"
 #include "soro_core_global.h"
 
@@ -15,13 +16,7 @@ struct SORO_CORE_EXPORT DrivePathMessage : public AbstractMessage
     DrivePathMessage(const QByteArray& payload);
     operator QByteArray() const override;
 
-    struct Location
-    {
-        double latitude;
-        double longitude;
-    };
-
-    QVector<Location> points;
+    QVector<LatLng> points;
 };
 
 } // namespace Soro

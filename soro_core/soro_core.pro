@@ -67,7 +67,8 @@ HEADERS +=\
     serialize.h \
     switchmessage.h \
     sciencecameragimbalmessage.h \
-    namegen.h
+    namegen.h \
+    latlng.h
 
 # Link against qmqtt
 LIBS += -L../lib -lqmqtt

@@ -52,7 +52,25 @@ void MainController::init(QCoreApplication *app)
         // Use a timer to wait for the event loop to start
         QTimer::singleShot(0, _self, []()
         {
+            //
+            // Create the settings model and load the main settings file
+            //
+            LOG_I(LogTag, "Loading settings...");
+            try
+            {
+                _self->_settingsModel = new SettingsModel;
+                _self->_settingsModel->load();
+            }
+            catch (QString err)
+            {
+                panic(LogTag, QString("Error loading settings: %1").arg(err));
+            }
 
+            //
+            // Initialize arm controller
+            //
+            LOG_I(LogTag, "Initializing arm controller...");
+            _self->_armController = new ArmController(_self->_settingsModel, _self);
 
             LOG_I(LogTag, "Initialization complete");
         });

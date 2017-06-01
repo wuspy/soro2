@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Stephen Nickle <stephen.nickle@ou.edu>
+ * Copyright 2017 Jacob Jordan <doublejinitials@ou.edu>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

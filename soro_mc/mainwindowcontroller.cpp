@@ -65,6 +65,10 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
     }
     _window->setProperty("videoCount", videoCount);
 
+    // Set map image
+    _window->setProperty("mapImage", QCoreApplication::applicationDirPath() + "/../maps/" + _settings->getMapImage());
+    _mapView = qvariant_cast<MapViewImpl*>(_window->property("mapViewImpl"));
+
     for (int i = 0; i < videoCount; i++)
     {
         // Set camera name
@@ -199,10 +203,10 @@ void MainWindowController::onMqttMessage(const QMQTT::Message &msg)
     else if (msg.topic() == "gps")
     {
         GpsMessage gpsMsg(msg.payload());
-        _window->setProperty("latitude", gpsMsg.latitude);
-        _window->setProperty("longitude", gpsMsg.longitude);
-        _lastLat = gpsMsg.latitude;
-        _lastLat = gpsMsg.longitude;
+        _window->setProperty("latitude", gpsMsg.location.latitude);
+        _window->setProperty("longitude", gpsMsg.location.longitude);
+        _lastLat = gpsMsg.location.latitude;
+        _lastLat = gpsMsg.location.longitude;
         _lastElevation = gpsMsg.elevation;
     }
     else if (msg.topic() == "compass")

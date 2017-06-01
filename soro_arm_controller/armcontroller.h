@@ -1,5 +1,5 @@
-#ifndef SCIENCEPACKAGECONTROLLER_H
-#define SCIENCEPACKAGECONTROLLER_H
+#ifndef ARMCONTROLLER_H
+#define ARMCONTROLLER_H
 
 #include <QObject>
 #include <QUdpSocket>
@@ -34,4 +34,4 @@ private:
 
 }
 
-#endif // SCIENCEPACKAGECONTROLLER_H
+#endif // ARMCONTROLLER_H

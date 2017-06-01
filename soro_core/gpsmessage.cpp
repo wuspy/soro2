@@ -6,8 +6,6 @@ namespace Soro {
 
 GpsMessage::GpsMessage()
 {
-    latitude = 0;
-    longitude = 0;
     elevation = 0;
 }
 
@@ -16,8 +14,8 @@ GpsMessage::GpsMessage(const QByteArray &payload)
     QDataStream stream(payload);
     stream.setByteOrder(QDataStream::BigEndian);
 
-    stream >> latitude;
-    stream >> longitude;
+    stream >> location.latitude;
+    stream >> location.longitude;
     stream >> elevation;
     stream >> satellites;
 }
@@ -28,8 +26,8 @@ GpsMessage::operator QByteArray() const
     QDataStream stream(&payload, QIODevice::WriteOnly);
     stream.setByteOrder(QDataStream::BigEndian);
 
-    stream << latitude
-           << longitude
+    stream << location.latitude
+           << location.longitude
            << elevation
            << satellites;
 

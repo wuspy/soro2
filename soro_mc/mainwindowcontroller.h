@@ -10,6 +10,7 @@
 #include "qmqtt/qmqtt.h"
 
 #include "settingsmodel.h"
+#include "mapviewimpl.h"
 #include "soro_core/camerasettingsmodel.h"
 #include "soro_core/notificationmessage.h"
 #include "soro_core/mediaprofilesettingsmodel.h"
@@ -54,6 +55,7 @@ private Q_SLOTS:
 
 private:
     QQuickWindow *_window;
+    MapViewImpl *_mapView;
 
     quint16 _notificationMsgId;
     const SettingsModel *_settings;

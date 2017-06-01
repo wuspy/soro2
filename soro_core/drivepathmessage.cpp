@@ -16,7 +16,7 @@ DrivePathMessage::DrivePathMessage(const QByteArray &payload)
 
     for (int i = 0; i < length; ++i)
     {
-        Location point;
+        LatLng point;
         stream >> point.latitude;
         stream >> point.longitude;
         points.append(point);
@@ -31,7 +31,7 @@ DrivePathMessage::operator QByteArray() const
 
     stream << (quint16)points.length();
 
-    for (Location point : points)
+    for (LatLng point : points)
     {
         stream << point.latitude
                << point.longitude;

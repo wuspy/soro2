@@ -15,6 +15,7 @@
  */
 
 #include "drivemessage.h"
+#include "constants.h"
 
 #include <QDataStream>
 

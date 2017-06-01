@@ -21,7 +21,9 @@ import Soro 1.0
 Item {
     id: mainContentView
 
-    property alias mapView: mapWebEngine
+    property alias mapView: mapView
+    property alias mapImage: mapView.image
+    property alias mapViewImpl: mapView.impl
     property alias spectrometerView: spectrometer
     property variant videoSurfaces: []
 
@@ -37,8 +39,8 @@ Item {
             videoSurfaces[i].z = i == activeViewIndex ? 1 : 0
             videoSurfaces[i].enabled = i == activeViewIndex
         }
-        mapWebEngine.z = activeViewIndex == mapIndex ? 1 : 0
-        mapWebEngine.enabled = activeViewIndex == mapIndex
+        mapView.z = activeViewIndex == mapIndex ? 1 : 0
+        mapView.enabled = activeViewIndex == mapIndex
         spectrometer.z = activeViewIndex == spectrometerIndex ? 1 : 0
         spectrometer.enabled = activeViewIndex == spectrometerIndex
     }
@@ -58,13 +60,10 @@ Item {
     /*
       The web view that shows the Google Maps overlay
       */
-    WebEngineView {
-        id: mapWebEngine
+    MapView {
+        id: mapView
         anchors.fill: parent
-        url: "qrc:/html/map.html"
         z: 0
-        enabled: false
-        focus: false
     }
 
     SpectrometerView {

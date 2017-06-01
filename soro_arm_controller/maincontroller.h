@@ -5,6 +5,9 @@
 #include <QCoreApplication>
 #include <QTimerEvent>
 
+#include "settingsmodel.h"
+#include "armcontroller.h"
+
 namespace Soro {
 
 class MainController : public QObject
@@ -19,6 +22,9 @@ public:
 private:
     explicit MainController(QObject *parent=0);
     static MainController *_self;
+
+    SettingsModel *_settingsModel = nullptr;
+    ArmController *_armController = nullptr;
 };
 
 } // namespace Soro

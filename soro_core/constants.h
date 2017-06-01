@@ -25,6 +25,8 @@
 #define SORO_HEADER_SLAVE_ARM_MSG           's'
 #define SORO_HEADER_SCIENCE_PACKAGE_MSG     'b'
 #define SORO_HEADER_SCIENCE_CONTROLLER_MSG  'c'
+#define SORO_HEADER_DRIVE_MSG               'd'
+#define SORO_HEADER_DRIVE_HEARTBEAT_MSG     'e'
 
 #define SORO_HEADER_ARM_KILL                '0'
 #define SORO_HEADER_ARM_YAW                 '1'
@@ -59,6 +61,7 @@
 
 #define SORO_NET_SLAVE_ARM_PORT             5554
 #define SORO_NET_SCIENCE_SYSTEM_PORT        5555
+#define SORO_NET_DRIVE_SYSTEM_PORT          5556
 #define SORO_NET_SCIENCE_MASTER_ARM_PORT    5557
 #define SORO_NET_MASTER_ARM_PORT            5558
 #define SORO_NET_AUDIO_PORT                 5559

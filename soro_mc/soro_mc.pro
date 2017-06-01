@@ -26,6 +26,7 @@ HEADERS += \
     sciencearmcontrolsystem.h \
     armcontrolsystem.h \
     sciencecameracontrolsystem.h \
+    mapviewimpl.h \
     audioclient.h \
     pitchrollview.h
 
@@ -41,15 +42,12 @@ SOURCES += main.cpp \
     qmlgstreamerglitem.cpp \
     bindssettingsmodel.cpp \
     videoclient.cpp \
-<<<<<<< HEAD
-    mapviewimpl.cpp
-=======
+    mapviewimpl.cpp \
     sciencearmcontrolsystem.cpp \
     armcontrolsystem.cpp \
     sciencecameracontrolsystem.cpp \
     audioclient.cpp \
     pitchrollview.cpp
->>>>>>> 6bb7c64db6f8dd79386f2e386eba9639054d1332
 
 RESOURCES += qml.qrc \
     assets.qrc

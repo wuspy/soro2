@@ -30,6 +30,11 @@
 #define KEY_CAMERA_GIMBAL_INPUT_MODE "SORO_CAMERA_GIMBAL_INPUT_MODE"
 #define KEY_DRIVE_SKIDSTEER_FACTOR "SORO_DRIVE_SKIDSTEER_FACTOR"
 #define KEY_DRIVE_POWER_LIMIT "SORO_DRIVE_POWER_LIMIT"
+#define KEY_MAP_IMAGE "SORO_MAP_IMAGE"
+#define KEY_MAP_START_LATITUDE "SORO_MAP_START_LATITUDE"
+#define KEY_MAP_START_LONGITUDE "SORO_MAP_START_LONGITUDE"
+#define KEY_MAP_END_LATITUDE "SORO_MAP_END_LATITUDE"
+#define KEY_MAP_END_LONGITUDE "SORO_MAP_END_LONGITUDE"
 
 #define LogTag "SettingsModel"
 
@@ -48,6 +53,11 @@ QHash<QString, int> SettingsModel::getKeys() const
     keys.insert(KEY_CAMERA_GIMBAL_INPUT_MODE, QMetaType::QString);
     keys.insert(KEY_DRIVE_SKIDSTEER_FACTOR, QMetaType::Float);
     keys.insert(KEY_MQTT_BROKER_IP, QMetaType::QString);
+    keys.insert(KEY_MAP_IMAGE, QMetaType::QString);
+    keys.insert(KEY_MAP_START_LATITUDE, QMetaType::Double);
+    keys.insert(KEY_MAP_START_LONGITUDE, QMetaType::Double);
+    keys.insert(KEY_MAP_END_LATITUDE, QMetaType::Double);
+    keys.insert(KEY_MAP_END_LONGITUDE, QMetaType::Double);
     return keys;
 }
 
@@ -64,6 +74,11 @@ QHash<QString, QVariant> SettingsModel::getDefaultValues() const
     defaults.insert(KEY_DRIVE_INPUT_MODE, "twostick");
     defaults.insert(KEY_CAMERA_GIMBAL_INPUT_MODE, "leftstick");
     defaults.insert(KEY_MQTT_BROKER_IP, QVariant("127.0.0.1"));
+    defaults.insert(KEY_MAP_IMAGE, "map.png");
+    defaults.insert(KEY_MAP_START_LATITUDE, "0");
+    defaults.insert(KEY_MAP_START_LONGITUDE, "0");
+    defaults.insert(KEY_MAP_END_LATITUDE, "1");
+    defaults.insert(KEY_MAP_END_LONGITUDE, "1");
     return defaults;
 }
 
@@ -89,6 +104,11 @@ SettingsModel::DriveInputMode SettingsModel::getDriveInputMode() const
 
     LOG_W(LogTag, QString("Invalid value for '%1' for setting '%2', returning 'twostick'").arg(value, KEY_DRIVE_INPUT_MODE));
     return DriveInputMode_TwoStick;
+}
+
+QString SettingsModel::getMapImage() const
+{
+    return _values.value(KEY_MAP_IMAGE).toString();
 }
 
 SettingsModel::CameraGimbalInputMode SettingsModel::getCameraGimbalInputMode() const
@@ -127,6 +147,16 @@ uint SettingsModel::getCameraGimbalSendInterval() const
 bool SettingsModel::getEnableHwDecoding() const
 {
     return _values.value(KEY_ENABLE_HWDECODING).toBool();
+}
+
+LatLng SettingsModel::getMapStartCoordinates() const
+{
+    return LatLng(_values.value(KEY_MAP_START_LATITUDE).toDouble(), _values.value(KEY_MAP_START_LONGITUDE).toDouble());
+}
+
+LatLng SettingsModel::getMapEndCoordinates() const
+{
+    return LatLng(_values.value(KEY_MAP_END_LATITUDE).toDouble(), _values.value(KEY_MAP_END_LONGITUDE).toDouble());
 }
 
 QHostAddress SettingsModel::getMqttBrokerAddress() const

@@ -4,6 +4,7 @@
 #include <QByteArray>
 
 #include "abstractmessage.h"
+#include "latlng.h"
 #include "soro_core_global.h"
 
 namespace Soro {
@@ -14,8 +15,7 @@ struct SORO_CORE_EXPORT GpsMessage : public AbstractMessage
     GpsMessage(const QByteArray& payload);
     operator QByteArray() const override;
 
-    double latitude;
-    double longitude;
+    LatLng location;
     double elevation;
     quint8 satellites;
 };

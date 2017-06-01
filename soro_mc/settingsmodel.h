@@ -6,6 +6,7 @@
 #include <QHostAddress>
 
 #include "soro_core/abstractsettingsmodel.h"
+#include "soro_core/latlng.h"
 
 namespace Soro {
 
@@ -48,6 +49,9 @@ public:
     float getDrivePowerLimit() const;
     uint getCameraGimbalSendInterval() const;
     QHostAddress getMqttBrokerAddress() const;
+    QString getMapImage() const;
+    LatLng getMapStartCoordinates() const;
+    LatLng getMapEndCoordinates() const;
 
 protected:
     QHash<QString, int> getKeys() const override;
