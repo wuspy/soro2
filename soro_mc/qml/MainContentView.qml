@@ -27,6 +27,9 @@ Item {
     property alias spectrometerView: spectrometer
     property variant videoSurfaces: []
 
+    property alias spectrometerWhiteReadings: spectrometer.readingsWhite
+    property alias spectrometer404Readings: spectrometer.readings404
+
     property int videoCount: 0
     readonly property int viewCount: videoCount + 2
     readonly property int mapIndex: videoCount

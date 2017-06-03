@@ -13,22 +13,11 @@ Item {
     property real longitude: 0
     property int satellites: 0
 
-    function degToDms (deg) {
-       var d = Math.floor (deg);
-       var minfloat = (deg-d)*60;
-       var m = Math.floor(minfloat);
-       var secfloat = (minfloat-m)*60;
-       var s = Math.round(secfloat * 100) / 100;
-
-       if (s==60) {
-         m++;
-         s=0;
-       }
-       if (m==60) {
-         d++;
-         m=0;
-       }
-       return ("" + d + "° " + m + "' " + s + "\"");
+    function degToDegreeMinutes (deg) {
+       var d = d > 0 ? Math.floor (deg) : Math.ceil(deg);
+       var m = Math.abs(deg - d) * 60;
+       m = Math.round(m * 1000) / 1000;
+       return ("" + d + "° " + m + "'");
     }
 
     ColorOverlay {
@@ -70,7 +59,7 @@ Item {
         anchors.top: parent.top
         font.pixelSize: parent.height / 4.2
         color: Theme.foreground
-        text: degToDms(latitude) + "<br>" + degToDms(longitude)
+        text: degToDegreeMinutes(latitude) + "<br>" + degToDegreeMinutes(longitude)
     }
 
     Label

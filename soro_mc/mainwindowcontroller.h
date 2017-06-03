@@ -47,6 +47,17 @@ public Q_SLOTS:
     void onLatencyUpdated(quint32 latency);
     void onDataRateUpdated(quint64 rateFromRover);
     void takeMainContentViewScreenshot();
+    void setSpectrometerWhiteReading(QList<quint16> readings);
+    void setSpectrometer404Reading(QList<quint16> readings);
+    void setO2GasReading(quint32 ppm);
+    void setCO2GasReading(quint32 ppm);
+    void setMQ2GasReading(quint16 raw);
+    void setMQ4GasReading(quint16 raw);
+    void setMQ5GasReading(quint16 raw);
+    void setMQ6GasReading(quint16 raw);
+    void setMQ7GasReading(quint16 raw);
+    void setMQ9GasReading(quint16 raw);
+    void setMQ135GasReading(quint16 raw);
 
 private Q_SLOTS:
     void onMqttConnected();

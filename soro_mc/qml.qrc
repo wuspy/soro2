@@ -11,5 +11,6 @@
         <file>qml/MapView.qml</file>
         <file>qml/NavOverlay.qml</file>
         <file>qml/SpectrometerView.qml</file>
+        <file>qml/MQGasView.qml</file>
     </qresource>
 </RCC>

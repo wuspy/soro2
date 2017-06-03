@@ -1,13 +1,14 @@
 #include "mapviewimpl.h"
 #include "soro_core/logger.h"
+#include <QtMath>
 
 #define LogTag "MapViewImpl"
 
 // This function does NOT work if the start point and end point are across the equator or meridian
 inline QPointF gpsPointToPixelPoint(Soro::LatLng point, Soro::LatLng startPoint, Soro::LatLng endPoint, qreal pixelWidth, qreal pixelHeight)
 {
-    return QPointF(pixelWidth * ((point.longitude - startPoint.longitude) / (endPoint.longitude - startPoint.longitude)),
-                       (pixelHeight * ((point.latitude - startPoint.latitude) / (endPoint.latitude - startPoint.latitude))));
+    return QPointF(pixelWidth * qAbs((point.longitude - startPoint.longitude) / (endPoint.longitude - startPoint.longitude)),
+                       (pixelHeight * qAbs((point.latitude - startPoint.latitude) / (endPoint.latitude - startPoint.latitude))));
 }
 
 // This function does NOT work if the start point and end point are across the equator or meridian
@@ -17,22 +18,11 @@ inline Soro::LatLng pixelPointToGpsPoint(QPointF point, Soro::LatLng startPoint,
                         (point.y() / pixelHeight) * (endPoint.latitude - startPoint.latitude) + startPoint.latitude);
 }
 
-inline QString degToDms (double deg) {
-   double d = floor(deg);
-   double minfloat = (deg - d) * 60;
-   double m = floor(minfloat);
-   double secfloat = (minfloat - m) * 60;
-   double s = round(secfloat * 100) / 100.0;
+inline QString degToDegreeMinutes (double deg) {
+   int degrees = deg > 0 ? floor(deg) : ceil(deg);
+   double minutes = qAbs(deg - degrees) * 60;
 
-   if (s == 60) {
-     m++;
-     s = 0;
-   }
-   if (m == 60) {
-     d++;
-     m = 0;
-   }
-   return QString::number((int)d) + "° " + QString::number((int)m) + "' " + QString::number(s, 'f', 2)  + "\"";
+   return QString::number(degrees) + "° " + QString::number(minutes, 'f', 3) + "'";
 }
 
 namespace Soro {
@@ -49,8 +39,8 @@ void MapViewImpl::paint(QPainter *painter)
     painter->drawImage(QRectF(0, 0, width(), height()), _image, QRectF(0, 0, _image.width(), _image.height()));
     for (int i = 0; i < _locations.size() - 1; ++i)
     {
-        painter->drawLine(QPointF(gpsPointToPixelPoint(_locations.value(i), _startCoordinate, _endCoordinate, width(), height())),
-                                  QPointF(gpsPointToPixelPoint(_locations.value(i + 1), _startCoordinate, _endCoordinate, width(), height())));
+        painter->drawLine(gpsPointToPixelPoint(_locations.value(i), _startCoordinate, _endCoordinate, width(), height()),
+                                  gpsPointToPixelPoint(_locations.value(i + 1), _startCoordinate, _endCoordinate, width(), height()));
     }
     painter->setPen(QPen(QBrush(QColor("#ffffff")), 2));
     painter->setBrush(QBrush(QColor("#00ff00")));
@@ -78,8 +68,8 @@ void MapViewImpl::paint(QPainter *painter)
     {
         LatLng gpsPointOfMouse = pixelPointToGpsPoint(_mousePosition, _startCoordinate, _endCoordinate, width(), height());
         painter->setBrush(QBrush(QColor("#70000000")));
-        QString str = "Lat: " + degToDms(gpsPointOfMouse.latitude) + " (" + QString::number(gpsPointOfMouse.latitude, 'f', 7) + ")\n"
-                + "Lng: " + degToDms(gpsPointOfMouse.longitude) + " (" + QString::number(gpsPointOfMouse.longitude, 'f', 7) + ")";
+        QString str = "Lat: " + degToDegreeMinutes(gpsPointOfMouse.latitude) + " (" + QString::number(gpsPointOfMouse.latitude, 'f', 7) + ")\n"
+                + "Lng: " + degToDegreeMinutes(gpsPointOfMouse.longitude) + " (" + QString::number(gpsPointOfMouse.longitude, 'f', 7) + ")";
         QRectF bounds = painter->boundingRect(0, 0, width(), height(), Qt::AlignLeft, str);
         bounds.translate(_mousePosition.x() + 25, _mousePosition.y() + 25);
         bounds.setHeight(bounds.height() + 10);
@@ -121,19 +111,8 @@ void MapViewImpl::markPoint(float x, float y)
 
 void MapViewImpl::updateLocation(LatLng location)
 {
-    float diff = 1000;
-    if (_locations.size() > 0)
-    {
-        // Only add this point if it is 20 screen pixels away from our last point
-        QPointF pixelNew = gpsPointToPixelPoint(location, _startCoordinate, _endCoordinate, width(), height());
-        QPointF pixelOld = gpsPointToPixelPoint(_locations.last(), _startCoordinate, _endCoordinate, width(), height());
-        diff = qAbs(sqrt(pow(pixelNew.x() - pixelOld.x(), 2) + pow(pixelNew.y() - pixelOld.y(), 2)));
-    }
-    if (diff > 20)
-    {
-        _locations.append(location);
-        update();
-    }
+    _locations.append(location);
+    update();
 }
 
 void MapViewImpl::updateHeading(double heading)

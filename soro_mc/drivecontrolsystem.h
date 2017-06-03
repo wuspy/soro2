@@ -39,6 +39,8 @@ public Q_SLOTS:
     void setDriveModeManual();
     void setDriveModeAutonomous();
     void setAutonomousDrivePath(DrivePathMessage path);
+    void unfold();
+    void stop();
 
     void onGamepadAxisUpdate(SDL_GameControllerAxis axis, float value);
 
@@ -48,6 +50,7 @@ private:
 
     quint16 _nextMqttMsgId;
     float _skidSteerFactor;
+    bool _unfolding;
     float _limit;
     bool _enabled;
     SettingsModel::DriveInputMode _mode;

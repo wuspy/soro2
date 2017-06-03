@@ -45,6 +45,7 @@ DriveControlSystem::DriveControlSystem(const SettingsModel *settings, QObject *p
     _gamepadLeftY = 0;
     _gamepadRightX = 0;
     _gamepadRightY = 0;
+    _unfolding = false;
     _mode = settings->getDriveInputMode();
 
     setLimit(settings->getDrivePowerLimit());
@@ -90,7 +91,7 @@ DriveControlSystem::DriveControlSystem(const SettingsModel *settings, QObject *p
 
     connect(&_timer, &QTimer::timeout, this, [this]()
     {
-        if(_enabled && _mqtt->isConnectedToHost())
+        if(_enabled && _mqtt->isConnectedToHost() && !_unfolding)
         {
             DriveMessage msg;
 
@@ -173,6 +174,30 @@ DriveControlSystem::DriveControlSystem(const SettingsModel *settings, QObject *p
     });
 
     _timer.start(settings->getDriveSendInterval());
+}
+
+void DriveControlSystem::unfold()
+{
+    if (_enabled && _mqtt->isConnectedToHost())
+    {
+        _unfolding = true;
+        DriveMessage msg;
+        msg.wheelFL = 5000;
+        msg.wheelFR = 5000;
+        msg.wheelBL = -5000;
+        msg.wheelBR = -5000;
+        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "drive_controller", msg, 0));
+    }
+}
+
+void DriveControlSystem::stop()
+{
+    if (_enabled && _mqtt->isConnectedToHost())
+    {
+        _unfolding = false;
+        DriveMessage msg;
+        _mqtt->publish(QMQTT::Message(_nextMqttMsgId++, "drive_controller", msg, 0));
+    }
 }
 
 void DriveControlSystem::setDriveModeManual()

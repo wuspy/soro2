@@ -51,6 +51,8 @@ ApplicationWindow {
     property alias latitude: navOverlay.latitude
     property alias longitude: navOverlay.longitude
     property alias gpsSatellites: navOverlay.satellites
+    property alias spectrometerWhiteReadings: mainContentView.spectrometerWhiteReadings
+    property alias spectrometer404Readings: mainContentView.spectrometer404Readings
 
     /*
       Selected view in the UI, can be eselectedViewither 'map' or 'camera0'-'camera9'

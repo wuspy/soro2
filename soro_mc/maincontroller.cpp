@@ -625,6 +625,19 @@ void MainController::init(QApplication *app)
                         _self->_driveControlSystem->setLimit(isPressed ? 1.0 : _self->_settingsModel->getDrivePowerLimit());
                     }
                     break;
+                case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                    if (_self->_driveControlSystem)
+                    {
+                        if (isPressed)
+                        {
+                            _self->_driveControlSystem->unfold();
+                        }
+                        else
+                        {
+                            _self->_driveControlSystem->stop();
+                        }
+                    }
+                    break;
                 case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
                     if (isPressed) _self->_mainWindowController->selectViewBelow();
                     break;

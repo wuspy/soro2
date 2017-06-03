@@ -119,6 +119,61 @@ MainWindowController::MainWindowController(QQmlEngine *engine, const SettingsMod
     _mqtt->connectToHost();
 }
 
+void MainWindowController::setSpectrometer404Reading(QList<quint16> readings)
+{
+   _window->setProperty("spectrometer404Readings", readings);
+}
+
+void MainWindowController::setSpectrometerWhiteReading(QList<quint16> readings)
+{
+   _window->setProperty("spectrometerWhiteReadings", readings);
+}
+
+void MainWindowController::setO2GasReading(quint32 ppm)
+{
+    _window->setProperty("o2GasPpm", raw);
+}
+
+void MainWindowController::setCO2GasReading(quint32 ppm)
+{
+    _window->setProperty("co2GasPpm", raw);
+}
+
+void MainWindowController::setMQ2GasReading(quint16 raw)
+{
+    _window->setProperty("mq2GasReading", raw);
+}
+
+void MainWindowController::setMQ4GasReading(quint16 raw)
+{
+    _window->setProperty("mq4GasReading", raw);
+}
+
+void MainWindowController::setMQ5GasReading(quint16 raw)
+{
+    _window->setProperty("mq5GasReading", raw);
+}
+
+void MainWindowController::setMQ6GasReading(quint16 raw)
+{
+    _window->setProperty("mq6GasReading", raw);
+}
+
+void MainWindowController::setMQ7GasReading(quint16 raw)
+{
+    _window->setProperty("mq7GasReading", raw);
+}
+
+void MainWindowController::setMQ9GasReading(quint16 raw)
+{
+    _window->setProperty("mq9GasReading", raw);
+}
+
+void MainWindowController::setMQ135GasReading(quint16 raw)
+{
+    _window->setProperty("mq135GasReading", raw);
+}
+
 void MainWindowController::onMqttConnected()
 {
     LOG_I(LogTag, "Connected to MQTT broker");
